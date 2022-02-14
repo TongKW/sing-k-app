@@ -7,4 +7,4 @@ export const navBarClass = "sidebar bg-gray-700 text-blue-100 w-64 space-y-2 py-
 // Title text for input form
 export const formTitleClass = "block text-white text-sm font-bold mb-2";
 // Text field for input form
-export const inputFormClass = "text-sm shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline";
+export const inputFormClass = "text-sm shadow border rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline";
