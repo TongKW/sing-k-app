@@ -22,8 +22,9 @@ export default async function register(req, res) {
     await result.forEach(() => { isExists = true; });
     if (isExists) {
       // username exists, return
-      return res.status(409).json({
-        message: "user exists, try other username"
+      return res.status(200).json({
+        success: false,
+        message: "Username has been used"
       });
     }
 
@@ -39,8 +40,7 @@ export default async function register(req, res) {
     
     // return basic user details and token
     return res.status(200).json({
-      id: id,
-      username: username,
+      success: true
     });
   }
   

@@ -1,7 +1,10 @@
 import { MongoClient } from 'mongodb';
+import sign_token from '../../../utils/jwt/sign';
+import getConfig from 'next/config'
 
 const uri = "mongodb://admin:admin@alexauwork.com:30000/";
 const bcrypt = require('bcryptjs');
+const { serverRuntimeConfig } = getConfig();
 
 export default async function authenticate(req, res) {
   if (req.method === "POST") {
@@ -23,19 +26,32 @@ export default async function authenticate(req, res) {
     await client.close();
     // if the username does not exist in the db
     if (!isExists) {
-      return res.status(409).json({
+      return res.status(200).json({
         message: "User not found"
       });
     }
     // if the password hash does not match
     if (!bcrypt.compareSync(password, user.hash)) {
-      return res.status(409).json({
+      return res.status(200).json({
         message: "Password incorrect"
       });
     }
-    // Successfully logged in
-    return res.status(200).json({
+    // successfully logged in
+    // set cookie and return signed jwt
+    var secret = serverRuntimeConfig.jwt_secret;
+    var payload = {
       id: user._id,
+      username: username,
+    }
+    // Create a jwt expires in 30 days
+    var token = sign_token(payload, secret, 30);
+    res.setHeader(
+      "Set-Cookie",
+      `isLogin=true; username=${username} path=/;`
+    );
+    return res.status(200).json({
+      message: "Successfully logged in",
+      token: token
     });
   }
 }
