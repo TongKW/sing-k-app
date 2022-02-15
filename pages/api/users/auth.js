@@ -1,14 +1,12 @@
 import { MongoClient } from 'mongodb';
 import sign_token from '../../../utils/jwt/sign';
 import getConfig from 'next/config'
-import { cors } from '../cors';
 
 const uri = "mongodb://admin:admin@alexauwork.com:30000/";
 const bcrypt = require('bcryptjs');
 const { serverRuntimeConfig } = getConfig();
 
 export default async function authenticate(req, res) {
-  await cors(req, res);
   if (req.method === "POST") {
     const { username, password } = req.body;
 

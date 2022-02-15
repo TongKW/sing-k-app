@@ -1,11 +1,10 @@
 import { MongoClient } from 'mongodb';
-import { cors } from '../cors';
 
 const uri = "mongodb://admin:admin@alexauwork.com:30000/";
 const bcrypt = require('bcryptjs');
 
 export default async function register(req, res) {
-  await cors(req, res);
+  res.setHeader('Allow', [ 'GET', 'POST' ]);
   if (req.method === "POST") {
     let id;
     const { username, password } = req.body;
