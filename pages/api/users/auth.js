@@ -6,7 +6,7 @@ const uri = "mongodb://admin:admin@alexauwork.com:30000/";
 const bcrypt = require('bcryptjs');
 const { serverRuntimeConfig } = getConfig();
 
-export default async function authenticate(req, res) {
+export default async function handler(req, res) {
   //res.setHeader('Allow', [ 'GET', 'POST' ]);
   if (req.method === "POST") {
 
