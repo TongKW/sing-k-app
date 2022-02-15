@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 import FormInput from '../../component/elements/form-input';
 import Button from '../../component/elements/button';
 import styles from '../../styles/Home.module.css'
-import axios from 'axios';
 import Icon from '../../component/elements/Icon';
-import { formTitleClass } from '../../styles/tailwindClasses';
 import { states } from '.';
 
 export default function CreateAccount(props) {
@@ -82,18 +80,30 @@ export default function CreateAccount(props) {
       username: username, password: password
     }
     // Register account
-    axios.post(`${process.env.NEXT_PUBLIC_HOST}/api/users/register`, request_body)
-    .then(function (response) {
-      console.log(response.data)
-      if (response.data.success) {
+    var request_body = {
+      username: username, password: password
+    };
+    const response = await fetch('/api/users/register', {
+      method: 'POST', 
+      body: JSON.stringify(request_body),
+      headers: {
+        'Content-Type': 'application/json'
+      },
+    });
+    try {
+      const data = await response.json();
+      if (data.success) {
         setStatus(true);
         return;
       } else {
-        setError(response.data.message);
+        setError(data.message);
       }
-    })
-    .catch(function (error) {
-      //console.log(error);
-    });
+    } catch (error) {
+      console.log(error);
+    }
   }
 }
+
+// Tailwind classes definitions
+// Title text for input form
+const formTitleClass = "block text-white text-sm font-bold mb-2";

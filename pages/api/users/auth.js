@@ -7,9 +7,11 @@ const bcrypt = require('bcryptjs');
 const { serverRuntimeConfig } = getConfig();
 
 export default async function authenticate(req, res) {
-  res.setHeader('Allow', [ 'GET', 'POST' ]);
+  //res.setHeader('Allow', [ 'GET', 'POST' ]);
   if (req.method === "POST") {
+
     const { username, password } = req.body;
+    console.log(`POST request received for authentication from ${username}`);
 
     //load hash from MongoDb with username
     let user;
@@ -27,18 +29,21 @@ export default async function authenticate(req, res) {
     await client.close();
     // if the username does not exist in the db
     if (!isExists) {
-      return res.status(200).json({
+      console.log("User not found");
+      res.status(200).json({
         message: "User not found"
       });
     }
     // if the password hash does not match
     if (!bcrypt.compareSync(password, user.hash)) {
-      return res.status(200).json({
+      console.log("Password incorrect");
+      res.status(200).json({
         message: "Password incorrect"
       });
     }
     // successfully logged in
     // set cookie and return signed jwt
+    console.log("successfully logged in");
     var secret = serverRuntimeConfig.jwt_secret;
     var payload = {
       id: user._id,
@@ -50,7 +55,7 @@ export default async function authenticate(req, res) {
       "Set-Cookie",
       `isLogin=true; username=${username} path=/;`
     );
-    return res.status(200).json({
+    res.status(200).json({
       message: "Successfully logged in",
       token: token
     });

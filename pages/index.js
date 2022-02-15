@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import MobileNavBar from '../component/navigationBar/mobile-nav-bar';
 import Icon from '../component/elements/Icon';
-import { navBarClass, navElemClass } from '../styles/tailwindClasses';
 import logout from '../utils/logout';
 
 export default function Home() {
@@ -40,4 +39,8 @@ export default function Home() {
   )
 }
 
-// document.cookie = "username=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+// Tailwind classes definitions
+// Side Navigation Bar elements
+const navElemClass = "block p-3 rounded transition duration-200 hover:bg-indigo-800 hover:text-white cursor-pointer";
+// Side Navigation Bar
+const navBarClass = "sidebar bg-gray-700 text-blue-100 w-64 space-y-2 py-7 px-2 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out";

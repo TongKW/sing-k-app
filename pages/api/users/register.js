@@ -4,7 +4,6 @@ const uri = "mongodb://admin:admin@alexauwork.com:30000/";
 const bcrypt = require('bcryptjs');
 
 export default async function register(req, res) {
-  res.setHeader('Allow', [ 'GET', 'POST' ]);
   if (req.method === "POST") {
     let id;
     const { username, password } = req.body;
@@ -23,7 +22,7 @@ export default async function register(req, res) {
     await result.forEach(() => { isExists = true; });
     if (isExists) {
       // username exists, return
-      return res.status(200).json({
+      res.status(200).json({
         success: false,
         message: "Username has been used"
       });
@@ -39,8 +38,8 @@ export default async function register(req, res) {
     });
     await client.close();
     
-    // return basic user details and token
-    return res.status(200).json({
+    // basic user details and token
+    res.status(200).json({
       success: true
     });
   }

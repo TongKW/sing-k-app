@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import FormInput from '../../component/elements/form-input';
 import Button from '../../component/elements/button';
 import styles from '../../styles/Home.module.css'
-import axios from 'axios';
 import Icon from '../../component/elements/Icon';
 import CreateAccount from './create-account';
 
@@ -64,27 +63,32 @@ export default function Login() {
       username: username, password: password
     };
     // Authenticate
-    axios.post(`${process.env.NEXT_PUBLIC_HOST}/api/users/auth`, request_body)
-      .then(function (response) {
-        console.log(response.data)
-        if ('token' in response.data) {
-          // Login is successful
-          // Store jwt and username in local storage
-          localStorage.setItem('username', username);
-          localStorage.setItem('token', response.data.token);
-          // Store username in cookies
-          document.cookie = `username=${username}`;
-          console.log('reload');
-          window.location.reload();
-        } else {
-          // Login not successful
-          console.log("Login not successful")
-          console.log(response.data["message"]);
-          setError(response.data.message);
-        }
-      })
-      .catch(function (error) {
-        //console.log(error);
-      });
+    const response = await fetch('/api/users/auth', {
+      method: 'POST', 
+      body: JSON.stringify(request_body),
+      headers: {
+        'Content-Type': 'application/json'
+      },
+    });
+    try {
+      const data = await response.json();
+      if ('token' in data) {
+        // Login is successful
+        // Store jwt and username in local storage
+        localStorage.setItem('username', username);
+        localStorage.setItem('token', data.token);
+        // Store username in cookies
+        document.cookie = `username=${username}`;
+        console.log('reload');
+        window.location.reload();
+      } else {
+        // Login not successful
+        console.log("Login not successful")
+        console.log(data["message"]);
+        setError(data.message);
+      }
+    } catch (error) {
+      console.log(error);
+    }
   }
 }
