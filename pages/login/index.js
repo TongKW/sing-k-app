@@ -4,6 +4,7 @@ import Button from '../../component/elements/button';
 import styles from '../../styles/Home.module.css'
 import Icon from '../../component/elements/Icon';
 import CreateAccount from './create-account';
+import { Loading } from 'notiflix/build/notiflix-loading-aio';
 
 export const states = Object.freeze({"login": 1, "create": 2, "forget": 3});
 
@@ -54,6 +55,8 @@ export default function Login() {
 
   // Login handler
   async function login() {
+    // Clear existing error message first
+    setError();
     // Check if username and password fields are filled
     if (!username || !password) {
       setError("Username or password cannot be empty");
@@ -62,6 +65,8 @@ export default function Login() {
     var request_body = {
       username: username, password: password
     };
+    // Add loading indicator
+    Loading.circle({backgroundColor: 'rgba(40, 53, 147, 0.8)'});
     // Authenticate
     const response = await fetch('/api/users/auth', {
       method: 'POST', 
@@ -72,6 +77,8 @@ export default function Login() {
     });
     try {
       const data = await response.json();
+      // Remove loading indicator after data is fetched
+      Loading.remove();
       if ('token' in data) {
         // Login is successful
         // Store jwt and username in local storage
@@ -88,6 +95,8 @@ export default function Login() {
         setError(data.message);
       }
     } catch (error) {
+      // Remove loading indicator
+      Loading.remove();
       console.log(error);
     }
   }

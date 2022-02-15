@@ -4,6 +4,7 @@ import Button from '../../component/elements/button';
 import styles from '../../styles/Home.module.css'
 import Icon from '../../component/elements/Icon';
 import { states } from '.';
+import { Loading } from 'notiflix/build/notiflix-loading-aio';
 
 export default function CreateAccount(props) {
   const [username, setUserName] = useState();
@@ -71,14 +72,17 @@ export default function CreateAccount(props) {
 
   // Create account
   async function validate() {
+    // Clear all errors first
+    setDupError();
+    setError();
+    // Validate repeat password before making request
     if (password !== dupPassword) {
       setDupError("Repeat password is not the same");
       setError();
       return;
     }
-    var request_body = {
-      username: username, password: password
-    }
+    // Add loading indicator
+    Loading.circle({backgroundColor: 'rgba(40, 53, 147, 0.8)'});
     // Register account
     var request_body = {
       username: username, password: password
@@ -92,6 +96,8 @@ export default function CreateAccount(props) {
     });
     try {
       const data = await response.json();
+      // Remove loading indicator after data is fetched
+      Loading.remove();
       if (data.success) {
         setStatus(true);
         return;
@@ -99,6 +105,8 @@ export default function CreateAccount(props) {
         setError(data.message);
       }
     } catch (error) {
+      // Remove loading indicator
+      Loading.remove();
       console.log(error);
     }
   }
