@@ -82,7 +82,7 @@ export default function CreateAccount(props) {
       return;
     }
     // Add loading indicator
-    Loading.circle({backgroundColor: 'rgba(40, 53, 147, 0.8)'});
+    Loading.circle({svgColor: "#283593"});
     // Register account
     var request_body = {
       username: username, password: password

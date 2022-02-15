@@ -66,7 +66,7 @@ export default function Login() {
       username: username, password: password
     };
     // Add loading indicator
-    Loading.circle({backgroundColor: 'rgba(40, 53, 147, 0.8)'});
+    Loading.circle({svgColor: "#283593"});
     // Authenticate
     const response = await fetch('/api/users/auth', {
       method: 'POST', 
