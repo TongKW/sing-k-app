@@ -30,14 +30,14 @@ export default async function handler(req, res) {
     // if the username does not exist in the db
     if (!isExists) {
       console.log("User not found");
-      res.status(200).json({
+      return res.status(200).json({
         message: "User not found"
       });
     }
     // if the password hash does not match
     if (!bcrypt.compareSync(password, user.hash)) {
       console.log("Password incorrect");
-      res.status(200).json({
+      return res.status(200).json({
         message: "Password incorrect"
       });
     }
@@ -55,7 +55,7 @@ export default async function handler(req, res) {
       "Set-Cookie",
       `isLogin=true; username=${username} path=/;`
     );
-    res.status(200).json({
+    return res.status(200).json({
       message: "Successfully logged in",
       token: token
     });

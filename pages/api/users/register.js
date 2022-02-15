@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     await result.forEach(() => { isExists = true; });
     if (isExists) {
       // username exists, return
-      res.status(200).json({
+      return res.status(200).json({
         success: false,
         message: "Username has been used"
       });
@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     await client.close();
     
     // basic user details and token
-    res.status(200).json({
+    return res.status(200).json({
       success: true
     });
   }
