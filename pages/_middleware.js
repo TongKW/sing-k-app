@@ -15,5 +15,8 @@ export function middleware(req) {
 
   console.log(`req.cookies: ${req.cookies}`);
   const isLogin = 'username' in req.cookies;
-  return NextResponse.rewrite(`/${isLogin ? '' : 'login'}`);
+  if (!isLogin) {
+    return NextResponse.rewrite('login');
+  }
+  
 } 
