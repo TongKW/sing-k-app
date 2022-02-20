@@ -17,6 +17,10 @@ export function middleware(req) {
   const isLogin = 'username' in req.cookies;
   if (!isLogin) {
     return NextResponse.rewrite('login');
+  } else {
+    if (req.url.includes('/login')) {
+      return NextResponse.rewrite('/');
+    }
   }
   
 } 

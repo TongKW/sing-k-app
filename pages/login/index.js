@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useRouter } from "next/router";
 import FormInput from '../../component/elements/form-input';
 import Button from '../../component/elements/button';
 import styles from '../../styles/Home.module.css'
 import Icon from '../../component/elements/Icon';
 import CreateAccount from './create-account';
 import { Loading } from 'notiflix/build/notiflix-loading-aio';
+import ActivateAccount from './activate-account';
 
 export const states = Object.freeze({"login": 1, "create": 2, "forget": 3});
 
@@ -14,6 +16,17 @@ export default function Login() {
   const [error, setError] = useState();
   const [loginState, setLoginState] = useState(states.login);
   console.log(loginState);
+  // Check if validate id is in the path query
+  // If so, return to the activate account page
+  const router = useRouter();
+  // http://localhost:3000/login?validate_id=abc
+  if ("validate_id" in router.query) {
+    return (
+      <ActivateAccount validate_id={router.query.validate_id}></ActivateAccount>
+    )
+  }
+
+  // Return normal login page
   if (loginState === states.login) {
     // Login page
     return (
@@ -53,7 +66,7 @@ export default function Login() {
     return;
   }
 
-  // Login handler
+  // Login logic
   async function login() {
     // Clear existing error message first
     setError();
