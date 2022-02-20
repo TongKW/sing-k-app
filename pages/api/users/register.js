@@ -5,42 +5,49 @@ const bcrypt = require('bcryptjs');
 
 export default async function handler(req, res) {
   if (req.method === "POST") {
-    let id;
-    const { username, password } = req.body;
+    let validate_id;
+    const { username, password, email } = req.body;
     var salt = bcrypt.genSaltSync(10);
     var hash = bcrypt.hashSync(password, salt);
   
-    //TODO: insert hash, username to MongoDb
     const client = new MongoClient(uri);
     await client.connect();
     var user_info = client.db("users").collection('user_info');
+    var validate = client.db("users").collection('validate');
 
     // Check if the username exists
-    const query = { "username": username };
-    const result = user_info.find(query);
-    var isExists = false;
-    await result.forEach(() => { isExists = true; });
-    if (isExists) {
-      // username exists, return
+    var usernameExists = false;
+    var emailExists = false;
+    await user_info.find({ "username": username }).forEach(() => { usernameExists = true; });
+    await validate.find({ "username": username }).forEach(() => { usernameExists = true; });
+    await user_info.find({ "email": email }).forEach(() => { emailExists = true; });
+    await validate.find({ "email": email }).forEach(() => { emailExists = true; });
+    if (usernameExists || emailExists) {
+      // username or email exists, return
       return res.status(200).json({
         success: false,
-        message: "Username has been used"
+        usernameExists: usernameExists,
+        emailExists: emailExists,
       });
     }
 
-    // Register a new user
-    const user = { username: username, hash: hash }
-    await user_info.insertOne(user).then(result => {
-      id = result.insertedId;
-      console.log(result.insertedId);
+    // Put user into validation waitlist
+    // username: string
+    // email: string
+    // hash: hashed user pw by bcrypt.hashSync with salt
+    // expireTime: int, milliseconds since Epoch till now + 24 hours
+    const user = { username: username, hash: hash, email: email, expireTime: Date.now()+86400000 }
+    await validate.insertOne(user).then(result => {
+      validate_id = result.insertedId;
     }).catch(err => {
       console.log(err);
     });
     await client.close();
     
-    // basic user details and token
+    // Return success status with validate_id
     return res.status(200).json({
-      success: true
+      success: true,
+      validate_id: validate_id
     });
   }
   

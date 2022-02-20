@@ -7,7 +7,6 @@ const bcrypt = require('bcryptjs');
 const { serverRuntimeConfig } = getConfig();
 
 export default async function handler(req, res) {
-  //res.setHeader('Allow', [ 'GET', 'POST' ]);
   if (req.method === "POST") {
 
     const { username, password } = req.body;

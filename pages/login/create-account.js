@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
-import FormInput from '../../component/elements/form-input';
+import { FormInputBlock } from '../../component/elements/form-input';
 import Button from '../../component/elements/button';
 import styles from '../../styles/Home.module.css'
 import Icon from '../../component/elements/Icon';
 import { states } from '.';
 import { Loading } from 'notiflix/build/notiflix-loading-aio';
+import validateFormat from '../../utils/validate-email-format';
 
 export default function CreateAccount(props) {
+  console.log(`error:${error}`)
   const [username, setUserName] = useState();
   const [password, setPassword] = useState();
+  const [email, setEmail] = useState();
   const [dupPassword, setDupPassword] = useState();
-  const [error, setError] = useState();
+  const [error, setError] = useState("");
   const [dupError, setDupError] = useState();
+  const [emailError, setEmailError] = useState();
   const [status, setStatus] = useState(false);
   if (!status) {
     return (
@@ -26,23 +30,24 @@ export default function CreateAccount(props) {
                 ← back
               </a>
             </div>
+            {/* Username block */}
             <label className={formTitleClass} htmlFor="username">
               Username
             </label>
-            <div className="mb-4 text-gray-700">
-              <FormInput id="username" type="text" placeholder="Username" onChange={setUserName} warning={error}></FormInput>
-              <p style={{display:`${error ? 'block' : 'none'}`}} className="text-red-700 text-xs italic mt-3">{error}</p>
-            </div>
+            <FormInputBlock category="username" onChange={setUserName} warning={error}></FormInputBlock>
+            {/* Email block */}
             <label className={formTitleClass} htmlFor="username">
+              Email
+            </label>
+            <FormInputBlock category="email" onChange={setEmail} warning={emailError}></FormInputBlock>
+            {/* Password block */}
+            <label className={formTitleClass} htmlFor="password">
               Password
             </label>
-            <div className="mb-4">
-              <FormInput id="password" type="password" placeholder="Password" onChange={setPassword}></FormInput>
-            </div>
-            <div className="mb-4">
-              <FormInput type="password" placeholder="Repeat password" onChange={setDupPassword} warning={dupError}></FormInput>
-              <p style={{display:`${dupError ? 'block' : 'none'}`}} className="text-red-700 text-xs italic mt-3">{dupError}</p>
-            </div>
+            <FormInputBlock category="password" onChange={setPassword}></FormInputBlock>
+            {/* Duplicate Password block */}
+            <FormInputBlock category="repeat password" onChange={setDupPassword} warning={dupError}></FormInputBlock>
+            {/* Confirm */}
             <div className="flex items-center justify-between">
               <div onClick={validate}>
                 <Button text="Confirm"></Button>
@@ -59,7 +64,8 @@ export default function CreateAccount(props) {
           <Icon></Icon>
         </div>
           <div className="text-center bg-gray-500 shadow-md rounded px-8 pt-6 pb-8">
-            Successfully created account
+            A verification link will be sent to you via email. <br></br>
+            Click into the link within 24 hours to activate your account.
             <div className="text-center pt-4">
               <div onClick={() => {props.setLoginState(states.login)}}>
                 <Button text="Return"></Button>
@@ -69,12 +75,26 @@ export default function CreateAccount(props) {
       </div>
     )
   }
+  
+  
 
   // Create account
   async function validate() {
     // Clear all errors first
     setDupError();
     setError();
+    setEmailError();
+    // Check if email is filled and with correct format
+    if (!email) {
+      setEmailError("Email must be filled");
+      return;
+    } else {
+      if (!validateFormat(email)) {
+        setEmailError("Incorrect email format");
+        return;
+      }
+    }
+
     // Validate repeat password before making request
     if (password !== dupPassword) {
       setDupError("Repeat password is not the same");
@@ -85,7 +105,7 @@ export default function CreateAccount(props) {
     Loading.circle({svgColor: "#283593"});
     // Register account
     var request_body = {
-      username: username, password: password
+      username: username, password: password, email: email
     };
     const response = await fetch('/api/users/register', {
       method: 'POST', 
@@ -99,10 +119,23 @@ export default function CreateAccount(props) {
       // Remove loading indicator after data is fetched
       Loading.remove();
       if (data.success) {
+        // Send an activation email to user
+        await fetch('/api/email/invite', {
+          method: 'POST', 
+          body: JSON.stringify({ email: email, username: username, validate_id: data.validate_id }),
+          headers: {
+            'Content-Type': 'application/json'
+          },
+        });
         setStatus(true);
         return;
       } else {
-        setError(data.message);
+        if (data.usernameExists) {
+          setError("Username has been used");
+        }
+        if (data.emailExists) {
+          setEmailError("Email has been used");
+        }  
       }
     } catch (error) {
       // Remove loading indicator
