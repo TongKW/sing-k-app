@@ -20,9 +20,9 @@ export default function ActivateAccount() {
     // Add loading indicator
     Loading.circle({svgColor: "#283593"});
     // Handle activation request
-    fetchMyAPI();
+    validate();
 
-    async function fetchMyAPI() {
+    async function validate() {
       try {
         const response = await fetch('/api/email/activate', {
           method: 'POST', 

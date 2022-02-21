@@ -5,6 +5,7 @@ import styles from '../../styles/Home.module.css'
 import Icon from '../../component/elements/Icon';
 import CreateAccount from './create-account';
 import { Loading } from 'notiflix/build/notiflix-loading-aio';
+import Link from 'next/link';
 
 export const states = Object.freeze({"login": 1, "create": 2, "forget": 3});
 
@@ -13,7 +14,6 @@ export default function Login() {
   const [password, setPassword] = useState();
   const [error, setError] = useState();
   const [loginState, setLoginState] = useState(states.login);
-  console.log(loginState);
   if (loginState === states.login) {
     // Login page
     return (
@@ -32,9 +32,11 @@ export default function Login() {
               <div onClick={login}>
                 <Button text="Login"></Button>
               </div>
-              <a className="cursor-pointer inline-block align-baseline text-sm text-indigo-700 hover:text-indigo-800">
-                Forgot Password
-              </a>
+              <Link href="/login/reset-password">
+                <a className="cursor-pointer inline-block align-baseline text-sm text-indigo-700 hover:text-indigo-800">
+                  Forgot Password
+                </a>
+              </Link>
             </div>
             <div className='content-center pt-3' onClick={() => {setLoginState(states.create)}}>
               <a className="cursor-pointer text-center text-sm text-indigo-700 hover:text-indigo-800">
@@ -86,18 +88,14 @@ export default function Login() {
         localStorage.setItem('token', data.token);
         // Store username in cookies
         document.cookie = `username=${username}`;
-        console.log('reload');
         window.location.reload();
       } else {
         // Login not successful
-        console.log("Login not successful")
-        console.log(data["message"]);
         setError(data.message);
       }
     } catch (error) {
       // Remove loading indicator
       Loading.remove();
-      console.log(error);
     }
   }
 }

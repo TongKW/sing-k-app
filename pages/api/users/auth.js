@@ -10,7 +10,6 @@ export default async function handler(req, res) {
   if (req.method === "POST") {
 
     const { username, password } = req.body;
-    console.log(`POST request received for authentication from ${username}`);
 
     //load hash from MongoDb with username
     let user;
@@ -52,7 +51,7 @@ export default async function handler(req, res) {
     var token = sign_token(payload, secret, 30);
     res.setHeader(
       "Set-Cookie",
-      `isLogin=true; username=${username} path=/;`
+      `isLogin=${true}; username=${username}; path=/;`
     );
     return res.status(200).json({
       message: "Successfully logged in",

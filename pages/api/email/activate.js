@@ -17,7 +17,6 @@ export default async function handler(req, res) {
     try {
       data = await validate.findOneAndDelete({'_id': ObjectId(validate_id)});
     } catch (error) {
-      console.log(error);
       return res.status(200).json({
         message: "Invalid activation link."
       });
@@ -56,26 +55,3 @@ export default async function handler(req, res) {
     });
   }
 }
-
-/*
-import fs from 'fs'
-import path from 'path'
-
-export default (req, res) => {
-  const dirRelativeToPublicFolder = 'img'
-
-  const dir = path.resolve('./public');
-
-  const filenames = fs.readdirSync(dir);
-  const images = filenames.map(name => path.join('/', dirRelativeToPublicFolder, name))
-
-  const content = readFileSync("myFile.txt");
-
-  res.statusCode = 200
-  res.json(images);
-
-
-  const avatar_path = path.join(path.resolve('./public'), 'avatar.txt')
-  const content = readFileSync(avatar_path);
-}
-*/
