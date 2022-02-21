@@ -8,7 +8,7 @@ import { NextResponse } from 'next/server'
 export function middleware(req) {
   // If from api call, do not redirect to login page
   try {
-    if (req.url.includes('/api')) return;
+    if (req.url.includes('/api') || req.url.includes('/activate-account') || req.url.includes('/reset-password')) return;
   } catch (error) {
     //
   }
