@@ -13,8 +13,9 @@ export function middleware(req) {
     //
   }
 
-  console.log(`req.cookies: ${req.cookies}`);
-  const isLogin = 'username' in req.cookies;
+  console.log(`req.cookies: ${JSON.stringify(req.cookies)}`);
+  const isLogin = 'isLogin' in req.cookies;
+  console.log(isLogin);
   if (!isLogin) {
     return NextResponse.rewrite('login');
   } else {

@@ -6,14 +6,14 @@ import Icon from '../../component/elements/Icon';
 import { states } from '.';
 import { Loading } from 'notiflix/build/notiflix-loading-aio';
 import validateFormat from '../../utils/validate-email-format';
+import FromTitle from '../../component/elements/form-title';
 
 export default function CreateAccount(props) {
-  console.log(`error:${error}`)
   const [username, setUserName] = useState();
   const [password, setPassword] = useState();
   const [email, setEmail] = useState();
   const [dupPassword, setDupPassword] = useState();
-  const [error, setError] = useState("");
+  const [error, setError] = useState();
   const [dupError, setDupError] = useState();
   const [emailError, setEmailError] = useState();
   const [status, setStatus] = useState(false);
@@ -23,6 +23,7 @@ export default function CreateAccount(props) {
         <Icon></Icon>
         <div className="w-full max-w-xs pt-10">
           <form className="bg-gray-500 shadow-md rounded px-8 pt-6 pb-8">
+            {/* Back */}
             <div className="flex items-center justify-between pb-2">
               <a className="cursor-pointer inline-block align-baseline text-sm text-indigo-700 hover:text-indigo-800"
                 onClick={() => {props.setLoginState(states.login)}}
@@ -31,19 +32,13 @@ export default function CreateAccount(props) {
               </a>
             </div>
             {/* Username block */}
-            <label className={formTitleClass} htmlFor="username">
-              Username
-            </label>
+            <FromTitle title="username"/>
             <FormInputBlock category="username" onChange={setUserName} warning={error}></FormInputBlock>
             {/* Email block */}
-            <label className={formTitleClass} htmlFor="username">
-              Email
-            </label>
+            <FromTitle title="email"/>
             <FormInputBlock category="email" onChange={setEmail} warning={emailError}></FormInputBlock>
             {/* Password block */}
-            <label className={formTitleClass} htmlFor="password">
-              Password
-            </label>
+            <FromTitle title="password"/>
             <FormInputBlock category="password" onChange={setPassword}></FormInputBlock>
             {/* Duplicate Password block */}
             <FormInputBlock category="confirm password" onChange={setDupPassword} warning={dupError}></FormInputBlock>
@@ -53,6 +48,7 @@ export default function CreateAccount(props) {
                 <Button text="Confirm"></Button>
               </div>
             </div>
+
           </form>
         </div>
       </div>
@@ -140,11 +136,6 @@ export default function CreateAccount(props) {
     } catch (error) {
       // Remove loading indicator
       Loading.remove();
-      console.log(error);
     }
   }
 }
-
-// Tailwind classes definitions
-// Title text for input form
-const formTitleClass = "block text-white text-sm font-bold mb-2";
