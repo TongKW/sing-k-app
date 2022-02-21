@@ -15,7 +15,7 @@ export function FormInputBlock(props) {
   var category = props.category;
   var onChange = props.onChange ? props.onChange : ()=>{};
   var isPassword = false;
-  if (category === 'password' || category === 'repeat password') {
+  if (category === 'password' || category === 'confirm password') {
     isPassword = true;
   }
 

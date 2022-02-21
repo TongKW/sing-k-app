@@ -46,7 +46,7 @@ export default function CreateAccount(props) {
             </label>
             <FormInputBlock category="password" onChange={setPassword}></FormInputBlock>
             {/* Duplicate Password block */}
-            <FormInputBlock category="repeat password" onChange={setDupPassword} warning={dupError}></FormInputBlock>
+            <FormInputBlock category="confirm password" onChange={setDupPassword} warning={dupError}></FormInputBlock>
             {/* Confirm */}
             <div className="flex items-center justify-between">
               <div onClick={validate}>
@@ -95,9 +95,9 @@ export default function CreateAccount(props) {
       }
     }
 
-    // Validate repeat password before making request
+    // Validate confirm password before making request
     if (password !== dupPassword) {
-      setDupError("Repeat password is not the same");
+      setDupError("Confirm password is not the same");
       setError();
       return;
     }
