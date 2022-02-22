@@ -64,6 +64,7 @@ export default function Reset(props) {
     // Check any unfilled fields
     if (!username || !email) {
       setError("Username or email must not be empty");
+      return;
     }
     // Set new password
     Loading.circle({svgColor: "#283593"});
