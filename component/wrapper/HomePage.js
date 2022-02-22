@@ -19,18 +19,24 @@ export default function HomePage(props) {
       <div className="relative min-h-screen md:flex">       
       <MobileNavBar></MobileNavBar>
       <div className={navBarClass}>
-        <Link href="/">
-          <a className="text-white flex items-center space-x-2 px-4">
-            <Icon length="50"></Icon>
-          </a>
-        </Link>
         <nav>
-          <a href="profile" className={navElemClass + (props.href == "profile" ? 'bg-indigo-900' : '')}>
-            User Profile
+          <Link href="/">
+            <a className={navElemClass + "flex w-64"}>
+              <Icon length="50"></Icon>
+            </a>
+          </Link>
+          <Link href="/profile">
+            <a className={navElemClass + (props.href == "profile" ? 'bg-indigo-900' : '')}>
+              User Profile
+            </a>
+          </Link>
+          <a href="change-password" className={navElemClass + (props.href == "change-password" ? 'bg-indigo-900' : '')}>
+            Change Password
           </a>
-          <div className={navElemClass} onClick={logout}>
+          <div className={navElemClass + "flex-col grow"} onClick={logout}>
             Logout
           </div>
+          
         </nav>
       </div>
         {props.children}
@@ -43,4 +49,4 @@ export default function HomePage(props) {
 // Side Navigation Bar elements
 const navElemClass = "block p-3 rounded transition duration-200 hover:bg-indigo-800 hover:text-white cursor-pointer ";
 // Side Navigation Bar
-const navBarClass = "sidebar bg-gray-700 text-blue-100 w-64 space-y-2 py-7 px-2 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out";
+const navBarClass = "sidebar bg-gray-700 text-blue-100 space-y-2 py-7 px-2 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out ";
