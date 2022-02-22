@@ -62,7 +62,7 @@ export default async function handler(req, res) {
           pass: 'Kawai@t32'
       }
     });
-    transporter.sendMail(message);
+    await transporter.sendMail(message);
 
     return res.status(200).json({
       success: true,
