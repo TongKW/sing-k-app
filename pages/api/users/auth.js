@@ -46,6 +46,8 @@ export default async function handler(req, res) {
     var payload = {
       id: user._id,
       username: username,
+      email: user.email,
+      avatar: user.avatar
     }
     // Create a jwt expires in 30 days
     var token = sign_token(payload, secret, 30);
