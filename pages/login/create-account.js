@@ -112,8 +112,6 @@ export default function CreateAccount(props) {
     });
     try {
       const data = await response.json();
-      // Remove loading indicator after data is fetched
-      Loading.remove();
       if (data.success) {
         // Send an activation email to user
         await fetch('/api/email/invite', {
@@ -124,8 +122,10 @@ export default function CreateAccount(props) {
           },
         });
         setStatus(true);
+        Loading.remove();
         return;
       } else {
+        Loading.remove();
         if (data.usernameExists) {
           setError("Username has been used");
         }
