@@ -17,7 +17,7 @@ export function middleware(req) {
   const isLogin = 'isLogin' in req.cookies;
   console.log(isLogin);
   if (!isLogin) {
-    return NextResponse.rewrite('login');
+    return NextResponse.rewrite('/login');
   } else {
     if (req.url.includes('/login')) {
       return NextResponse.rewrite('/');
