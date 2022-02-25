@@ -13,14 +13,17 @@ export function middleware(req) {
     //
   }
 
+  const url = req.nextUrl.clone()
   console.log(`req.cookies: ${JSON.stringify(req.cookies)}`);
   const isLogin = 'isLogin' in req.cookies;
   console.log(isLogin);
   if (!isLogin) {
-    return NextResponse.rewrite('login');
+    url.pathname = '/login';
+    return NextResponse.rewrite(url);
   } else {
     if (req.url.includes('/login')) {
-      return NextResponse.rewrite('/');
+      url.pathname = '/';
+      return NextResponse.rewrite(url);
     }
   }
   
