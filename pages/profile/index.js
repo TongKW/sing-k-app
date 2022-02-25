@@ -35,6 +35,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+
 export default function Profile() {
   const classes = useStyles();
   const [username, setUsername] = useState();
@@ -42,8 +43,9 @@ export default function Profile() {
   // Avatar in base64 encoding
   const [avatar, setAvatar] = useState();
   const description = "Hello, everyone!";
-  const userExp = 10;
+  const userExp = 20;
   const ExpToNextLevel = 100;
+  const bar=Number(userExp)/Number(ExpToNextLevel)*100;
 
   // Get the token stored in local storage
   // Send decrypt request to server
@@ -94,7 +96,7 @@ export default function Profile() {
             </center>
           </Box>
           <Box width="100%" mr={3} mt={2}>
-            <LinearProgress variant="determinate" />
+            <LinearProgress variant="determinate" value={bar}/>
           </Box>
           <Box minWidth={20}>
             <Typography variant="subtitle2" color="white" ><Box sx={{ fontSize: 10}}>{`${userExp}/${ExpToNextLevel} `}</Box></Typography>
