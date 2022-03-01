@@ -1,4 +1,4 @@
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 
 const uri = "mongodb://admin:admin@alexauwork.com:30000/";
 const bcrypt = require('bcryptjs');
@@ -12,43 +12,32 @@ const bcrypt = require('bcryptjs');
 export default async function handler(req, res) {
   if (req.method === "POST") {
     const body = req.body;
+    let { id, password, ...user } = body;
 
-    var user = {};
-
-    if(!body.hasOwnProperty('username') ){
+    if(!body.hasOwnProperty('id') ){
       return res.status(200).json({
         success: false,
-        message: "No Username in request"
+        message: "No id in request"
       });
     }
 
     //Hash the password Check do the request body contain there is any in the request body
     if(body.hasOwnProperty('password')){
       const password = body.password;
-      var salt = bcrypt.genSaltSync(10);
-      var hash = bcrypt.hashSync(password, salt);
+      let salt = bcrypt.genSaltSync(10);
+      let hash = bcrypt.hashSync(password, salt);
       user.hash = hash;
     }
 
-    //put every field from `body` to `user`
-    console.log("DEBUG MSG 2");
-    for (var key in body) {
-      console.log(key);
-      console.log(body[key]);
-      if (key!='password' && key!='username'){
-        user[key] = body[key];
-      }
-    }
-    console.log(user);
     //connect MongoDB
     const client = new MongoClient(uri);
     await client.connect();
-    var user_info = client.db("users").collection('user_info');
+    let user_info = client.db("users").collection('user_info');
 
     // Check if the username exists
-    var query = { "username": body.username };
+    let query = { "_id": ObjectId(id) };
     const result = user_info.find(query);
-    var isExists = false;
+    let isExists = false;
     await result.forEach(() => { isExists = true; });
     if (!isExists) {
       // username exists, return
@@ -59,7 +48,7 @@ export default async function handler(req, res) {
     }
 
     //update mongodb
-    var newvalues = { $set: user };
+    let newvalues = { $set: user };
     await user_info.updateOne(query, newvalues).then(result => {
       console.log(result);
     }).catch(err => {
