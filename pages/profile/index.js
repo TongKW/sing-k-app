@@ -6,23 +6,36 @@ import {
   Avatar,
   LinearProgress,
   Typography,
+  IconButton,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import AddAPhotoIcon from '@mui/icons-material/AddAPhoto';
+import EditIcon from '@mui/icons-material/Edit';
 
 
-const SmallAvatar = styled(Avatar)(({ theme }) => ({
+const ProfileIconButton = styled(IconButton)(({ theme }) => ({
   width: 22,
   height: 22,
-  border: `2px solid ${theme.palette.background.paper}`,
   [theme.breakpoints.up('md')]: {
     width: 32,
     height: 32,
   },
 }));
 
+const ProfileIcon = styled(Avatar)(({ theme }) => ({
+  width: 25,
+  height: 25,
+  border: `3px solid ${theme.palette.background.paper}`,
+  [theme.breakpoints.up('md')]: {
+    width: 35,
+    height: 35,
+  },
+}));
+
 const UserAvatar = styled(Avatar)(({ theme }) => ({
   width: theme.spacing(9),
   height: theme.spacing(9),
+  border: `4px solid ${theme.palette.background.paper}`,
   [theme.breakpoints.up('md')]: {
     width: theme.spacing(17),
     height: theme.spacing(17),
@@ -82,7 +95,7 @@ export default function Profile() {
                   vertical: 'bottom',
                   horizontal: 'right',
                 }}
-                badgeContent={<SmallAvatar src="https://cdn0.iconfinder.com/data/icons/professional-avatar-10/65/38-512.png" />}
+                badgeContent={<ProfileIconButton><ProfileIcon><AddAPhotoIcon color="primary" sx={{ fontSize: {xs: 15, md:22} }}/></ProfileIcon></ProfileIconButton>}
               >
                 <UserAvatar encoding={avatar} mx="auto"/>
               </Badge>
