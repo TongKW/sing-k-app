@@ -4,7 +4,7 @@ import FromTitle from "../component/elements/form-title";
 import { FormInputBlock } from "../component/elements/form-input";
 import Button from "../component/elements/button";
 import { Loading } from "notiflix/build/notiflix-loading-aio";
-import validatePwFormat from "../utils/validate-password-format";
+import pwValidateSetError from "../utils/validate-password-format";
 
 export default function ChangePassword() {
   return (
@@ -27,9 +27,9 @@ function ChangePasswordPage() {
   const [changedPwStatus, setChangedPwStatus] = useState(false);
   if (!changedPwStatus) {
     return (
-      <div className="grid grid-cols-10 gap-8">
-        <div className="col-start-3 col-span-6">
-          <form>
+      <div className="grid grid-cols-12 gap-8" style={{ height: "100%" }}>
+        <div className="flex flex-col justify-center col-start-4 col-span-6">
+          <form className="flex flex-col space-y-4">
             <FromTitle title="Old Password" />
             <FormInputBlock
               category="password"
@@ -130,9 +130,9 @@ function ChangePasswordPage() {
   }
 
   async function changePwInterface(newPw) {
-    const decryptionSuccess = await decryptSessionToken();
-    if (!decryptionSuccess.success) return decryptionSuccess;
-    const userId = decryptionSuccess.success;
+    const decryptionResult = await decryptSessionToken();
+    if (!decryptionResult.success) return decryptionResult;
+    const userId = decryptionResult.success;
     return await changePw(userId, newPw);
   }
 
@@ -153,11 +153,7 @@ function ChangePasswordPage() {
       setNewPwError("New password should not be the same as the old password");
       setOldPwError();
       return;
-    } else if (!validatePwFormat(newPw)) {
-      setNewPwError(
-        "Password should contain at least 1 lowercase character, 1 uppercase character, 1 number 1 symbol and 8 characters in total"
-      );
-      setOldPwError();
+    } else if (pwValidateSetError(newPw, setNewPwError, setOldPwError)) {
       return;
     } else if (newPw !== confirmedNewPw) {
       setDupError("Confirmed New Password is not equal to New Password");
