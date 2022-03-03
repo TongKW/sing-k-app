@@ -177,6 +177,8 @@ export default function Profile() {
       }
     }
 
+    //TODO: check whether the new username has been used
+
     Loading.circle({svgColor: "#283593"});
     const decryptionSuccess = await decryptSessionToken();
     if (!decryptionSuccess.success){
