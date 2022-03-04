@@ -17,6 +17,7 @@ import {
 import { styled } from "@mui/material/styles";
 import AddAPhotoIcon from "@mui/icons-material/AddAPhoto";
 import { LocalConvenienceStoreOutlined } from "@mui/icons-material";
+import checkFileSize from "../../utils/checkFileSize";
 
 const Input = styled("input")({
   display: "none",
@@ -69,7 +70,14 @@ export default function Profile() {
       const [file] = event.target.files;
       let reader = new FileReader();
       reader.readAsDataURL(file);
-      reader.onloadend = () => setAvatar(reader.result);
+      reader.onloadend = () => {
+        const base64 = reader.result;
+        if (avatarTooLarge(base64)) {
+          alert("Avatar is too large!");
+          return;
+        }
+        setAvatar(base64);
+      };
     },
   });
   const [emailError, setEmailError] = useState();
@@ -189,6 +197,13 @@ export default function Profile() {
     </HomePage>
   );
 
+  function avatarTooLarge(base64) {
+    const fileSize = checkFileSize(base64);
+    console.log(fileSize);
+    if (fileSize > 360000) return true;
+    return false;
+  }
+
   async function decryptSessionToken() {
     const token = localStorage.getItem("token");
     const requestBody = { token: token };
@@ -305,13 +320,23 @@ export default function Profile() {
     if (email !== oldEmail) {
       request_body.email = email;
     }
-    const response = await fetch("/api/users/update", {
-      method: "POST",
-      body: JSON.stringify(request_body),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    if (avatar !== oldAvatar) {
+      request_body.avatar = avatar;
+    }
+    let response;
+    try {
+      response = await fetch("/api/users/update", {
+        method: "POST",
+        body: JSON.stringify(request_body),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    } catch (error) {
+      alert(`Unknown error occurs! ${error}`);
+      Loading.remove();
+      return;
+    }
     try {
       const data = await response.json();
       if (data.success) {
