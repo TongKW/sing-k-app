@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
-import FormInput from '../../component/elements/form-input';
-import Button from '../../component/elements/button';
-import styles from '../../styles/Home.module.css'
-import Icon from '../../component/elements/Icon';
-import CreateAccount from './create-account';
-import { Loading } from 'notiflix/build/notiflix-loading-aio';
-import Link from 'next/link';
+import React, { useState } from "react";
+import FormInput from "../../component/elements/form-input";
+import Button from "../../component/elements/button";
+import styles from "../../styles/Home.module.css";
+import Icon from "../../component/elements/Icon";
+import CreateAccount from "./create-account";
+import { Loading } from "notiflix/build/notiflix-loading-aio";
+import Link from "next/link";
 
-export const states = Object.freeze({"login": 1, "create": 2, "forget": 3});
+export const states = Object.freeze({ login: 1, create: 2, forget: 3 });
 
 export default function Login() {
   const [username, setUserName] = useState();
@@ -22,11 +22,27 @@ export default function Login() {
         <div className="w-full max-w-xs pt-10">
           <form className="bg-gray-500 shadow-md rounded px-8 pt-6 pb-8">
             <div className="mb-4 text-gray-700">
-              <FormInput id="username" type="text" placeholder="Username" onChange={setUserName}></FormInput>
+              <FormInput
+                id="username"
+                type="text"
+                placeholder="Username"
+                onChange={setUserName}
+              ></FormInput>
             </div>
             <div className="mb-4">
-              <FormInput id="password" type="password" placeholder="Password" onChange={setPassword} warning={error}></FormInput>
-              <p style={{display:`${error ? 'block' : 'none'}`}} className="text-red-700 text-xs italic mt-3">{error}</p>
+              <FormInput
+                id="password"
+                type="password"
+                placeholder="Password"
+                onChange={setPassword}
+                warning={error}
+              ></FormInput>
+              <p
+                style={{ display: `${error ? "block" : "none"}` }}
+                className="text-red-700 text-xs italic mt-3"
+              >
+                {error}
+              </p>
             </div>
             <div className="flex items-center justify-between">
               <div onClick={login}>
@@ -38,7 +54,12 @@ export default function Login() {
                 </a>
               </Link>
             </div>
-            <div className='content-center pt-3' onClick={() => {setLoginState(states.create)}}>
+            <div
+              className="content-center pt-3"
+              onClick={() => {
+                setLoginState(states.create);
+              }}
+            >
               <a className="cursor-pointer text-center text-sm text-indigo-700 hover:text-indigo-800">
                 Create account
               </a>
@@ -46,11 +67,9 @@ export default function Login() {
           </form>
         </div>
       </div>
-    )
+    );
   } else if (loginState === states.create) {
-    return (
-      <CreateAccount setLoginState={setLoginState}/>
-    )
+    return <CreateAccount setLoginState={setLoginState} />;
   } else {
     return;
   }
@@ -65,27 +84,28 @@ export default function Login() {
       return;
     }
     var request_body = {
-      username: username, password: password
+      username: username,
+      password: password,
     };
     // Add loading indicator
-    Loading.circle({svgColor: "#283593"});
+    Loading.circle({ svgColor: "#283593" });
     // Authenticate
-    const response = await fetch('/api/users/auth', {
-      method: 'POST', 
+    const response = await fetch("/api/users/auth", {
+      method: "POST",
       body: JSON.stringify(request_body),
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
     });
     try {
       const data = await response.json();
       // Remove loading indicator after data is fetched
       Loading.remove();
-      if ('token' in data) {
+      if ("token" in data) {
         // Login is successful
         // Store jwt and username in local storage
-        localStorage.setItem('username', username);
-        localStorage.setItem('token', data.token);
+        localStorage.setItem("username", username);
+        localStorage.setItem("token", data.token);
         // Store username in cookies
         document.cookie = `username=${username}`;
         window.location.reload();
