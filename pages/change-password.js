@@ -145,7 +145,12 @@ function ChangePasswordPage() {
     const oldPwCorrect = await checkUserOldPw(oldPw);
     Loading.remove();
 
-    if (!oldPwCorrect.success) {
+    if (newPw !== confirmedNewPw) {
+      setDupError("Confirmed New Password is not equal to New Password");
+      setOldPwError();
+      setNewPwError();
+      return;
+    } else if (!oldPwCorrect.success) {
       if (oldPwCorrect.error === null) alert("Unknown error occurs");
       else setOldPwError("Password is not correct");
       return;
@@ -154,11 +159,6 @@ function ChangePasswordPage() {
       setOldPwError();
       return;
     } else if (pwValidateSetError(newPw, setNewPwError, setOldPwError)) {
-      return;
-    } else if (newPw !== confirmedNewPw) {
-      setDupError("Confirmed New Password is not equal to New Password");
-      setOldPwError();
-      setNewPwError();
       return;
     } else {
       Loading.circle({ svgColor: "#283593" });
