@@ -17,8 +17,8 @@ import {
 import { styled } from "@mui/material/styles";
 import AddAPhotoIcon from "@mui/icons-material/AddAPhoto";
 
-const Input = styled('input')({
-  display: "none"
+const Input = styled("input")({
+  display: "none",
 });
 
 function UploadImageButton() {
@@ -31,13 +31,15 @@ function UploadImageButton() {
       >
         <ProfileIcon>
           <Input accept="image/*" id="upload-image" type="file" />
-          <AddAPhotoIcon color="primary" sx={{ fontSize: {xs: 15, md:22} }}/>
+          <AddAPhotoIcon
+            color="primary"
+            sx={{ fontSize: { xs: 15, md: 22 } }}
+          />
         </ProfileIcon>
       </ProfileIconButton>
     </label>
   );
 }
-
 
 const ProfileIconButton = styled(IconButton)(({ theme }) => ({
   width: 22,
@@ -69,6 +71,7 @@ const UserAvatar = styled(Avatar)(({ theme }) => ({
 }));
 
 export default function Profile() {
+  const [userId, setUserId] = useState();
   const [oldUsername, setOldUsername] = useState();
   const [oldEmail, setOldEmail] = useState();
   const [username, setUsername] = useState();
@@ -101,6 +104,7 @@ export default function Profile() {
       console.log(data);
       if (data.authorized) {
         const user = data.body;
+        setUserId(user._id);
         setOldUsername(user.username);
         setOldEmail(user.email);
         setUsername(user.username);
@@ -144,7 +148,7 @@ export default function Profile() {
                     vertical: "bottom",
                     horizontal: "right",
                   }}
-                  badgeContent={ <UploadImageButton /> }
+                  badgeContent={<UploadImageButton />}
                 >
                   <UserAvatar encoding={avatar} mx="auto" />
                 </Badge>
@@ -179,7 +183,7 @@ export default function Profile() {
                 warning={emailError}
               />
               <div className="flex items-center justify-between">
-                <div onClick={updateProfile}>
+                <div onClick={() => updateProfile}>
                   <Button text="Save" />
                 </div>
               </div>
@@ -231,6 +235,29 @@ export default function Profile() {
       return null;
     } finally {
       Loading.remove();
+    }
+  }
+
+  async function updateSessionToken(id, username, email, avatar) {
+    const token = localStorage.getItem("token");
+    const requestBody = { token, id, username, email, avatar };
+    const response = await fetch("/api/jwt/encrypt", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    let responseData;
+    try {
+      responseData = await response.json();
+    } catch (error) {
+      return null;
+    }
+    if (responseData.success) {
+      return responseData.token;
+    } else {
+      return null;
     }
   }
 
@@ -288,8 +315,16 @@ export default function Profile() {
     try {
       const data = await response.json();
       if (data.success) {
-        // const newToken = await function ();
-        // localStorage.setItem("token", newToken);
+        const newToken = await updateSessionToken(
+          userId,
+          username,
+          email,
+          avatar
+        );
+        if (newToken === null) {
+          alert("Unknown error occurs!");
+          return;
+        } else localStorage.setItem("token", newToken);
         setUpdatedProfileStatus(true);
         alert("Profile is successfully update.");
         return;
