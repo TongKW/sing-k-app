@@ -24,35 +24,27 @@ const Input = styled("input")({
 });
 
 const ProfileIconButton = styled(IconButton)(({ theme }) => ({
-  width: 22,
-  height: 22,
-  [theme.breakpoints.up("md")]: {
-    width: 32,
-    height: 32,
-  },
+  width: 32,
+  height: 32,
 }));
 
 const ProfileIcon = styled(Avatar)(({ theme }) => ({
-  width: 25,
-  height: 25,
+  width: 35,
+  height: 35,
   border: `3px solid ${theme.palette.background.paper}`,
-  [theme.breakpoints.up("md")]: {
-    width: 35,
-    height: 35,
-  },
 }));
 
 const UserAvatar = styled(Avatar, {
   shouldForwardProp: (prop) => ["src"].includes(prop),
 })(({ src, theme }) => ({
-  width: theme.spacing(9),
-  height: theme.spacing(9),
+  width: theme.spacing(17),
+  height: theme.spacing(17),
   border: `4px solid ${theme.palette.background.paper}`,
-  [theme.breakpoints.up("md")]: {
-    width: theme.spacing(17),
-    height: theme.spacing(17),
-  },
   src: src,
+}));
+
+const StyledLinearProgress = styled(LinearProgress)(({ theme }) => ({
+  width: theme.spacing(19),
 }));
 
 export default function Profile() {
@@ -124,75 +116,71 @@ export default function Profile() {
   return (
     <HomePage href="profile">
       <div className="flex-1 p-10 text-2xl font-bold">
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignContent: "center",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              width: { xs: "30%", md: "20%" },
-              alignContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Box>
-              <center>
-                <Badge
-                  overlap="circular"
-                  anchorOrigin={{
-                    vertical: "bottom",
-                    horizontal: "right",
-                  }}
-                  badgeContent={<UploadImageButton onChange={uploadPhoto} />}
-                >
-                  <UserAvatar src={avatar} mx="auto" />
-                </Badge>
-              </center>
-            </Box>
+        <div className="grid grid-cols-10 gap-8">
+          <div className="col-start-3 col-span-6">
+            <center>
             <Box
-              sx={{ width: { xs: "80%", md: "100%" }, mt: { xs: 1, md: 2 } }}
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                width: "60%",
+                alignContent: "center",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
-              <LinearProgress variant="determinate" value={bar} />
-              <Typography variant="subtitle2" color="white">
-                <Box
-                  sx={{ fontSize: 10, mr: "80%" }}
-                >{`${userExp}/${ExpToNextLevel} `}</Box>
-              </Typography>
-            </Box>
-          </Box>
-          <Box mt={3} />
-          <Box>
-            <form>
-              <FormTitle title="username" />
-              <FormInputBlock
-                category="username"
-                value={username}
-                onChange={setUsername}
-                warning={usernameError}
-              />
-              <FormTitle title="email" />
-              <FormInputBlock
-                category="email"
-                value={email}
-                onChange={setEmail}
-                warning={emailError}
-                readOnly={true}
-              />
-              <div className="flex items-center justify-between">
-                <div onClick={updateProfile}>
-                  <Button text="Save" />
+              <Box>
+                <center>
+                  <Badge
+                    overlap="circular"
+                    anchorOrigin={{
+                      vertical: "bottom",
+                      horizontal: "right",
+                    }}
+                    badgeContent={<UploadImageButton onChange={uploadPhoto} />}
+                  >
+                    <UserAvatar src={avatar} mx="auto" />
+                  </Badge>
+                </center>
+              </Box>
+              <Box
+                sx={{ mt: { xs: 1, md: 2 } }}
+              >
+                <StyledLinearProgress variant="determinate" value={bar} />
+                <Typography variant="subtitle2" color="white">
+                  <Box
+                    sx={{ fontSize: 10, mr: "100%" }}
+                  >{`${userExp}/${ExpToNextLevel} `}</Box>
+                </Typography>
+              </Box>
+            </Box></center>
+            <Box mt={3} />
+            <Box>
+              <form>
+                <FormTitle title="username" />
+                <FormInputBlock
+                  category="username"
+                  value={username}
+                  onChange={setUsername}
+                  warning={usernameError}
+                />
+                <FormTitle title="email" />
+                <FormInputBlock
+                  category="email"
+                  value={email}
+                  onChange={setEmail}
+                  warning={emailError}
+                  readOnly={true}
+                />
+                <div className="flex items-center justify-between">
+                  <div onClick={updateProfile}>
+                    <Button text="Save" />
+                  </div>
                 </div>
-              </div>
-            </form>
-          </Box>
-        </Box>
+              </form>
+            </Box>
+          </div>
+        </div>
       </div>
     </HomePage>
   );
@@ -379,7 +367,7 @@ function UploadImageButton(props) {
           />
           <AddAPhotoIcon
             color="primary"
-            sx={{ fontSize: { xs: 15, md: 22 } }}
+            sx={{ fontSize: 22 }}
           />
         </ProfileIcon>
       </ProfileIconButton>
