@@ -175,6 +175,7 @@ export default function Profile() {
                 value={email}
                 onChange={setEmail}
                 warning={emailError}
+                readOnly={true}
               />
               <div className="flex items-center justify-between">
                 <div onClick={updateProfile}>
