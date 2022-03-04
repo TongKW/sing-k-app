@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import HomePage from '../../component/wrapper/HomePage';
-import { FormInputBlock } from '../../component/elements/form-input';
-import FormTitle from '../../component/elements/form-title';
-import Button from '../../component/elements/button';
+import React, { useState, useEffect } from "react";
+import HomePage from "../../component/wrapper/HomePage";
+import { FormInputBlock } from "../../component/elements/form-input";
+import FormTitle from "../../component/elements/form-title";
+import Button from "../../component/elements/button";
 import { Loading } from "notiflix/build/notiflix-loading-aio";
-import validateFormat from '../../utils/validate-email-format';
+import validateFormat from "../../utils/validate-email-format";
+import logout from "../../utils/logout";
 import {
   Box,
   Badge,
@@ -12,14 +13,14 @@ import {
   LinearProgress,
   Typography,
   IconButton,
-} from '@mui/material';
-import { styled } from '@mui/material/styles';
-import AddAPhotoIcon from '@mui/icons-material/AddAPhoto';
+} from "@mui/material";
+import { styled } from "@mui/material/styles";
+import AddAPhotoIcon from "@mui/icons-material/AddAPhoto";
 
 const ProfileIconButton = styled(IconButton)(({ theme }) => ({
   width: 22,
   height: 22,
-  [theme.breakpoints.up('md')]: {
+  [theme.breakpoints.up("md")]: {
     width: 32,
     height: 32,
   },
@@ -29,7 +30,7 @@ const ProfileIcon = styled(Avatar)(({ theme }) => ({
   width: 25,
   height: 25,
   border: `3px solid ${theme.palette.background.paper}`,
-  [theme.breakpoints.up('md')]: {
+  [theme.breakpoints.up("md")]: {
     width: 35,
     height: 35,
   },
@@ -39,7 +40,7 @@ const UserAvatar = styled(Avatar)(({ theme }) => ({
   width: theme.spacing(9),
   height: theme.spacing(9),
   border: `4px solid ${theme.palette.background.paper}`,
-  [theme.breakpoints.up('md')]: {
+  [theme.breakpoints.up("md")]: {
     width: theme.spacing(17),
     height: theme.spacing(17),
   },
@@ -57,7 +58,7 @@ export default function Profile() {
   const [updatedProfileStatus, setUpdatedProfileStatus] = useState(false);
   const userExp = 10;
   const ExpToNextLevel = 100;
-  const bar=Number(userExp)/Number(ExpToNextLevel)*100;
+  const bar = (Number(userExp) / Number(ExpToNextLevel)) * 100;
 
   // Get the token stored in local storage
   // Send decrypt request to server
@@ -65,13 +66,13 @@ export default function Profile() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     const user = decrypt_jwt(token).body;
-    
+
     async function decrypt_jwt(token) {
-      const response = await fetch('/api/jwt/decrypt', {
-        method: 'POST', 
+      const response = await fetch("/api/jwt/decrypt", {
+        method: "POST",
         body: JSON.stringify({ token: token }),
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
       });
       const data = await response.json();
@@ -86,41 +87,84 @@ export default function Profile() {
       } else {
         // Unauthorized user or jwt expired
         // Prompt to login page
+        alert("Invalid operation");
+        logout();
       }
     }
   }, []);
 
   return (
-    <HomePage href='profile'>
+    <HomePage href="profile">
       <div className="flex-1 p-10 text-2xl font-bold">
-        <Box sx={{ display: "flex", flexDirection: "column", alignContent: "center", alignItems: "center", justifyContent: "center"}}>
-          <Box sx={{ display: "flex", flexDirection: "column", width: {xs: "30%", md: "20%"}, alignContent: "center", alignItems: "center"}}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignContent: "center",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              width: { xs: "30%", md: "20%" },
+              alignContent: "center",
+              alignItems: "center",
+            }}
+          >
             <Box>
               <center>
                 <Badge
                   overlap="circular"
                   anchorOrigin={{
-                    vertical: 'bottom',
-                    horizontal: 'right',
+                    vertical: "bottom",
+                    horizontal: "right",
                   }}
-                  badgeContent={<ProfileIconButton><ProfileIcon><AddAPhotoIcon color="primary" sx={{ fontSize: {xs: 15, md:22} }}/></ProfileIcon></ProfileIconButton>}
+                  badgeContent={
+                    <ProfileIconButton>
+                      <ProfileIcon>
+                        <AddAPhotoIcon
+                          color="primary"
+                          sx={{ fontSize: { xs: 15, md: 22 } }}
+                        />
+                      </ProfileIcon>
+                    </ProfileIconButton>
+                  }
                 >
-                  <UserAvatar encoding={avatar} mx="auto"/>
+                  <UserAvatar encoding={avatar} mx="auto" />
                 </Badge>
               </center>
             </Box>
-            <Box sx={{ width: {xs: "80%", md: "100%"}, mt: {xs:1, md: 2} }} >
-              <LinearProgress variant="determinate" value={bar}/>
-              <Typography variant="subtitle2" color="white" ><Box sx={{ fontSize: 10, mr: "80%"}}>{`${userExp}/${ExpToNextLevel} `}</Box></Typography>
+            <Box
+              sx={{ width: { xs: "80%", md: "100%" }, mt: { xs: 1, md: 2 } }}
+            >
+              <LinearProgress variant="determinate" value={bar} />
+              <Typography variant="subtitle2" color="white">
+                <Box
+                  sx={{ fontSize: 10, mr: "80%" }}
+                >{`${userExp}/${ExpToNextLevel} `}</Box>
+              </Typography>
             </Box>
           </Box>
           <Box mt={3} />
           <Box>
             <form>
-              <FormTitle title="username"/>
-              <FormInputBlock category="username" value={username} onChange={setUsername} warning={usernameError} />
-              <FormTitle title="email"/>
-              <FormInputBlock category="email" value={email} onChange={setEmail} warning={emailError} />
+              <FormTitle title="username" />
+              <FormInputBlock
+                category="username"
+                value={username}
+                onChange={setUsername}
+                warning={usernameError}
+              />
+              <FormTitle title="email" />
+              <FormInputBlock
+                category="email"
+                value={email}
+                onChange={setEmail}
+                warning={emailError}
+              />
               <div className="flex items-center justify-between">
                 <div onClick={updateProfile}>
                   <Button text="Save" />
@@ -131,7 +175,7 @@ export default function Profile() {
         </Box>
       </div>
     </HomePage>
-  )
+  );
 
   async function decryptSessionToken() {
     const token = localStorage.getItem("token");
@@ -157,13 +201,38 @@ export default function Profile() {
     }
   }
 
-  
+  async function validateUsername(username) {
+    Loading.circle({ svgColor: "#283593" });
+    const requestBody = { username: username };
+    const response = await fetch("/api/users/username-exists", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    try {
+      const data = await response.json();
+      return data.exists;
+    } catch (error) {
+      return null;
+    } finally {
+      Loading.remove();
+    }
+  }
+
   //Update user profile
   async function updateProfile() {
     setUsernameError();
     setEmailError();
 
-    if (username === oldUsername && email === oldEmail){
+    if (username === oldUsername && email === oldEmail) {
+      return;
+    }
+    //TODO: check whether the new username has been used
+    const usernameExists = await validateUsername(username);
+    if (!usernameExists) {
+      setUsernameError("Username has been used");
       return;
     }
 
@@ -177,35 +246,32 @@ export default function Profile() {
       }
     }
 
-    //TODO: check whether the new username has been used
-
-    Loading.circle({svgColor: "#283593"});
+    Loading.circle({ svgColor: "#283593" });
     const decryptionSuccess = await decryptSessionToken();
-    if (!decryptionSuccess.success){
+    if (!decryptionSuccess.success) {
       alert(`Unknown error occurs`);
       return;
     }
     const userId = decryptionSuccess.success;
 
-    var request_body = {
-      id: userId
+    const request_body = {
+      id: userId,
     };
-    if (username !== oldUsername){
+    if (username !== oldUsername) {
       request_body.username = username;
     }
-    if (email !== oldEmail){
+    if (email !== oldEmail) {
       request_body.email = email;
     }
-    const response = await fetch('/api/users/update', {
-      method: 'POST', 
+    const response = await fetch("/api/users/update", {
+      method: "POST",
       body: JSON.stringify(request_body),
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
     });
     try {
       const data = await response.json();
-      Loading.remove();
       if (data.success) {
         setUpdatedProfileStatus(true);
         alert("Profile is successfully update.");
@@ -213,6 +279,7 @@ export default function Profile() {
       }
     } catch (error) {
       alert("Unknown error occurs");
+    } finally {
       Loading.remove();
     }
   }
