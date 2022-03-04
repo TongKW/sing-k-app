@@ -53,7 +53,17 @@ export default async function handler(req, res) {
       avatar: user.avatar,
     };
     // // Create a jwt expires in 30 days
-    return await signNewToken(payload, secret, res);
+    var token = sign_token(payload, secret, 30);
+    res.setHeader(
+      "Set-Cookie",
+      `isLogin=${true}; username=${username}; path=/;`
+    );
+    return res.status(200).json({
+      message: "Successfully logged in",
+      success: true,
+      token: token,
+    });
+    // return await signNewToken(payload, secret, res);
   }
 }
 

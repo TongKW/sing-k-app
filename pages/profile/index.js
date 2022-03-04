@@ -21,26 +21,6 @@ const Input = styled("input")({
   display: "none",
 });
 
-function UploadImageButton() {
-  return (
-    <label htmlFor="upload-image">
-      <ProfileIconButton
-        color="primary"
-        aria-label="upload picture"
-        component="span"
-      >
-        <ProfileIcon>
-          <Input accept="image/*" id="upload-image" type="file" />
-          <AddAPhotoIcon
-            color="primary"
-            sx={{ fontSize: { xs: 15, md: 22 } }}
-          />
-        </ProfileIcon>
-      </ProfileIconButton>
-    </label>
-  );
-}
-
 const ProfileIconButton = styled(IconButton)(({ theme }) => ({
   width: 22,
   height: 22,
@@ -183,7 +163,7 @@ export default function Profile() {
                 warning={emailError}
               />
               <div className="flex items-center justify-between">
-                <div onClick={() => updateProfile}>
+                <div onClick={updateProfile}>
                   <Button text="Save" />
                 </div>
               </div>
@@ -265,7 +245,6 @@ export default function Profile() {
   async function updateProfile() {
     setUsernameError();
     setEmailError();
-
     if (username === oldUsername && email === oldEmail) {
       return;
     }
@@ -273,11 +252,11 @@ export default function Profile() {
     const usernameExists = await validateUsername(username);
     if (usernameExists === null) {
       alert("Unknown error occurs!");
+      return;
     } else if (usernameExists) {
       setUsernameError("Username has been used");
       return;
     }
-
     if (!email) {
       setEmailError("Email must be filled");
       return;
@@ -287,7 +266,6 @@ export default function Profile() {
         return;
       }
     }
-
     Loading.circle({ svgColor: "#283593" });
     const decryptionSuccess = await decryptSessionToken();
     if (!decryptionSuccess.success) {
@@ -335,4 +313,24 @@ export default function Profile() {
       Loading.remove();
     }
   }
+}
+
+function UploadImageButton() {
+  return (
+    <label htmlFor="upload-image">
+      <ProfileIconButton
+        color="primary"
+        aria-label="upload picture"
+        component="span"
+      >
+        <ProfileIcon>
+          <Input accept="image/*" id="upload-image" type="file" />
+          <AddAPhotoIcon
+            color="primary"
+            sx={{ fontSize: { xs: 15, md: 22 } }}
+          />
+        </ProfileIcon>
+      </ProfileIconButton>
+    </label>
+  );
 }

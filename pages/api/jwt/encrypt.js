@@ -1,6 +1,7 @@
 import verify_token from "../../../utils/jwt/verify";
 import getConfig from "next/config";
 import { signNewToken } from "../users/auth";
+import sign_token from "../../../utils/jwt/sign";
 
 const { serverRuntimeConfig } = getConfig();
 
@@ -20,7 +21,16 @@ export default async function handler(req, res) {
     if (!result.authorized) {
       return res.status(200).json({ success: false, token: null });
     } else {
-      return await signNewToken(newPayload, secret_key, res);
+      // return await signNewToken(newPayload, secret_key, res);
+      let token = sign_token(newPayload, secret_key, 30);
+      res.setHeader(
+        "Set-Cookie",
+        `isLogin=${true}; username=${username}; path=/;`
+      );
+      return res.status(200).json({
+        success: true,
+        token: token,
+      });
     }
   }
 }
