@@ -17,6 +17,28 @@ import {
 import { styled } from "@mui/material/styles";
 import AddAPhotoIcon from "@mui/icons-material/AddAPhoto";
 
+const Input = styled('input')({
+  display: "none"
+});
+
+function UploadImageButton() {
+  return (
+    <label htmlFor="upload-image">
+      <ProfileIconButton
+        color="primary"
+        aria-label="upload picture"
+        component="span"
+      >
+        <ProfileIcon>
+          <Input accept="image/*" id="upload-image" type="file" />
+          <AddAPhotoIcon color="primary" sx={{ fontSize: {xs: 15, md:22} }}/>
+        </ProfileIcon>
+      </ProfileIconButton>
+    </label>
+  );
+}
+
+
 const ProfileIconButton = styled(IconButton)(({ theme }) => ({
   width: 22,
   height: 22,
@@ -122,16 +144,7 @@ export default function Profile() {
                     vertical: "bottom",
                     horizontal: "right",
                   }}
-                  badgeContent={
-                    <ProfileIconButton>
-                      <ProfileIcon>
-                        <AddAPhotoIcon
-                          color="primary"
-                          sx={{ fontSize: { xs: 15, md: 22 } }}
-                        />
-                      </ProfileIcon>
-                    </ProfileIconButton>
-                  }
+                  badgeContent={ <UploadImageButton /> }
                 >
                   <UserAvatar encoding={avatar} mx="auto" />
                 </Badge>
