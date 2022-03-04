@@ -231,7 +231,9 @@ export default function Profile() {
     }
     //TODO: check whether the new username has been used
     const usernameExists = await validateUsername(username);
-    if (!usernameExists) {
+    if (usernameExists === null) {
+      alert("Unknown error occurs!");
+    } else if (usernameExists) {
       setUsernameError("Username has been used");
       return;
     }
@@ -273,6 +275,8 @@ export default function Profile() {
     try {
       const data = await response.json();
       if (data.success) {
+        // const newToken = await function ();
+        // localStorage.setItem("token", newToken);
         setUpdatedProfileStatus(true);
         alert("Profile is successfully update.");
         return;

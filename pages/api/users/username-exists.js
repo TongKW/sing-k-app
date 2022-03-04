@@ -28,13 +28,13 @@ async function checkUsernameExists(username, res) {
   if (!isExists) {
     console.log("No username conflict");
     return res.status(200).json({
-      exists: true,
+      exists: false,
       message: "No username conflict",
     });
   }
   console.log("Username already exists!");
   return res.status(200).json({
-    exists: false,
+    exists: true,
     message: "Username already exists!",
   });
 }
