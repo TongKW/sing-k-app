@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import HomePage from "../../component/wrapper/HomePage";
 import { FormInputBlock } from "../../component/elements/form-input";
 import FormTitle from "../../component/elements/form-title";
@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import AddAPhotoIcon from "@mui/icons-material/AddAPhoto";
+import { LocalConvenienceStoreOutlined } from "@mui/icons-material";
 
 const Input = styled("input")({
   display: "none",
@@ -40,7 +41,9 @@ const ProfileIcon = styled(Avatar)(({ theme }) => ({
   },
 }));
 
-const UserAvatar = styled(Avatar)(({ theme }) => ({
+const UserAvatar = styled(Avatar, {
+  shouldForwardProp: (prop) => ["src"].includes(prop),
+})(({ src, theme }) => ({
   width: theme.spacing(9),
   height: theme.spacing(9),
   border: `4px solid ${theme.palette.background.paper}`,
@@ -48,17 +51,27 @@ const UserAvatar = styled(Avatar)(({ theme }) => ({
     width: theme.spacing(17),
     height: theme.spacing(17),
   },
+  src: src,
 }));
 
 export default function Profile() {
   const [userId, setUserId] = useState();
   const [oldUsername, setOldUsername] = useState();
   const [oldEmail, setOldEmail] = useState();
+  const [oldAvatar, setOldAvatar] = useState();
   const [username, setUsername] = useState();
   const [email, setEmail] = useState();
   // Avatar in base64 encoding
   const [avatar, setAvatar] = useState();
   const [usernameError, setUsernameError] = useState();
+  const [uploadPhoto] = useFileUpload({
+    onStarting: (event) => {
+      const [file] = event.target.files;
+      let reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onloadend = () => setAvatar(reader.result);
+    },
+  });
   const [emailError, setEmailError] = useState();
   const [updatedProfileStatus, setUpdatedProfileStatus] = useState(false);
   const userExp = 10;
@@ -87,6 +100,7 @@ export default function Profile() {
         setUserId(user._id);
         setOldUsername(user.username);
         setOldEmail(user.email);
+        setOldAvatar(user.avatar);
         setUsername(user.username);
         setEmail(user.email);
         setAvatar(user.avatar);
@@ -128,9 +142,9 @@ export default function Profile() {
                     vertical: "bottom",
                     horizontal: "right",
                   }}
-                  badgeContent={<UploadImageButton />}
+                  badgeContent={<UploadImageButton onChange={uploadPhoto} />}
                 >
-                  <UserAvatar encoding={avatar} mx="auto" />
+                  <UserAvatar src={avatar} mx="auto" />
                 </Badge>
               </center>
             </Box>
@@ -245,18 +259,25 @@ export default function Profile() {
   async function updateProfile() {
     setUsernameError();
     setEmailError();
-    if (username === oldUsername && email === oldEmail) {
+    if (
+      username === oldUsername &&
+      email === oldEmail &&
+      avatar === oldAvatar
+    ) {
       return;
     }
     //TODO: check whether the new username has been used
-    const usernameExists = await validateUsername(username);
-    if (usernameExists === null) {
-      alert("Unknown error occurs!");
-      return;
-    } else if (usernameExists) {
-      setUsernameError("Username has been used");
-      return;
+    if (username !== oldUsername) {
+      const usernameExists = await validateUsername(username);
+      if (usernameExists === null) {
+        alert("Unknown error occurs!");
+        return;
+      } else if (usernameExists) {
+        setUsernameError("Username has been used");
+        return;
+      }
     }
+
     if (!email) {
       setEmailError("Email must be filled");
       return;
@@ -315,7 +336,7 @@ export default function Profile() {
   }
 }
 
-function UploadImageButton() {
+function UploadImageButton(props) {
   return (
     <label htmlFor="upload-image">
       <ProfileIconButton
@@ -324,7 +345,12 @@ function UploadImageButton() {
         component="span"
       >
         <ProfileIcon>
-          <Input accept="image/*" id="upload-image" type="file" />
+          <Input
+            accept="image/*"
+            id="upload-image"
+            type="file"
+            onChange={props.onChange}
+          />
           <AddAPhotoIcon
             color="primary"
             sx={{ fontSize: { xs: 15, md: 22 } }}
@@ -333,4 +359,20 @@ function UploadImageButton() {
       </ProfileIconButton>
     </label>
   );
+}
+
+function useFileUpload({ onStarting } = {}) {
+  const [fileName, setFileName] = useState(undefined);
+  const uploadFile = useCallback(
+    (file) => {
+      if (!file) {
+        alert("Please upload a file!");
+        return;
+      }
+      setFileName(file.name);
+      onStarting(file);
+    },
+    [onStarting]
+  );
+  return [uploadFile];
 }
