@@ -68,7 +68,7 @@ export default function Profile() {
   // Get response of user info and display
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const user = decrypt_jwt(token).body;
+    decrypt_jwt(token);
 
     async function decrypt_jwt(token) {
       const response = await fetch("/api/jwt/decrypt", {
@@ -104,41 +104,42 @@ export default function Profile() {
         <div className="grid grid-cols-10 gap-8">
           <div className="col-start-3 col-span-6">
             <center>
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                width: "60%",
-                alignContent: "center",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Box>
-                <center>
-                  <Badge
-                    overlap="circular"
-                    anchorOrigin={{
-                      vertical: "bottom",
-                      horizontal: "right",
-                    }}
-                    badgeContent={<UploadImageButton onChange={uploadPhoto} />}
-                  >
-                    <UserAvatar src={avatar} mx="auto" />
-                  </Badge>
-                </center>
-              </Box>
               <Box
-                sx={{ mt: { xs: 1, md: 2 } }}
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  width: "60%",
+                  alignContent: "center",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
               >
-                <StyledLinearProgress variant="determinate" value={bar} />
-                <Typography variant="subtitle2" color="white">
-                  <Box
-                    sx={{ fontSize: 10, mr: "100%" }}
-                  >{`${userExp}/${ExpToNextLevel} `}</Box>
-                </Typography>
+                <Box>
+                  <center>
+                    <Badge
+                      overlap="circular"
+                      anchorOrigin={{
+                        vertical: "bottom",
+                        horizontal: "right",
+                      }}
+                      badgeContent={
+                        <UploadImageButton onChange={uploadPhoto} />
+                      }
+                    >
+                      <UserAvatar src={avatar} mx="auto" />
+                    </Badge>
+                  </center>
+                </Box>
+                <Box sx={{ mt: { xs: 1, md: 2 } }}>
+                  <StyledLinearProgress variant="determinate" value={bar} />
+                  <Typography variant="subtitle2" color="white">
+                    <Box
+                      sx={{ fontSize: 10, mr: "100%" }}
+                    >{`${userExp}/${ExpToNextLevel} `}</Box>
+                  </Typography>
+                </Box>
               </Box>
-            </Box></center>
+            </center>
             <Box mt={3} />
             <Box>
               <form>
@@ -361,10 +362,7 @@ function UploadImageButton(props) {
             type="file"
             onChange={props.onChange}
           />
-          <AddAPhotoIcon
-            color="primary"
-            sx={{ fontSize: 22 }}
-          />
+          <AddAPhotoIcon color="primary" sx={{ fontSize: 22 }} />
         </ProfileIcon>
       </ProfileIconButton>
     </label>

@@ -1,34 +1,20 @@
 import React from "react";
 
 export default function FormInput(props) {
-  if (props.readOnly) {
-    return (
-      <input
-        className={inputFormClass + (props.warning ? "border-red-500" : "")}
-        id={props.id}
-        type={props.type}
-        placeholder={props.placeholder}
-        onChange={(e) => {
-          props.onChange(e.target.value);
-        }}
-        value={props.value}
-        readOnly={true}
-      />
-    );
-  } else {
-    return (
-      <input
-        className={inputFormClass + (props.warning ? "border-red-500" : "")}
-        id={props.id}
-        type={props.type}
-        placeholder={props.placeholder}
-        onChange={(e) => {
-          props.onChange(e.target.value);
-        }}
-        value={props.value}
-      />
-    );
-  }
+  return (
+    <input
+      className={inputFormClass + (props.warning ? "border-red-500" : "")}
+      id={props.id}
+      type={props.type}
+      placeholder={props.placeholder}
+      onChange={(e) => {
+        props.onChange(e.target.value);
+      }}
+      value={props.value}
+      readOnly={props.readOnly && true}
+      style={{ color: props.readOnly? "grey" :"black" }}
+    />
+  );
 }
 
 // Input Form block
