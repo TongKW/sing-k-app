@@ -17,7 +17,7 @@ import {
 import { styled } from "@mui/material/styles";
 import AddAPhotoIcon from "@mui/icons-material/AddAPhoto";
 import { LocalConvenienceStoreOutlined } from "@mui/icons-material";
-import checkFileSize from "../../utils/checkFileSize";
+import { checkFileSize, processFile } from "../../utils/fileUtils";
 
 const Input = styled("input")({
   display: "none",
@@ -65,21 +65,6 @@ export default function Profile() {
   // Avatar in base64 encoding
   const [avatar, setAvatar] = useState();
   const [usernameError, setUsernameError] = useState();
-  const [uploadPhoto] = useFileUpload({
-    onStarting: (event) => {
-      const [file] = event.target.files;
-      let reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onloadend = () => {
-        const base64 = reader.result;
-        if (avatarTooLarge(base64)) {
-          alert("Avatar is too large!");
-          return;
-        }
-        setAvatar(base64);
-      };
-    },
-  });
   const [emailError, setEmailError] = useState();
   const [updatedProfileStatus, setUpdatedProfileStatus] = useState(false);
   const userExp = 10;
@@ -202,6 +187,17 @@ export default function Profile() {
     console.log(fileSize);
     if (fileSize > 360000) return true;
     return false;
+  }
+
+  async function uploadPhoto(event) {
+    const [file] = event.target.files;
+    const fileData = await processFile(file);
+    if (!fileData.success) {
+      alert(fileData.content);
+      return;
+    } else if (avatarTooLarge(fileData.content)) return;
+    console.log(fileData.content);
+    setAvatar(fileData.content);
   }
 
   async function decryptSessionToken() {
@@ -385,20 +381,4 @@ function UploadImageButton(props) {
       </ProfileIconButton>
     </label>
   );
-}
-
-function useFileUpload({ onStarting } = {}) {
-  const [fileName, setFileName] = useState(undefined);
-  const uploadFile = useCallback(
-    (file) => {
-      if (!file) {
-        alert("Please upload a file!");
-        return;
-      }
-      setFileName(file.name);
-      onStarting(file);
-    },
-    [onStarting]
-  );
-  return [uploadFile];
 }
