@@ -1,5 +1,3 @@
-// Still have bugs to be solved
-
 import sleep from '../../sleep';
 /**
  * 
@@ -7,8 +5,25 @@ import sleep from '../../sleep';
  * @return {}
  */
 export default async function initPeerConnection(localStream) {
-  let pc = new RTCPeerConnection(servers);
+  const pc = new RTCPeerConnection(servers);
+  let remoteStream = new MediaStream();
   let iceCandidate = null;
+  console.log(`localStream: ${localStream}`)
+
+  // Push tracks from local stream to peer connection
+  localStream.getTracks().forEach((track) => {
+    pc.addTrack(track, localStream);
+  });
+
+  pc.ontrack = (event) => {
+    event.streams[0].getTracks().forEach((track) => {
+      remoteStream.addTrack(track);
+    });
+  };
+
+  pc.onicecandidate = (event) => {
+    event.candidate && (iceCandidate = event.candidate.toJSON());
+  };
 
   // Create offer descript and set to local
   let description = await pc.createOffer();
@@ -18,23 +33,12 @@ export default async function initPeerConnection(localStream) {
   };
   await pc.setLocalDescription(description);
 
-  // Push tracks from local stream to peer connection
-  localStream.getTracks().forEach((track) => {
-    pc.addTrack(track, localStream);
-  });
-
-  pc.onicecandidate = (event) => {
-    if (event.candidate) {
-      iceCandidate = event.candidate.toJSON();
-    }
-  };
-
   while (!iceCandidate) {
     // wait until iceCandidate is got
-    sleep(10);
+    await sleep(5);
   }
 
-  return [pc, offer, iceCandidate];
+  return [pc, offer, iceCandidate, remoteStream];
 }
 
 const servers = {
@@ -43,4 +47,5 @@ const servers = {
       urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'],
     },
   ],
+  iceCandidatePoolSize: 10,
 };
