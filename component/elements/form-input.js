@@ -3,7 +3,7 @@ import React from "react";
 export default function FormInput(props) {
   return (
     <input
-      className={inputFormClass + (props.warning ? "border-red-500" : "")}
+      className={inputFormClass + (props.warning ? "border-red-500 " : " ") + (props.readOnly ? "bg-gray-300 text-gray-600 " : " ")}
       id={props.id}
       type={props.type}
       placeholder={props.placeholder}
@@ -12,7 +12,6 @@ export default function FormInput(props) {
       }}
       value={props.value}
       readOnly={props.readOnly && true}
-      style={{ color: props.readOnly? "grey" :"black" }}
     />
   );
 }
@@ -29,7 +28,7 @@ export function FormInputBlock(props) {
   }
 
   return (
-    <div className="mb-4 text-gray-700">
+    <div className={"mb-4 text-gray-700"}>
       <FormInput
         id={category}
         type={isPassword ? "password" : "text"}
