@@ -59,7 +59,7 @@ export default async function handler(req, res) {
       service: 'gmail',
       auth: {
           user: 'enjoy.singing.karaoke@gmail.com',
-          pass: 'Kawai@t32'
+          pass: process.env.EMAIL_PW
       }
     });
     await transporter.sendMail(message);
