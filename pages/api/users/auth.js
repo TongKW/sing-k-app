@@ -33,7 +33,10 @@ export default async function handler(req, res) {
       console.log("User not found");
       return res.status(200).json({
         message: "User not found",
+<<<<<<< HEAD
         success: false,
+=======
+>>>>>>> user-profile
       });
     }
     // if the password hash does not match
