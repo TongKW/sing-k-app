@@ -32,6 +32,8 @@ export default async function initPeerConnection(localStream) {
     type: description.type,
   };
   await pc.setLocalDescription(description);
+  const localDesc = pc.localDescription;
+  console.log(`Local Desc : ${localDesc ? localDesc.sdp.slice(9, 20) : 'null'}`);
 
   while (!iceCandidate) {
     // wait until iceCandidate is got
