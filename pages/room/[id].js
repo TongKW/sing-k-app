@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/router'
+import Router, { useRouter } from 'next/router'
 import HomePage from '../../component/wrapper/HomePage';
 import firebase from "firebase/compat/app";
 import { 
@@ -14,9 +14,13 @@ import {
   deleteDoc
 } from "firebase/firestore";
 import { firebaseConfig } from '../../firebase/config';
-import initPeerConnection from '../../utils/webrtc/peer-connection/init';
-import connect from '../../utils/webrtc/peer-connection/connect';
+import Button from '../../component/elements/button';
+import sleep from '../../utils/sleep';
 
+// Peer connection global variables
+var peerConnections = {};
+// Existing users global variables
+var existingUsers = [];
 
 export default function Room() {
   // Routing parameter
@@ -25,13 +29,9 @@ export default function Room() {
 
   // WebRTC info and Stream parameters for the next newcomer
   let localStream = useRef(null);
-  let remoteStream = useRef(null);
-  let pc = useRef(null);
 
-  // Peer connection variables
-  let peerConnections = useRef({})
-  console.log('Peer RTC Info:')
-  console.log(peerConnections.current);
+  // Only reload when users enter/leave
+  const [load, reload] = useState(Date.now());  
 
   // Initialization indicates
   const [initialized, setInitialized] = useState(false);
@@ -43,12 +43,16 @@ export default function Room() {
 
   // Initialize Firebase 
   const app = firebase.initializeApp(firebaseConfig);
+
+  //--test--
+  console.log('Peer connection:');
+  console.log(peerConnections)
+  //--test--
   
   // Get response of user info and display from local storage
   useEffect(() => {
     const token = localStorage.getItem("token");
     const user = decrypt_jwt(token).body;
-    
     async function decrypt_jwt(token) {
       const response = await fetch('/api/jwt/decrypt', {
         method: 'POST', 
@@ -63,7 +67,6 @@ export default function Room() {
         setUsername(user.username);
         setAvatar(user.avatar);
         setUserId(user.id);
-        console.log(`userId: ${user.id}`)
       } else {
         // Unauthorized user or jwt expired
         // Prompt to login page
@@ -74,91 +77,202 @@ export default function Room() {
 
   // Initialize audio stream and WebRTC
   // Get peer WebRTC info and connect
+  // Only run once after roomId is get
   useEffect(() => {
-    if (!initialized && roomId && userId) {
-      initialize();
-    }
+    const db = getFirestore();
+    const allUserDoc = collection(db, `rooms/${roomId}/RTCinfo`);
+    const calleeDoc = collection(db, `rooms/${roomId}/RTCinfo/${userId}/callees`);
+
+    if (initialized || !roomId || !userId) return;
+    initialize();
+    
+    // Initialize for first time joining the room
     async function initialize() {
-      console.log('initalizing...')
-      
+      console.log("COUNT: initalize() is called");
+      setInitialized(true);
       // Setup audio
       localStream.current = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
 
       // Get Firebase
-      const db = getFirestore();
-      console.log(`roomId: ${roomId}`)
       const roomDoc = doc(db, "rooms", roomId);
       const roomSnapshot = await getDoc(roomDoc);
       const roomType = roomSnapshot.data().type;
-      console.log(roomType);
 
-      const allUserDocs = collection(db, `rooms/${roomId}/RTCinfo`);
-      const allUserSnapshot = await getDocs(allUserDocs);
+      const allUserSnapshot = await getDocs(allUserDoc);
       
       allUserSnapshot.forEach(async (docSnapshot) => {
-        // Create one WebRTC Peer Connection for every other user
-        // Update Peer Connection detail to Firestore
-        const userDoc = doc(db, `rooms/${roomId}/RTCinfo/${docSnapshot.id}`);
-        const [pc, FromRTCOffer, FromICEcandidate, remoteStream] = await initPeerConnection(localStream.current);
-        peerConnections.current[docSnapshot.id] = {pc: pc, audioStream: remoteStream};
-        await updateDoc(userDoc, {
-          FromICEcandidate: FromICEcandidate,
-          FromRTCoffer: FromRTCOffer,
-        });
+        if (docSnapshot.id !== userId) {
+          existingUsers.push(docSnapshot.id);
+          const newUserId = docSnapshot.id;
+          // Create one WebRTC Peer Connection and update Firestore for every other user
+          await initPeerConnection(newUserId);
+        } 
       });
-      
-      
 
       // Write Firebase to update offer
-      console.log(userId)
-      await createNewOffer(db);
+      await createNewUserFirestore();
+    }    
+    
+    // Listen for any joined user
+    onSnapshot(calleeDoc, (snapshot) => {
+      snapshot.docChanges().forEach(async (change) => {
+        // Get new user info
+        const newUserDoc = change.doc;
+        const newUserId = newUserDoc.id;
+        if (newUserId === userId) return;
+        // If a new user joined, connect with WebRTC
+        if (change.type === 'added' || change.type === 'modified') {
+          createNewPeerConnection(newUserId);
+          //await initPeerConnection(newUserId);
+          const fromICEcandidate = newUserDoc.data().ICEcandidate
+          const fromRTCoffer = newUserDoc.data().RTCoffer
+          if (fromRTCoffer) {
+            console.log("PROCESS 1.5")
+            // If created the connection first and got answer back:
+            // 1. if pc.currentRemote is null => setRemote
+            if (existingUsers.includes(newUserId)) {
+              if (!peerConnections[newUserId].pc.remoteDescription) {
+                console.log("PROCESS 2")
+                const desc = new RTCSessionDescription(fromRTCoffer);
+                await peerConnections[newUserId].pc.setRemoteDescription(desc);
+                console.log(`[system] ${newUserId} joined the room.`);
+                console.log(peerConnections);
+              }
+            }
+            // If other created the connection first:
+            // 1. setRemote
+            // 2. createOffer
+            // 3. setLocal
+            if (!(existingUsers.includes(newUserId))) {
+              console.log("PROCESS 3")
+              await connectNewUser(newUserId, fromRTCoffer);
+            }
 
-      // Listen for any new user
-      const userDoc = doc(db, `rooms/${roomId}/RTCinfo/${userId}`)
-      onSnapshot(allUserDocs, (snapshot) => {
-        snapshot.docChanges().forEach(async (change) => {
-          console.log(change);
-          // If a new user joined, connect with WebRTC
-          if (change.type === 'added') {
-            const userDocSnapshot = await getDoc(userDoc);
-            if (userDocSnapshot.id === userId) return;
-            console.log('new user joined')
-            const fromICEcandidate = userDocSnapshot.data().FromICEcandidate
-            const fromRTCoffer = userDocSnapshot.data().FromRTCOffer
-            await connect(pc.current, fromICEcandidate, fromRTCoffer);
-
-            // Store remote stream and peerConnection
-            peerConnections.current[userDocSnapshot.id] = {pc: pc.current, audioStream: remoteStream.current}
-
-            // Create new offer and update to Firestore
-            await createNewOffer(db);
+            if (fromICEcandidate) {
+              await addICEcandidate(newUserId, fromICEcandidate);
+            }
+            /*
+            if (!fromICEcandidate || !fromRTCoffer) return;
+            // Connect
+            await connectNewUser(newUserId, fromICEcandidate, fromRTCoffer);
+            */
+            // Force rerender on the UI
+            reload();
           }
-          // If an user left, delete info and close the WebRTC connection
-          if (change.type === 'removed') {
-            const userDocSnapshot = await getDoc(userDoc);
-            if (userDocSnapshot.id === userId) return;
-            // Close WebRTC connection
-            peerConnections.current[userDocSnapshot.id].pc.close()
-            // delete user info
-            delete peerConnections.current[userDocSnapshot.id]
-          }
+        }
+      });
+    });
+
+    // Listen for any left user
+    onSnapshot(allUserDoc, (snapshot) => {
+      snapshot.docChanges().forEach(async (change) => {
+        // If an user left, delete info and close the WebRTC connection
+        if (change.type === 'removed') {
+          const newUserDoc = change.doc;
+          const leftUserId = newUserDoc.id;
+          if (leftUserId === userId) return;
+          await deleteDoc(doc(db, `rooms/${roomId}/RTCinfo/${userId}/callees/${leftUserId}`));
+          console.log(`[system] ${leftUserId} left the room.`);
+          // Close WebRTC connection
+          peerConnections[leftUserId].pc.close();
+          // delete user info
+          delete peerConnections[leftUserId];
+          // Force rerender on the UI
+          reload();
+        }
+      });
+    });
+    
+    //return () => {}
+
+    // Below are the wrapped functions ONLY used in this useEffect
+
+    // Initialize Peer Connection
+    async function initPeerConnection(userId) {
+      console.log(`COUNT: initPeerConnection() is called on ${userId}`);
+      // If peer Connection has been created before, return
+      if (peerConnections.hasOwnProperty(userId)) return;
+      
+      // Initialize and store new Peer Connection
+      createNewPeerConnection(userId)
+      
+      // Create new Media Stream
+      let remoteStream = new MediaStream();
+  
+      // Push tracks from local stream to peer connection
+      localStream.current.getTracks().forEach((track) => {
+        peerConnections[userId].pc.addTrack(track, localStream.current);
+      });
+    
+      peerConnections[userId].pc.ontrack = (event) => {
+        event.streams[0].getTracks().forEach((track) => {
+          remoteStream.addTrack(track);
         });
-      })
+      };
+      peerConnections[userId].audioStream = remoteStream;
+      peerConnections[userId].mute = false;
+  
+      peerConnections[userId].pc.onicecandidate = (event) => {
+        event.candidate && updateConnectionData(userId, {
+          ICEcandidate: event.candidate.toJSON()
+        });
+      };
+  
+      // Create offer descript and set to local
+      const description = await peerConnections[userId].pc.createOffer();
+      const RTCoffer = {
+        sdp: description.sdp,
+        type: description.type,
+      };
+      await peerConnections[userId].pc.setLocalDescription(description);
+      console.log('Peer Connection after setLocalDescription');
+      console.log(peerConnections);
+      console.log(peerConnections[userId].pc);
 
-      setInitialized(true);
+      await sleep(2000);
+      await updateConnectionData(userId, { RTCoffer: RTCoffer });
+      //const localDesc = peerConnections[userId].pc.localDescription;
+
+      // Create firestore document for new user to connect to you
+      await createNewUserFirestore();
     }
 
-    // When unmounted, remove user in Firestore
-    return async () => {
-      const db = getFirestore();
-      // remove user in Firestore
-      await deleteDoc(doc(db, `rooms/${roomId}/RTCinfo/${userId}`));
-    };
-  }, [roomId]);
+    // Create an user document for any user to write connection data on
+    async function createNewUserFirestore() {
+      const userDoc = doc(db, `rooms/${roomId}/RTCinfo/${userId}`)
+      await setDoc(userDoc, {});
+    }
+  
+    // Update the connection data on other's user document
+    async function updateConnectionData(targetUserId, payload) {
+      const calleeDoc = doc(db, `rooms/${roomId}/RTCinfo/${targetUserId}/callees/${userId}`)
+      await setDoc(calleeDoc, payload, { merge: true });
+      console.log("updated connection data:");
+      console.log(payload);
+    }
+
+    async function connectNewUser(newUserId, remoteRTCoffer) {
+      createNewPeerConnection(userId);
+      const desc = new RTCSessionDescription(remoteRTCoffer);
+      await peerConnections[newUserId].pc.setRemoteDescription(desc);
+      const localRTCoffer = await peerConnections[newUserId].pc.createAnswer();
+      await peerConnections[newUserId].pc.setLocalDescription(localRTCoffer);
+      const offer = {
+        type: localRTCoffer.type,
+        sdp: localRTCoffer.sdp,
+      };
+      await updateConnectionData(newUserId, { RTCoffer: offer });
+      console.log(`[system] ${newUserId} joined the room.`);
+      console.log(peerConnections);
+    }
+
+    
+
+  }, [roomId, userId, initialized]);
+  
 
   
   // Page UI
-
   if (!initialized) return (
     <HomePage>
       <div className="flex-1 p-10 text-2xl font-bold">
@@ -171,19 +285,117 @@ export default function Room() {
       <div className="flex-1 p-10 text-2xl font-bold">
         Room id: {roomId}
       </div>
-      <audio autoPlay={true}>
-        <source type="audio/ogg"/>
-      </audio>
+      {Object.keys(peerConnections).map(userId => (
+        <span key={userId}>
+          <h3>{userId}</h3>
+          <video id={userId} autoPlay playsInline></video>
+        </span>
+      ))}
+      <span>
+        <h3>Callback</h3>
+        <video id="callbackAudio" autoPlay playsInline></video>
+      </span>
+      <div onClick={connectAudio}>
+        <Button text="Connect Audio"/>
+      </div>
+      <div onClick={disconnectAudio}>
+        <Button text="Disconnect Audio"/>
+      </div>
+      <div onClick={leave}>
+        <Button text="Leave"/>
+      </div>
+      
     </HomePage>
   );
 
-  async function createNewOffer(db) {
-    const userDoc = doc(db, `rooms/${roomId}/RTCinfo/${userId}`)
-    let RTCoffer, ICEcandidate;
-    [pc.current, RTCoffer, ICEcandidate, remoteStream.current] = await initPeerConnection(localStream.current)
-    await setDoc(userDoc, {
-      ICEcandidate: ICEcandidate,
-      RTCoffer: RTCoffer,
+  function connectAudio() {
+    console.log("connecting Audio")
+    Object.keys(peerConnections).map(userId => {
+      const remoteAudio = document.getElementById(userId);
+      remoteAudio.srcObject = peerConnections.audioStream;
+    })
+    const callbackAudio = document.getElementById("callbackAudio");
+    //callbackAudio.srcObject = localStream.current;
+  }
+
+  function disconnectAudio() {
+    console.log("Disconnecting Audio")
+    Object.keys(peerConnections).map(userId => {
+      const remoteAudio = document.getElementById(userId);
+      remoteAudio.srcObject = null;
+    })
+    const callbackAudio = document.getElementById("callbackAudio");
+    callbackAudio.srcObject = null;
+  }
+
+  async function leave() {
+    await unsubscribe();
+    const db = getFirestore();
+    // remove user in Firestore
+    const calleesDoc = collection(db, `rooms/${roomId}/RTCinfo/${userId}/callees`);
+    /*
+    const calleesDocSnapshot = await getDocs(calleesDoc);
+    calleesDocSnapshot.forEach(async (docSnapshot) => {
+      if (docSnapshot === undefined) return;
+      await deleteDoc(docSnapshot.doc);
     });
+    */
+    await deleteDoc(doc(db, `rooms/${roomId}/RTCinfo/${userId}`));
+    Router.push('/')
+  }
+
+  async function unsubscribe() {
+    const db = getFirestore();
+    const allUserDoc = collection(db, `rooms/${roomId}/RTCinfo`);
+    const calleeDoc = collection(db, `rooms/${roomId}/RTCinfo/${userId}/callees`);
+    onSnapshot(allUserDoc, () => {});
+    onSnapshot(calleeDoc, () => {});
+  }
+
+  
+
+  async function addICEcandidate(newUserId, ICEcandidate) {
+    console.log('addICEcandidate:')
+    console.log(ICEcandidate);
+    const candidate = new RTCIceCandidate(ICEcandidate);
+    await peerConnections[newUserId].pc.addIceCandidate(candidate);
+  }
+
+  function createNewPeerConnection(userId) {
+    if (peerConnections.hasOwnProperty(userId)) return;
+    peerConnections[userId] = {}
+    peerConnections[userId].pc = new RTCPeerConnection(servers);
+  }
+
+
+  function logDescState(userId) {
+    if (!(peerConnections.hasOwnProperty(userId))) {
+      console.log(`Description state for ${userId}`);
+      console.log("Remote Desc: null");
+      console.log("Local Desc : null");
+      return;
+    }
+    const remoteDesc = peerConnections.pc.remoteDescription;
+    const localDesc = peerConnections.pc.localDescription;
+    console.log(`Description state for ${userId}`);
+    console.log(`Remote Desc: ${remoteDesc ? remoteDesc.sdp.slice(9, 20) : 'null'}`);
+    console.log(`Local Desc : ${localDesc ? localDesc.sdp.slice(9, 20) : 'null'}`);
+  }
+
+  function logAllDescState() {
+    console.log("Log All Desc State:")
+    for (const userId of Object.keys(peerConnections)) {
+      logDescState(userId);
+    }
   }
 }
+
+
+const servers = {
+  iceServers: [
+    {
+      urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'],
+    },
+  ],
+  iceCandidatePoolSize: 10,
+};
