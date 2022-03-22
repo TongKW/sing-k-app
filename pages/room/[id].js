@@ -352,7 +352,7 @@ export default function Room() {
       remoteAudio.srcObject = peerConnections[userId].audioStream;
     })
     const callbackAudio = document.getElementById("callbackAudio");
-    callbackAudio.srcObject = localStream.current;
+    //callbackAudio.srcObject = localStream.current;
   }
 
   function disconnectAudio() {
