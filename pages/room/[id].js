@@ -29,6 +29,7 @@ export default function Room() {
 
   // WebRTC info and Stream parameters for the next newcomer
   let localStream = useRef(null);
+  let pendingICEcandidates = useRef({});
 
   // Only reload when users enter/leave
   const [load, reload] = useState(Date.now());  
@@ -106,7 +107,7 @@ export default function Room() {
           const newUserId = docSnapshot.id;
           // Create one WebRTC Peer Connection and update Firestore for every other user
           await initPeerConnection(newUserId);
-        } 
+        }
       });
 
       // Write Firebase to update offer
@@ -123,6 +124,9 @@ export default function Room() {
         // If a new user joined, connect with WebRTC
         if (change.type === 'added' || change.type === 'modified') {
           createNewPeerConnection(newUserId);
+          if (!(pendingICEcandidates.current.hasOwnProperty(newUserId))) {
+            pendingICEcandidates.current[newUserId] = [];
+          }
           //await initPeerConnection(newUserId);
           const fromICEcandidate = newUserDoc.data().ICEcandidate
           const fromRTCoffer = newUserDoc.data().RTCoffer
@@ -138,8 +142,6 @@ export default function Room() {
                 await peerConnections[newUserId].pc.setRemoteDescription(desc);
                 console.log(`[system] ${newUserId} joined the room.`);
                 console.log(peerConnections);
-                // Force rerender on the UI
-                reload();
               }
             }
             // If other created the connection first:
@@ -149,14 +151,16 @@ export default function Room() {
             if (!(existingUsers.includes(newUserId))) {
               console.log("PROCESS 3")
               await connectNewUser(newUserId, fromRTCoffer);
-              // Force rerender on the UI
-              reload();
             }
+            // Add all pending ICE candidates
+            await handleICEqueue(newUserId);
+
             /*
             if (!fromICEcandidate || !fromRTCoffer) return;
             // Connect
             await connectNewUser(newUserId, fromICEcandidate, fromRTCoffer);
             */
+            
             // Force rerender on the UI
             reload();
           }
@@ -164,10 +168,14 @@ export default function Room() {
           if (fromICEcandidate) {
             console.log('received icecandidate:') 
             console.log(fromICEcandidate)
-            try {
-              await addICEcandidate(newUserId, fromICEcandidate);
-            } catch (error) {
-              console.log(`Error occurred when adding ICE candidate: ${error}`)
+            if (peerConnections[newUserId].pc.remoteDescription) {
+              try {
+                await addICEcandidate(newUserId, fromICEcandidate);
+              } catch (error) {
+                console.log(`Error occurred when adding ICE candidate: ${error}`)
+              }        
+            } else {
+              pendingICEcandidates.current[newUserId].push(fromICEcandidate);
             }
           }
         }
@@ -238,7 +246,7 @@ export default function Room() {
     async function updateConnectionData(targetUserId, payload) {
       const calleeDoc = doc(db, `rooms/${roomId}/RTCinfo/${targetUserId}/callees/${userId}`)
       await setDoc(calleeDoc, payload, { merge: true });
-      console.log("updated connection data:");
+      console.log("update connection data:");
       console.log(payload);
     }
 
@@ -284,6 +292,16 @@ export default function Room() {
       };
       peerConnections[userId].mute = false;
     }
+
+    async function handleICEqueue(userId) {
+      while (pendingICEcandidates.current[userId].length > 0) {
+        const candidate = pendingICEcandidates.current[userId].pop();
+        console.log('From ICE candidate queue:');
+        console.log(candidate);
+        await addICEcandidate(userId, candidate);
+      }
+    }
+
   }, [roomId, userId, initialized]);
   
 
