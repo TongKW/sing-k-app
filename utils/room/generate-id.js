@@ -1,4 +1,6 @@
-import { firestore } from "../../firebase/firestore";
+import { getDoc, doc, getFirestore } from "firebase/firestore";
+import firebase from "firebase/compat/app";
+import { firebaseConfig } from '../../firebase/config';
 
 // Generate alphanumeric random string of 6 characters
 function generateRandomString() {
@@ -15,9 +17,13 @@ function generateRandomString() {
 }
 
 export default async function generateRoomId() {
+  // Initialize Firebase 
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = getFirestore();
   let roomId = generateRandomString();
+  console.log(roomId);
   // check if firestore already has this roomId
-  const userDocRef = firestore.collection('rooms').doc(roomId);
-  const doc = await userDocRef.get();
-  return doc.exists ? generateRoomId() : roomId;
+  const snapshot = await getDoc(doc(db, `rooms/${roomId}`));
+  return snapshot.exists() ? (await generateRoomId()) : roomId;
+
 }

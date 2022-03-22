@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import HomePage from '../component/wrapper/HomePage';
-import Link from 'next/link';
 import { useRouter } from 'next/router'
 import firebase from 'firebase/compat/app';
 import { firebaseConfig } from '../firebase/config';
@@ -8,6 +7,7 @@ import { getFirestore, collection } from 'firebase/firestore';
 import { Box, Typography, Avatar, styled, Dialog, DialogTitle, DialogContent, Button } from '@mui/material';
 import { FormInputBlock } from "../component/elements/form-input";
 import PeopleIcon from '@mui/icons-material/People';
+import generateRoomId from '../utils/room/generate-id';
 
 export default function Home() {
 	const [ username, setUsername ] = useState('');
@@ -59,6 +59,7 @@ const UserAvatar = styled(Avatar, {
 
 function CreateRoomButton() {
 	const [ open, setOpen ] = useState(false);
+  const router = useRouter()
 
 	const handleClickOpen = () => {
 		setOpen(true);
@@ -67,6 +68,12 @@ function CreateRoomButton() {
 	const handleClose = () => {
 		setOpen(false);
 	};
+
+  const createRoom = async () => {
+    const roomid = await generateRoomId();
+  
+    router.push('/room/'+roomid);
+  };
 
 	return (
     <>
@@ -82,13 +89,13 @@ function CreateRoomButton() {
         <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-around'}}>
           <button
             className="w-30 h-20 bg-sky-500 hover:bg-sky-600 text-white py-2 px-4 mx-5 text-xs rounded focus:outline-none focus:shadow-outline"
-            type="button"
+            type="button" onClick={createRoom}
           >
             <font size="3">Stream room</font>
           </button>
           <button
             className="w-30 h-20 bg-sky-500 hover:bg-sky-600 text-white py-2 px-4 mx-5 text-xs rounded focus:outline-none focus:shadow-outline"
-            type="button"
+            type="button" onClick={createRoom}
           >
             <font size="3">Private room</font>
           </button>
@@ -145,7 +152,7 @@ function CurrentStreamRoom(props) {
   const router = useRouter();
 
   const handleJoinRoom = () => {
-    router.push('/room/'+props.id)
+    router.push('/room/'+props.id);
   };
 
   const StyledButton = styled(Button)({
