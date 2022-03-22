@@ -32,18 +32,21 @@ function ChangePasswordPage() {
           <form className="flex flex-col space-y-4">
             <FromTitle title="Old Password" />
             <FormInputBlock
+              value={oldPw}
               category="password"
               onChange={setOldPw}
               warning={oldPwError}
             />
             <FromTitle title="New Password" />
             <FormInputBlock
+              value={newPw}
               category="password"
               onChange={setNewPw}
               warning={newPwError}
             />
             <FromTitle title="Confirmed New Password" />
             <FormInputBlock
+              value={confirmedNewPw}
               category="confirm password"
               onChange={setConfirmedNewPw}
               warning={dupError}
