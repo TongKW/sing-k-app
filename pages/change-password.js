@@ -61,8 +61,8 @@ function ChangePasswordPage() {
             <div className="flex items-center justify-between">
               <div onClick={validate}>
                 <Button text="Confirm" />
-                <AlertDialog open={openDialog} onClose={() => setOpenDialog(false)}>{dialogMessage}</AlertDialog>
               </div>
+              <AlertDialog open={openDialog} onClose={() => setOpenDialog(false)}>{dialogMessage}</AlertDialog>
             </div>
           </form>
         </div>
