@@ -166,7 +166,12 @@ export default function Profile() {
                 <div className="flex items-center justify-between">
                   <div onClick={updateProfile}>
                     <Button text="Save" />
-                    <AlertDialog open={openDialog} onClose={() => setOpenDialog(false)}>{dialogMessage}</AlertDialog>
+                    <AlertDialog
+                      open={openDialog}
+                      onClose={() => setOpenDialog(false)}
+                    >
+                      {dialogMessage}
+                    </AlertDialog>
                   </div>
                 </div>
               </form>
@@ -382,12 +387,10 @@ function UploadImageButton(props) {
   );
 }
 
-function AlertDialog(props){
-  return(
+function AlertDialog(props) {
+  return (
     <Dialog open={props.open} onClose={props.onClose}>
-      <DialogContent>
-        {props.children}
-      </DialogContent>
+      <DialogContent>{props.children}</DialogContent>
     </Dialog>
   );
 }
