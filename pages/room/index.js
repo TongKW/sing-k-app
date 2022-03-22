@@ -1,23 +1,42 @@
-import React, { useState, useEffect, useRef } from 'react';
-import Router, { useRouter } from 'next/router'
-import HomePage from '../../component/wrapper/HomePage';
+import React, { useState, useEffect, useRef } from "react";
+import Router, { useRouter } from "next/router";
+import HomePage from "../../component/wrapper/HomePage";
 import firebase from "firebase/compat/app";
-import { 
-  collection, 
-  getDocs, 
-  getDoc, 
+import {
+  collection,
+  getDocs,
+  getDoc,
   setDoc,
-  doc, 
+  doc,
   getFirestore,
   updateDoc,
   onSnapshot,
-  deleteDoc
+  deleteDoc,
 } from "firebase/firestore";
-import { firebaseConfig } from '../../firebase/config';
-import Button from '../../component/elements/button';
-import sleep from '../../utils/sleep';
+import { Box } from "@mui/material";
+import { firebaseConfig } from "../../firebase/config";
+import Button from "../../component/elements/button";
+import sleep from "../../utils/sleep";
+import RoomMangementPanel from "./roomManagement";
+import UserUtilityPanel from "./userUtility";
+import SongManagementPanel from "./songManagement";
 
 
+
+const otherParticipantsInfo = {
+  "621635d92eecb0a4b18574e4": { isMuted: false },
+  "62166ad3d7f58646d5114865": { isMuted: false },
+  "6219f8e0e125e5022f3ea0b6": { isMuted: false },
+  "6229aaa2d4b8504f1e3bf9a6": { isMuted: true },
+  "6220d4e21ca3fb25423ac18f": { isMuted: false },
+};
+
+const songInfo = [
+  "senbonsakura.mp3",
+  "ddu-du ddu-du.flac",
+  "gunjou.mp3",
+  "Jiyuu no Daishou.flac",
+];
 
 export default function Room() {
   // Routing parameter
@@ -43,25 +62,79 @@ export default function Room() {
   const [username, setUsername] = useState();
   const [avatar, setAvatar] = useState();
   const [userId, setUserId] = useState();
+  const [roomCreatorId, setRoomCreatorId] = useState(
+    "621635d92eecb0a4b18574e4"
+  );
 
-  // Initialize Firebase 
+  const [currentRoomType, setCurrentRoomType] = useState("private");
+  const [isRoomCreator, setIsRoomCreator] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
+  const [otherUsersList, setOtherUsersList] = useState(otherParticipantsInfo);
+
+  const [allSongList, setAllSongList] = useState(songInfo);
+
+  // Initialize Firebase
   const app = firebase.initializeApp(firebaseConfig);
 
   //--test--
   console.log('Peer connection:');
   console.log(peerConnections.current)
   //--test--
-  
+
+  const handleMuteUnmute = () => {
+    if (isMuted) {
+      setIsMuted(false);
+      console.log("Now Unmute!");
+    } else {
+      setIsMuted(true);
+      console.log("Now mute!");
+    }
+  };
+
+  const handleStartSong = () => {
+    console.log("Start song!");
+  };
+  const handleStopSong = () => {
+    console.log("Stopped song!");
+  };
+
+  const handleAddSong = (newSong) => {
+    const newAllSongList = [...allSongList, newSong];
+    setAllSongList(newAllSongList);
+  };
+
+  const handleDeleteSong = () => {
+    //delete the last element in allSongList if it is not empty
+    const newAllSongList = allSongList.slice(0, -1);
+    setAllSongList(newAllSongList);
+  };
+
+  function handleMoveSong(prevIndex, currentIndex) {
+    //swap the two elements inside a list based on prevIndex and currentIndex
+    if (currentIndex === allSongList.length) return;
+    else if (currentIndex === -1) return;
+    let newAllSongList = [...allSongList];
+    newAllSongList[prevIndex] = allSongList[currentIndex];
+    newAllSongList[currentIndex] = allSongList[prevIndex];
+    setAllSongList(newAllSongList);
+  }
+
+  // useEffect(() => {
+  //   if (!initialized) {
+  //     //TODO: Update the firebase when the song list is changed
+  //   }
+  // }, [allSongList]);
+
   // Get response of user info and display from local storage
   useEffect(() => {
     const token = localStorage.getItem("token");
     const user = decrypt_jwt(token).body;
     async function decrypt_jwt(token) {
-      const response = await fetch('/api/jwt/decrypt', {
-        method: 'POST', 
+      const response = await fetch("/api/jwt/decrypt", {
+        method: "POST",
         body: JSON.stringify({ token: token }),
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
       });
       const data = await response.json();
@@ -73,7 +146,7 @@ export default function Room() {
       } else {
         // Unauthorized user or jwt expired
         // Prompt to login page
-        router.push('/login');
+        router.push("/login");
       }
     }
   }, [router]);
@@ -91,15 +164,19 @@ export default function Room() {
   useEffect(() => {
     const db = getFirestore();
     const allUserDoc = collection(db, `rooms/${roomId}/RTCinfo`);
-    const calleeDoc = collection(db, `rooms/${roomId}/RTCinfo/${userId}/callees`);
+    const calleeDoc = collection(
+      db,
+      `rooms/${roomId}/RTCinfo/${userId}/callees`
+    );
 
     if (initialized || !roomId || !userId) return;
     initialize();
-    
+
     // Initialize for first time joining the room
     async function initialize() {
       console.log("COUNT: initalize() is called");
       setInitialized(true);
+
       // Setup audio
       localStream.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       callbackStream.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
@@ -108,9 +185,10 @@ export default function Room() {
       const roomDoc = doc(db, "rooms", roomId);
       const roomSnapshot = await getDoc(roomDoc);
       const roomType = roomSnapshot.data().type;
+      setCurrentRoomType(roomType);
 
       const allUserSnapshot = await getDocs(allUserDoc);
-      
+
       allUserSnapshot.forEach(async (docSnapshot) => {
         if (docSnapshot.id !== userId) {
           existingUsers.current.push(docSnapshot.id);
@@ -120,10 +198,12 @@ export default function Room() {
         }
       });
 
+      //TODO: Add a new user to the otherUsersList
+
       // Write Firebase to update offer
       await createNewUserFirestore();
-    }    
-    
+    }
+
     // Listen for any joined user
     onSnapshot(calleeDoc, (snapshot) => {
       snapshot.docChanges().forEach(async (change) => {
@@ -200,7 +280,7 @@ export default function Room() {
     onSnapshot(allUserDoc, (snapshot) => {
       snapshot.docChanges().forEach(async (change) => {
         // If an user left, delete info and close the WebRTC connection
-        if (change.type === 'removed') {
+        if (change.type === "removed") {
           const newUserDoc = change.doc;
           const leftUserId = newUserDoc.id;
           if (leftUserId === userId) return;
@@ -221,7 +301,7 @@ export default function Room() {
         }
       });
     });
-    
+
     //return () => {}
 
     // Below are the wrapped functions ONLY used in this useEffect
@@ -257,13 +337,16 @@ export default function Room() {
 
     // Create an user document for any user to write connection data on
     async function createNewUserFirestore() {
-      const userDoc = doc(db, `rooms/${roomId}/RTCinfo/${userId}`)
+      const userDoc = doc(db, `rooms/${roomId}/RTCinfo/${userId}`);
       await setDoc(userDoc, {});
     }
-  
+
     // Update the connection data on other's user document
     async function updateConnectionData(targetUserId, payload) {
-      const calleeDoc = doc(db, `rooms/${roomId}/RTCinfo/${targetUserId}/callees/${userId}`)
+      const calleeDoc = doc(
+        db,
+        `rooms/${roomId}/RTCinfo/${targetUserId}/callees/${userId}`
+      );
       await setDoc(calleeDoc, payload, { merge: true });
       console.log("update connection data:");
       console.log(payload);
@@ -352,15 +435,52 @@ export default function Room() {
   }, [roomId, userId, initialized, username]);
   
 
-  
   // Page UI
-  if (!initialized) return (
-    <HomePage>
-      <div className="flex-1 p-10 text-2xl font-bold">
-        Loading...
-      </div>
-    </HomePage>
-  );
+  if (!initialized)
+    return (
+      <>
+        <HomePage>
+          <Box
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              width: "100%",
+              height: "100vh",
+              background: "#ccc",
+            }}
+          >
+            <Box sx={{ width: "23%" }}>
+              <RoomMangementPanel
+                roomId={roomId}
+                otherUsersList={otherUsersList}
+                roomCreatorId={roomCreatorId}
+                currentRoomType={currentRoomType}
+                isMuted={isMuted}
+                handleMuteUnmute={handleMuteUnmute}
+              />
+            </Box>
+            <Box sx={{ width: "54%" }}></Box>
+            {/* <UserUtilityPanel
+          isRoomCreator={isRoomCreator}
+          otherUsersList={otherUsersList}
+          isMuted={isMuted}
+        /> */}
+            <Box sx={{ width: "23%" }}>
+              <SongManagementPanel
+                allSongList={allSongList}
+                currentRoomType={currentRoomType}
+                isRoomCreator={isRoomCreator}
+                handleStartSong={handleStartSong}
+                handleStopSong={handleStopSong}
+                handleAddSong={handleAddSong}
+                handleDeleteSong={handleDeleteSong}
+                handleMoveSong={handleMoveSong}
+              />
+            </Box>
+          </Box>
+        </HomePage>
+      </>
+    );
   return (
     <HomePage>
       <div className="flex-1 p-10 text-2xl font-bold">
@@ -413,7 +533,7 @@ export default function Room() {
     Object.keys(peerConnections.current).map(userId => {
       const remoteAudio = document.getElementById(userId);
       remoteAudio.srcObject = null;
-    })
+    });
     const callbackAudio = document.getElementById("callbackAudio");
     callbackAudio.srcObject = null;
   }
@@ -459,7 +579,10 @@ export default function Room() {
   async function unsubscribe() {
     const db = getFirestore();
     const allUserDoc = collection(db, `rooms/${roomId}/RTCinfo`);
-    const calleeDoc = collection(db, `rooms/${roomId}/RTCinfo/${userId}/callees`);
+    const calleeDoc = collection(
+      db,
+      `rooms/${roomId}/RTCinfo/${userId}/callees`
+    );
     onSnapshot(allUserDoc, () => {});
     onSnapshot(calleeDoc, () => {});
   }
@@ -490,11 +613,10 @@ export default function Room() {
   }
 }
 
-
 const servers = {
   iceServers: [
     {
-      urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'],
+      urls: ["stun:stun1.l.google.com:19302", "stun:stun2.l.google.com:19302"],
     },
   ],
   iceCandidatePoolSize: 10,
