@@ -11,15 +11,12 @@ import {
 } from "@mui/material";
 
 export default function ChangePassword() {
-  const [openDialog, setOpenDialog] = useState(false);
-  const [dialogMessage, setDialogMessage] = useState();
 
   return (
     <HomePage href="change-password">
       <div className="flex-1 p-10 text-2xl font-bold">
         Change Password
         <ChangePasswordPage />
-        <AlertDialog open={openDialog} onClose={() => setOpenDialog(false)}>{dialogMessage}</AlertDialog>
       </div>
     </HomePage>
   );
@@ -33,25 +30,30 @@ function ChangePasswordPage() {
   const [newPwError, setNewPwError] = useState();
   const [dupError, setDupError] = useState();
   const [changedPwStatus, setChangedPwStatus] = useState(false);
-  if (!changedPwStatus) {
+  const [openDialog, setOpenDialog] = useState(false);
+  const [dialogMessage, setDialogMessage] = useState();
+  
     return (
       <div className="grid grid-cols-12 gap-8" style={{ height: "100%" }}>
         <div className="flex flex-col justify-center col-start-4 col-span-6">
           <form className="flex flex-col space-y-4">
             <FromTitle title="Old Password" />
             <FormInputBlock
+              value={oldPw}
               category="password"
               onChange={setOldPw}
               warning={oldPwError}
             />
             <FromTitle title="New Password" />
             <FormInputBlock
+              value={newPw}
               category="password"
               onChange={setNewPw}
               warning={newPwError}
             />
             <FromTitle title="Confirmed New Password" />
             <FormInputBlock
+              value={confirmedNewPw}
               category="confirm password"
               onChange={setConfirmedNewPw}
               warning={dupError}
@@ -59,19 +61,14 @@ function ChangePasswordPage() {
             <div className="flex items-center justify-between">
               <div onClick={validate}>
                 <Button text="Confirm" />
+                <AlertDialog open={openDialog} onClose={() => setOpenDialog(false)}>{dialogMessage}</AlertDialog>
               </div>
             </div>
           </form>
         </div>
       </div>
     );
-  } else {
-    return (
-      <>
-        <ChangedPasswordPage />
-      </>
-    );
-  }
+  
   async function checkUserOldPw(oldPw) {
     const username = localStorage.getItem("username");
     const requestBody = { username: username, password: oldPw };
@@ -188,17 +185,13 @@ function ChangePasswordPage() {
         setOpenDialog(true);
         setDialogMessage("Unknown error occurs");
         return;
-      } else setChangedPwStatus(true);
+      } else {
+        setChangedPwStatus(true);
+        setOpenDialog(true);
+        setDialogMessage("Successfully changed password!");
+      }
     }
   }
-}
-
-function ChangedPasswordPage() {
-  return (
-    <div className="flex flex-row justify-center">
-      <div>Successfully changed password!</div>
-    </div>
-  );
 }
 
 function AlertDialog(props){
