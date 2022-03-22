@@ -5,13 +5,21 @@ import { FormInputBlock } from "../component/elements/form-input";
 import Button from "../component/elements/button";
 import { Loading } from "notiflix/build/notiflix-loading-aio";
 import pwValidateSetError from "../utils/validate-password-format";
+import { 
+  Dialog,
+  DialogContent,
+} from "@mui/material";
 
 export default function ChangePassword() {
+  const [openDialog, setOpenDialog] = useState(false);
+  const [dialogMessage, setDialogMessage] = useState();
+
   return (
     <HomePage href="change-password">
       <div className="flex-1 p-10 text-2xl font-bold">
         Change Password
         <ChangePasswordPage />
+        <AlertDialog open={openDialog} onClose={() => setOpenDialog(false)}>{dialogMessage}</AlertDialog>
       </div>
     </HomePage>
   );
@@ -151,7 +159,10 @@ function ChangePasswordPage() {
       setNewPwError();
       return;
     } else if (!oldPwCorrect.success) {
-      if (oldPwCorrect.error === null) alert("Unknown error occurs");
+      if (oldPwCorrect.error === null) {
+        setOpenDialog(true);
+        setDialogMessage("Unknown error occurs");
+      }
       else setOldPwError("Password is not correct");
       return;
     } else if (oldPw === newPw) {
@@ -167,13 +178,15 @@ function ChangePasswordPage() {
         uploadedPw = await changePwInterface(newPw);
         console.log("uploadedPw = ", uploadedPw);
       } catch (error) {
-        alert(`Unknown error occurs: ${error}`);
+        setOpenDialog(true);
+        setDialogMessage(`Unknown error occurs: ${error}`);
         return;
       } finally {
         Loading.remove();
       }
       if (!uploadedPw.success) {
-        alert("Unknown error occurs");
+        setOpenDialog(true);
+        setDialogMessage("Unknown error occurs");
         return;
       } else setChangedPwStatus(true);
     }
@@ -185,5 +198,15 @@ function ChangedPasswordPage() {
     <div className="flex flex-row justify-center">
       <div>Successfully changed password!</div>
     </div>
+  );
+}
+
+function AlertDialog(props){
+  return(
+    <Dialog open={props.open} onClose={props.onClose}>
+      <DialogContent>
+        {props.children}
+      </DialogContent>
+    </Dialog>
   );
 }
