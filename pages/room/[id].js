@@ -91,7 +91,7 @@ export default function Room() {
       console.log("COUNT: initalize() is called");
       setInitialized(true);
       // Setup audio
-      localStream.current = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+      localStream.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 
       // Get Firebase
       const roomDoc = doc(db, "rooms", roomId);
@@ -126,6 +126,7 @@ export default function Room() {
           //await initPeerConnection(newUserId);
           const fromICEcandidate = newUserDoc.data().ICEcandidate
           const fromRTCoffer = newUserDoc.data().RTCoffer
+
           if (fromRTCoffer) {
             console.log("PROCESS 1.5")
             // If created the connection first and got answer back:
@@ -137,6 +138,8 @@ export default function Room() {
                 await peerConnections[newUserId].pc.setRemoteDescription(desc);
                 console.log(`[system] ${newUserId} joined the room.`);
                 console.log(peerConnections);
+                // Force rerender on the UI
+                reload();
               }
             }
             // If other created the connection first:
@@ -146,10 +149,8 @@ export default function Room() {
             if (!(existingUsers.includes(newUserId))) {
               console.log("PROCESS 3")
               await connectNewUser(newUserId, fromRTCoffer);
-            }
-
-            if (fromICEcandidate) {
-              await addICEcandidate(newUserId, fromICEcandidate);
+              // Force rerender on the UI
+              reload();
             }
             /*
             if (!fromICEcandidate || !fromRTCoffer) return;
@@ -158,6 +159,16 @@ export default function Room() {
             */
             // Force rerender on the UI
             reload();
+          }
+
+          if (fromICEcandidate) {
+            console.log('received icecandidate:') 
+            console.log(fromICEcandidate)
+            try {
+              await addICEcandidate(newUserId, fromICEcandidate);
+            } catch (error) {
+              console.log(`Error occurred when adding ICE candidate: ${error}`)
+            }
           }
         }
       });
@@ -195,28 +206,8 @@ export default function Room() {
       
       // Initialize and store new Peer Connection
       createNewPeerConnection(userId)
+  
       
-      // Create new Media Stream
-      let remoteStream = new MediaStream();
-  
-      // Push tracks from local stream to peer connection
-      localStream.current.getTracks().forEach((track) => {
-        peerConnections[userId].pc.addTrack(track, localStream.current);
-      });
-    
-      peerConnections[userId].pc.ontrack = (event) => {
-        event.streams[0].getTracks().forEach((track) => {
-          remoteStream.addTrack(track);
-        });
-      };
-      peerConnections[userId].audioStream = remoteStream;
-      peerConnections[userId].mute = false;
-  
-      peerConnections[userId].pc.onicecandidate = (event) => {
-        event.candidate && updateConnectionData(userId, {
-          ICEcandidate: event.candidate.toJSON()
-        });
-      };
   
       // Create offer descript and set to local
       const description = await peerConnections[userId].pc.createOffer();
@@ -252,7 +243,7 @@ export default function Room() {
     }
 
     async function connectNewUser(newUserId, remoteRTCoffer) {
-      createNewPeerConnection(userId);
+      createNewPeerConnection(newUserId);
       const desc = new RTCSessionDescription(remoteRTCoffer);
       await peerConnections[newUserId].pc.setRemoteDescription(desc);
       const localRTCoffer = await peerConnections[newUserId].pc.createAnswer();
@@ -266,8 +257,33 @@ export default function Room() {
       console.log(peerConnections);
     }
 
-    
+    function createNewPeerConnection(userId) {
+      if (peerConnections.hasOwnProperty(userId)) return;
+      peerConnections[userId] = {}
+      peerConnections[userId].pc = new RTCPeerConnection(servers);
+      // Push tracks from local stream to peer connection
+      localStream.current.getTracks().forEach((track) => {
+        console.log(`Pushing track ... ${(new Date()).getTime()}`)
+        console.log(track)
+        peerConnections[userId].pc.addTrack(track, localStream.current);
+      });
 
+      peerConnections[userId].audioStream = new MediaStream();
+      peerConnections[userId].pc.ontrack = (event) => {
+        console.log(`Getting track ... ${(new Date()).getTime()}`)
+        event.streams[0].getTracks().forEach((track) => {
+          peerConnections[userId].audioStream.addTrack(track);
+        });
+      };
+
+      // Listen for any IceCandidate update and write to Firestore
+      peerConnections[userId].pc.onicecandidate = (event) => {
+        event.candidate && updateConnectionData(userId, {
+          ICEcandidate: event.candidate.toJSON()
+        });
+      };
+      peerConnections[userId].mute = false;
+    }
   }, [roomId, userId, initialized]);
   
 
@@ -312,10 +328,13 @@ export default function Room() {
     console.log("connecting Audio")
     Object.keys(peerConnections).map(userId => {
       const remoteAudio = document.getElementById(userId);
-      remoteAudio.srcObject = peerConnections.audioStream;
+      console.log(`remoteAudio of ${userId}`)
+      console.log(remoteAudio)
+      console.log()
+      remoteAudio.srcObject = peerConnections[userId].audioStream;
     })
     const callbackAudio = document.getElementById("callbackAudio");
-    //callbackAudio.srcObject = localStream.current;
+    callbackAudio.srcObject = localStream.current;
   }
 
   function disconnectAudio() {
@@ -352,41 +371,9 @@ export default function Room() {
     onSnapshot(calleeDoc, () => {});
   }
 
-  
-
   async function addICEcandidate(newUserId, ICEcandidate) {
-    console.log('addICEcandidate:')
-    console.log(ICEcandidate);
     const candidate = new RTCIceCandidate(ICEcandidate);
     await peerConnections[newUserId].pc.addIceCandidate(candidate);
-  }
-
-  function createNewPeerConnection(userId) {
-    if (peerConnections.hasOwnProperty(userId)) return;
-    peerConnections[userId] = {}
-    peerConnections[userId].pc = new RTCPeerConnection(servers);
-  }
-
-
-  function logDescState(userId) {
-    if (!(peerConnections.hasOwnProperty(userId))) {
-      console.log(`Description state for ${userId}`);
-      console.log("Remote Desc: null");
-      console.log("Local Desc : null");
-      return;
-    }
-    const remoteDesc = peerConnections.pc.remoteDescription;
-    const localDesc = peerConnections.pc.localDescription;
-    console.log(`Description state for ${userId}`);
-    console.log(`Remote Desc: ${remoteDesc ? remoteDesc.sdp.slice(9, 20) : 'null'}`);
-    console.log(`Local Desc : ${localDesc ? localDesc.sdp.slice(9, 20) : 'null'}`);
-  }
-
-  function logAllDescState() {
-    console.log("Log All Desc State:")
-    for (const userId of Object.keys(peerConnections)) {
-      logDescState(userId);
-    }
   }
 }
 
