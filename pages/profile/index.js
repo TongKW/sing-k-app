@@ -13,6 +13,9 @@ import {
   LinearProgress,
   Typography,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import AddAPhotoIcon from "@mui/icons-material/AddAPhoto";
@@ -59,6 +62,8 @@ export default function Profile() {
   const [usernameError, setUsernameError] = useState();
   const [emailError, setEmailError] = useState();
   const [updatedProfileStatus, setUpdatedProfileStatus] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [dialogMessage, setDialogMessage] = useState();
   const userExp = 10;
   const ExpToNextLevel = 100;
   const bar = (Number(userExp) / Number(ExpToNextLevel)) * 100;
@@ -92,7 +97,8 @@ export default function Profile() {
       } else {
         // Unauthorized user or jwt expired
         // Prompt to login page
-        alert("Invalid operation");
+        setOpenDialog(true);
+        setDialogMessage("Invalid operation");
         logout();
       }
     }
@@ -161,6 +167,7 @@ export default function Profile() {
                 <div className="flex items-center justify-between">
                   <div onClick={updateProfile}>
                     <Button text="Save" />
+                    <AlertDialog open={openDialog} onClose={() => setOpenDialog(false)}>{dialogMessage}</AlertDialog>
                   </div>
                 </div>
               </form>
@@ -182,7 +189,8 @@ export default function Profile() {
     const [file] = event.target.files;
     const fileData = await processFile(file);
     if (!fileData.success) {
-      alert(fileData.content);
+      setOpenDialog(true);
+      setDialogMessage(fileData.content);
       return;
     } else if (avatarTooLarge(fileData.content)) return;
     console.log(fileData.content);
@@ -271,7 +279,8 @@ export default function Profile() {
     if (username !== oldUsername) {
       const usernameExists = await validateUsername(username);
       if (usernameExists === null) {
-        alert("Unknown error occurs!");
+        setOpenDialog(true);
+        setDialogMessage("Unknown error occurs!");
         return;
       } else if (usernameExists) {
         setUsernameError("Username has been used");
@@ -291,7 +300,8 @@ export default function Profile() {
     Loading.circle({ svgColor: "#283593" });
     const decryptionSuccess = await decryptSessionToken();
     if (!decryptionSuccess.success) {
-      alert(`Unknown error occurs`);
+      setOpenDialog(true);
+      setDialogMessage("Unknown error occurs");
       return;
     }
     const userId = decryptionSuccess.success;
@@ -318,7 +328,8 @@ export default function Profile() {
         },
       });
     } catch (error) {
-      alert(`Unknown error occurs! ${error}`);
+      setOpenDialog(true);
+      setDialogMessage(`Unknown error occurs! ${error}`);
       Loading.remove();
       return;
     }
@@ -332,15 +343,18 @@ export default function Profile() {
           avatar
         );
         if (newToken === null) {
-          alert("Unknown error occurs!");
+          setOpenDialog(true);
+          setDialogMessage("Unknown error occurs!");
           return;
         } else localStorage.setItem("token", newToken);
         setUpdatedProfileStatus(true);
-        alert("Profile is successfully update.");
+        setOpenDialog(true);
+        setDialogMessage("Profile is successfully update.");
         return;
       }
     } catch (error) {
-      alert("Unknown error occurs");
+      setOpenDialog(true);
+      setDialogMessage("Unknown error occurs");
     } finally {
       Loading.remove();
     }
@@ -366,5 +380,15 @@ function UploadImageButton(props) {
         </ProfileIcon>
       </ProfileIconButton>
     </label>
+  );
+}
+
+function AlertDialog(props){
+  return(
+    <Dialog open={props.open} onClose={props.onClose}>
+      <DialogContent>
+        {props.children}
+      </DialogContent>
+    </Dialog>
   );
 }
