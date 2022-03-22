@@ -43,12 +43,14 @@ export default function Reset(props) {
             {/* Password block */}
             <FromTitle title="new password" />
             <FormInputBlock
+              value={password}
               category="password"
               onChange={setPassword}
               warning={error}
             ></FormInputBlock>
             {/* Duplicate Password block */}
             <FormInputBlock
+              value={dupPassword}
               category="confirm password"
               onChange={setDupPassword}
               warning={dupError}

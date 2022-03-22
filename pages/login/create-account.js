@@ -39,6 +39,7 @@ export default function CreateAccount(props) {
             {/* Username block */}
             <FromTitle title="username" />
             <FormInputBlock
+              value={username}
               category="username"
               onChange={setUserName}
               warning={error}
@@ -46,6 +47,7 @@ export default function CreateAccount(props) {
             {/* Email block */}
             <FromTitle title="email" />
             <FormInputBlock
+              value={email}
               category="email"
               onChange={setEmail}
               warning={emailError}
@@ -53,12 +55,14 @@ export default function CreateAccount(props) {
             {/* Password block */}
             <FromTitle title="password" />
             <FormInputBlock
+              value={password}
               category="password"
               onChange={setPassword}
               warning={pwFormatError}
             ></FormInputBlock>
             {/* Duplicate Password block */}
             <FormInputBlock
+              value={dupPassword}
               category="confirm password"
               onChange={setDupPassword}
               warning={dupError}
