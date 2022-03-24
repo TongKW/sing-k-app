@@ -13,11 +13,6 @@ export async function getRoomList() {
         result.push(doc.id);
         console.log(doc.id, " => ", doc.data());
     });
-    /*
-    const collectionIds = querySnapshot.docs.map(doc => {doc.id, doc.data()});
-    console.log("collectionIds",collectionIds);
-    console.log("id_type_pair_list",id_type_pair_list);
-    */
     console.log(result);
     return result;
 }
@@ -29,7 +24,7 @@ export async function getPublicRoomList() {
     var result = [];
     querySnapshot.forEach((doc) => {
         // doc.data() is never undefined for query doc snapshots
-        if (doc['type'] == 'public') {
+        if (doc['type'] === 'public') {
             result.push(doc.id);
         }
     });
@@ -43,7 +38,7 @@ export async function getPrivateRoomList() {
     var result = [];
     querySnapshot.forEach((doc) => {
         // doc.data() is never undefined for query doc snapshots
-        if (doc['type'] == 'private') {
+        if (doc['type'] === 'private') {
             result.push(doc.id);
         }
     });
