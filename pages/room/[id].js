@@ -29,6 +29,7 @@ export default function Room() {
 
   // WebRTC info and Stream parameters for the next newcomer
   let localStream = useRef(null);
+  let callbackStream = useRef(null);
   let pendingICEcandidates = useRef({});
 
   // Only reload when users enter/leave
@@ -76,6 +77,13 @@ export default function Room() {
     }
   }, [router]);
 
+  // Add listener when user is about to close the page or refresh
+  useEffect(() => {
+    window.onbeforeunload = async () => {
+      await leave();
+    };
+  })
+
   // Initialize audio stream and WebRTC
   // Get peer WebRTC info and connect
   // Only run once after roomId is get
@@ -93,6 +101,7 @@ export default function Room() {
       setInitialized(true);
       // Setup audio
       localStream.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      callbackStream.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
 
       // Get Firebase
       const roomDoc = doc(db, "rooms", roomId);
@@ -123,34 +132,37 @@ export default function Room() {
         if (newUserId === userId) return;
         // If a new user joined, connect with WebRTC
         if (change.type === 'added' || change.type === 'modified') {
+          // Create new connection
           createNewPeerConnection(newUserId);
+          // Initializing an empty ICE candidate queue for the new comer
           if (!(pendingICEcandidates.current.hasOwnProperty(newUserId))) {
             pendingICEcandidates.current[newUserId] = [];
           }
-          //await initPeerConnection(newUserId);
           const fromICEcandidate = newUserDoc.data().ICEcandidate
           const fromRTCoffer = newUserDoc.data().RTCoffer
-
           if (fromRTCoffer) {
             console.log("PROCESS 1.5")
-            // If created the connection first and got answer back:
-            // 1. if pc.currentRemote is null => setRemote
-            if (existingUsers.includes(newUserId)) {
-              if (!peerConnections[newUserId].pc.remoteDescription) {
+
+            if (peerConnections[newUserId].pc.remoteDescription === null) {
+              console.log(`Current remote desc:`)
+              console.log(peerConnections[newUserId].pc.remoteDescription)
+              // If created the connection first and got answer back:
+              // 1. if pc.currentRemote is null => setRemote
+              if (existingUsers.includes(newUserId)) {
                 console.log("PROCESS 2")
                 const desc = new RTCSessionDescription(fromRTCoffer);
                 await peerConnections[newUserId].pc.setRemoteDescription(desc);
                 console.log(`[system] ${newUserId} joined the room.`);
                 console.log(peerConnections);
               }
-            }
-            // If other created the connection first:
-            // 1. setRemote
-            // 2. createOffer
-            // 3. setLocal
-            if (!(existingUsers.includes(newUserId))) {
-              console.log("PROCESS 3")
-              await connectNewUser(newUserId, fromRTCoffer);
+              // If other created the connection first:
+              // 1. setRemote
+              // 2. createOffer
+              // 3. setLocal
+              if (!(existingUsers.includes(newUserId))) {
+                console.log("PROCESS 3")
+                await connectNewUser(newUserId, fromRTCoffer);
+              }
             }
             // Add all pending ICE candidates
             await handleICEqueue(newUserId);
@@ -166,8 +178,6 @@ export default function Room() {
           }
 
           if (fromICEcandidate) {
-            console.log('received icecandidate:') 
-            console.log(fromICEcandidate)
             if (peerConnections[newUserId].pc.remoteDescription) {
               try {
                 await addICEcandidate(newUserId, fromICEcandidate);
@@ -191,11 +201,17 @@ export default function Room() {
           const leftUserId = newUserDoc.id;
           if (leftUserId === userId) return;
           await deleteDoc(doc(db, `rooms/${roomId}/RTCinfo/${userId}/callees/${leftUserId}`));
-          console.log(`[system] ${leftUserId} left the room.`);
+          // Remove user from existingUsers
+          if (existingUsers.includes(leftUserId)) {
+            const index = existingUsers.indexOf(leftUserId);
+            existingUsers.splice(index, 1);
+          }
           // Close WebRTC connection
           peerConnections[leftUserId].pc.close();
           // delete user info
           delete peerConnections[leftUserId];
+
+          console.log(`[system] ${leftUserId} left the room.`);
           // Force rerender on the UI
           reload();
         }
@@ -296,10 +312,21 @@ export default function Room() {
     async function handleICEqueue(userId) {
       while (pendingICEcandidates.current[userId].length > 0) {
         const candidate = pendingICEcandidates.current[userId].pop();
-        console.log('From ICE candidate queue:');
-        console.log(candidate);
         await addICEcandidate(userId, candidate);
       }
+    }
+
+    function hasStableConnection(userId) {
+      console.log('Connection Status:')
+      console.log(`has pc         : ${peerConnections.hasOwnProperty(userId)}`);
+      if (peerConnections.hasOwnProperty(userId)) {
+        console.log(`connectionState: ${peerConnections[userId].pc.connectionState}`)
+        console.log(`signalingState : ${peerConnections[userId].pc.signalingState}`)
+      }
+      
+      if (!peerConnections.hasOwnProperty(userId)) return false;
+      if (peerConnections[userId].pc.signalingState !== "stable") return false;
+      return true;
     }
 
   }, [roomId, userId, initialized]);
@@ -352,7 +379,7 @@ export default function Room() {
       remoteAudio.srcObject = peerConnections[userId].audioStream;
     })
     const callbackAudio = document.getElementById("callbackAudio");
-    //callbackAudio.srcObject = localStream.current;
+    callbackAudio.srcObject = callbackStream.current;
   }
 
   function disconnectAudio() {
@@ -368,17 +395,33 @@ export default function Room() {
   async function leave() {
     await unsubscribe();
     const db = getFirestore();
+    await deleteDoc(doc(db, `rooms/${roomId}/RTCinfo/${userId}`));
     // remove user in Firestore
-    const calleesDoc = collection(db, `rooms/${roomId}/RTCinfo/${userId}/callees`);
     /*
+    const calleesDoc = collection(db, `rooms/${roomId}/RTCinfo/${userId}/callees`);
     const calleesDocSnapshot = await getDocs(calleesDoc);
     calleesDocSnapshot.forEach(async (docSnapshot) => {
       if (docSnapshot === undefined) return;
       await deleteDoc(docSnapshot.doc);
     });
     */
-    await deleteDoc(doc(db, `rooms/${roomId}/RTCinfo/${userId}`));
-    Router.push('/')
+    // stop audio transfer
+    if (localStream.current) {
+      localStream.current.getTracks().forEach((track) => {
+        track.stop();
+      });
+    }
+    
+
+    // Clear data
+    peerConnections = {};
+    existingUsers = [];
+    localStream.current = null;
+    callbackStream.current = null;
+    pendingICEcandidates.current = {};
+    setInitialized(false);
+    
+    location.href = '/'
   }
 
   async function unsubscribe() {
