@@ -9,9 +9,8 @@ export async function getRoomList() {
     var querySnapshot  = await getDocs(collection(db,'rooms'));
     var result = [];
     querySnapshot.forEach((doc) => {
-        // doc.data() is never undefined for query doc snapshots
         result.push(doc.id);
-        console.log(doc.id, " => ", doc.data());
+        console.log("getRoomList", doc.id, " => ", doc.data());
     });
     console.log(result);
     return result;
@@ -19,12 +18,9 @@ export async function getRoomList() {
 
 export async function getPublicRoomList() {
     var querySnapshot  = await getDocs(collection(db,'rooms'));
-    console.log("querySnapshot",querySnapshot);
-
     var result = [];
     querySnapshot.forEach((doc) => {
-        // doc.data() is never undefined for query doc snapshots
-        if (doc['type'] === 'public') {
+        if (doc.data()['type'] === 'public') {
             result.push(doc.id);
         }
     });
@@ -33,12 +29,9 @@ export async function getPublicRoomList() {
 
 export async function getPrivateRoomList() {
     var querySnapshot  = await getDocs(collection(db,'rooms'));
-    console.log("querySnapshot",querySnapshot);
-
     var result = [];
     querySnapshot.forEach((doc) => {
-        // doc.data() is never undefined for query doc snapshots
-        if (doc['type'] === 'private') {
+        if (doc.data()['type'] === 'private') {
             result.push(doc.id);
         }
     });
