@@ -108,11 +108,11 @@ export default function Room() {
   };
 
   const handleAddComment = (commentText) => {
-    console.log(JSON.stringify(commentText));
     const newComment = {
       userName: localStorage.getItem("username"),
       time: Date(),
       text: commentText,
+      isSystem: false,
     };
     const newCommentList = [...commentList, newComment];
     setCommentList(newCommentList);
@@ -449,6 +449,7 @@ export default function Room() {
       <>
         <HomePage>
           <Box
+            className="hide-scrollbar"
             style={{
               display: "flex",
               flexDirection: "row",

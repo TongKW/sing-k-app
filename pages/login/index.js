@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import FormInput from "../../component/elements/form-input";
 import Button from "../../component/elements/button";
 import styles from "../../styles/Home.module.css";
@@ -14,6 +14,17 @@ export default function Login() {
   const [password, setPassword] = useState();
   const [error, setError] = useState();
   const [loginState, setLoginState] = useState(states.login);
+  useEffect(() => {
+    document.addEventListener("keyup", handleKeyPress);
+    return () => {
+      document.removeEventListener("keyup", handleKeyPress);
+    };
+  });
+  const handleKeyPress = (event) => {
+    if (event.key == "Enter") {
+      login();
+    }
+  };
   if (loginState === states.login) {
     // Login page
     return (

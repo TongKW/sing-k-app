@@ -125,29 +125,61 @@ function MessageArea(props) {
   }, [props.commentList]);
   return (
     <Box
+      className="py-4 px-2 scrollbar"
       sx={{
         height: "85%",
-        "overflow-y": "scroll",
-        overflow: "auto",
+        "overflow-y": "auto",
+        "overflow-x": "hidden",
       }}
       ref={messageArea}
     >
-      {props.commentList.map((comment, index) => (
-        <Comment
-          key={index}
-          userName={comment.userName}
-          time={comment.time}
-          text={comment.text}
-        />
-      ))}
+      {props.commentList.map((comment, index) => {
+        if (comment.isSystem) return <SystemMessage text={comment.text} />;
+        else
+          return (
+            <UserComment
+              key={index}
+              userName={comment.userName}
+              time={comment.time}
+              text={comment.text}
+            />
+          );
+      })}
     </Box>
   );
 }
 
-function Comment(props) {
+function SystemMessage(props) {
+  return (
+    <Box
+      className="my-1"
+      sx={{
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItem: "center",
+        width: "100%",
+      }}
+    >
+      <div
+        style={{
+          background: "rgba(127,127,127,0.5)",
+          borderRadius: "50px",
+          padding: "2px 5px 2px 5px",
+          color: "rgba(127,127,127)",
+        }}
+      >
+        {props.text}
+      </div>
+    </Box>
+  );
+}
+
+function UserComment(props) {
   const time = new Date(props.time);
   return (
     <Box
+      className="my-1"
       sx={{
         display: "flex",
         flexDirection: "row",
@@ -155,22 +187,24 @@ function Comment(props) {
       }}
     >
       <Box
+        className="mr-2"
         sx={{
           display: "flex",
           flexDirection: "column",
           justifyContent: "flex-start",
-          width: "10%",
+          alignItem: "flex-start",
         }}
       >
         <div>[{formatTime(time)}]</div>
       </Box>
 
       <Box
+        className="mr-2"
         sx={{
           display: "flex",
           flexDirection: "column",
           justifyContent: "flex-start",
-          width: "10%",
+          alignItem: "flex-start",
         }}
       >
         <EllipsisText text={props.userName + ": "} length={"25"} />
@@ -183,7 +217,7 @@ function Comment(props) {
           justifyContent: "flex-start",
         }}
       >
-        <p>{props.text}</p>
+        <p style={{ "overflow-wrap": "anywhere" }}>{props.text}</p>
       </Box>
     </Box>
   );
