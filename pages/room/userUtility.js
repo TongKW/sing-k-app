@@ -265,15 +265,9 @@ function InputArea(props) {
           }}
         />
         {modalOpen && (
-          <div
-            className="modal fade"
-            tabIndex="-1"
-            role="dialog"
-            aria-labelledby="exampleModalLabel"
-            aria-hidden="true"
-          >
+          <Box sx={{position: "absolute", bottom: "10%", right: {xs: "10%", md: "15%"}}}>
             <Picker onEmojiClick={onEmojiClick} />
-          </div>
+          </Box>
         )}
         <Icon
           icon="/images/right-arrow.png"
