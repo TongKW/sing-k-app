@@ -59,7 +59,7 @@ const UserAvatar = styled(Avatar, {
 
 function CreateRoomButton() {
 	const [ open, setOpen ] = useState(false);
-  const router = useRouter()
+  	const router = useRouter()
 
 	const handleClickOpen = () => {
 		setOpen(true);
@@ -83,33 +83,34 @@ function CreateRoomButton() {
 		>
 			<font size="3">Create room</font>
 		</button>
-    <Dialog open={open} onClose={handleClose}>
-      <DialogTitle>Choose Type: </DialogTitle>
-      <DialogContent>
-        <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-around'}}>
-          <button
-            className="w-30 h-20 bg-sky-500 hover:bg-sky-600 text-white py-2 px-4 mx-5 text-xs rounded focus:outline-none focus:shadow-outline"
-            type="button" onClick={createRoom}
-          >
-            <font size="3">Stream room</font>
-          </button>
-          <button
-            className="w-30 h-20 bg-sky-500 hover:bg-sky-600 text-white py-2 px-4 mx-5 text-xs rounded focus:outline-none focus:shadow-outline"
-            type="button" onClick={createRoom}
-          >
-            <font size="3">Private room</font>
-          </button>
-        </Box>
-      </DialogContent>
-    </Dialog>
+		<Dialog open={open} onClose={handleClose}>
+			<DialogTitle>Choose Type: </DialogTitle>
+			<DialogContent>
+				<Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-around'}}>
+				<button
+					className="w-30 h-20 bg-sky-500 hover:bg-sky-600 text-white py-2 px-4 mx-5 text-xs rounded focus:outline-none focus:shadow-outline"
+					type="button" onClick={createRoom}
+				>
+					<font size="3">Stream room</font>
+				</button>
+				<button
+					className="w-30 h-20 bg-sky-500 hover:bg-sky-600 text-white py-2 px-4 mx-5 text-xs rounded focus:outline-none focus:shadow-outline"
+					type="button" onClick={createRoom}
+				>
+					<font size="3">Private room</font>
+				</button>
+				</Box>
+			</DialogContent>
+		</Dialog>
     </>
 	);
 }
 
 function JoinRoomButton() {
 	const [ open, setOpen ] = useState(false);
-  const [roomid, setRoomid] = useState();
-  const [roomidError, setRoomidError] = useState();
+  	const [roomid, setRoomid] = useState();
+  	const [roomidError, setRoomidError] = useState();
+	const router = useRouter()
 
 	const handleClickOpen = () => {
 		setOpen(true);
@@ -119,30 +120,35 @@ function JoinRoomButton() {
 		setOpen(false);
 	};
 
+	const joinRoom = async () => {
+		//TODO: check if the room id exists
+		router.push('/room/'+roomid);
+	};
+
 	return (
     <>
 		<button
-      className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 mx-10 text-xs rounded focus:outline-none focus:shadow-outline"
-      type="button" onClick={handleClickOpen}
-    >
-      <font size="3">Join room</font>
-    </button>
-    <Dialog open={open} onClose={handleClose}>
-      <DialogTitle>Enter Room ID: </DialogTitle>
-      <DialogContent>
-        <form>
-          <FormInputBlock category="Room ID" value={roomid} onChange={setRoomid} warning={roomidError} />
-          <Box sx={{display: 'flex', flexDirection: 'row-reverse'}}>
-            <button 
-              className="bg-indigo-700 hover:bg-indigo-800 text-white py-2 px-4 text-xs rounded focus:outline-none focus:shadow-outline" 
-              type="button"
-            >
-            Confirm 
-            </button>
-          </Box>
-        </form>
-      </DialogContent>
-    </Dialog>
+      		className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 mx-10 text-xs rounded focus:outline-none focus:shadow-outline"
+      		type="button" onClick={handleClickOpen}
+    	>
+			<font size="3">Join room</font>
+		</button>
+		<Dialog open={open} onClose={handleClose}>
+			<DialogTitle>Enter Room ID: </DialogTitle>
+			<DialogContent>
+				<form>
+					<FormInputBlock category="Room ID" value={roomid} onChange={setRoomid} warning={roomidError} />
+					<Box sx={{display: 'flex', flexDirection: 'row-reverse'}}>
+						<button 
+						className="bg-indigo-700 hover:bg-indigo-800 text-white py-2 px-4 text-xs rounded focus:outline-none focus:shadow-outline" 
+						type="button" onClick={joinRoom}
+						>
+						Confirm 
+						</button>
+					</Box>
+				</form>
+			</DialogContent>
+		</Dialog>
     </>
 	);
 }
