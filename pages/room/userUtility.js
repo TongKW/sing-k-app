@@ -265,7 +265,13 @@ function InputArea(props) {
           }}
         />
         {modalOpen && (
-          <Box sx={{position: "absolute", bottom: "10%", right: {xs: "10%", md: "15%"}}}>
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: "10%",
+              right: { xs: "10%", md: "15%" },
+            }}
+          >
             <Picker onEmojiClick={onEmojiClick} />
           </Box>
         )}
@@ -302,6 +308,7 @@ function InputBox(props) {
       onChange={props.onChange}
       type="textarea"
       className="
+            hidden-scrollbar
             form-control
             block
             w-full
@@ -321,7 +328,6 @@ function InputBox(props) {
       placeholder="Type something..."
       style={{
         "overflow-y": "scroll",
-        overflow: "hidden",
         color: "black",
         height: "80%",
         width: "80%",
