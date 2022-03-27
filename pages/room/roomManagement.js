@@ -1,19 +1,8 @@
-import { React, useState } from "react";
-import Button from "../../component/elements/button";
+import { React } from "react";
 import Icon from "../../component/elements/Icon";
 import { styled } from "@mui/material/styles";
-import {
-  Box,
-  Badge,
-  Avatar,
-  LinearProgress,
-  Typography,
-  IconButton,
-} from "@mui/material";
+import { Box, Avatar } from "@mui/material";
 import { userDataBase } from "./mockup";
-import { connectFirestoreEmulator } from "firebase/firestore";
-import Image from "next/image";
-import MicIcon from "@mui/icons-material/Mic";
 
 const UserAvatar = styled(Avatar, {
   shouldForwardProp: (prop) => ["src"].includes(prop),

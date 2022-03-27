@@ -20,23 +20,9 @@ import sleep from "../../utils/sleep";
 import RoomMangementPanel from "./roomManagement";
 import UserUtilityPanel from "./userUtility";
 import SongManagementPanel from "./songManagement";
+import { otherParticipantsInfo, songInfo, commentInfo } from "./mockup";
 
 
-
-const otherParticipantsInfo = {
-  "621635d92eecb0a4b18574e4": { isMuted: false },
-  "62166ad3d7f58646d5114865": { isMuted: false },
-  "6219f8e0e125e5022f3ea0b6": { isMuted: false },
-  "6229aaa2d4b8504f1e3bf9a6": { isMuted: true },
-  "6220d4e21ca3fb25423ac18f": { isMuted: false },
-};
-
-const songInfo = [
-  "senbonsakura.mp3",
-  "ddu-du ddu-du.flac",
-  "gunjou.mp3",
-  "Jiyuu no Daishou.flac",
-];
 
 export default function Room() {
   // Routing parameter
@@ -51,6 +37,8 @@ export default function Room() {
   let peerConnections = useRef({});
   // Existing users global variables
   let existingUsers = useRef([]);
+
+  let userInput = useRef(null);
 
   // Only reload when users enter/leave
   const [value, setValue] = useState(0);  
@@ -69,8 +57,10 @@ export default function Room() {
   const [currentRoomType, setCurrentRoomType] = useState("private");
   const [isRoomCreator, setIsRoomCreator] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
+  const [echo, setEcho] = useState(50);
+  const [volume, setVolume] = useState(50);
   const [otherUsersList, setOtherUsersList] = useState(otherParticipantsInfo);
-
+  const [commentList, setCommentList] = useState(commentInfo);
   const [allSongList, setAllSongList] = useState(songInfo);
 
   // Initialize Firebase
@@ -109,6 +99,24 @@ export default function Room() {
     setAllSongList(newAllSongList);
   };
 
+  const handleEcho = (event) => {
+    setEcho(event.target.value);
+  };
+
+  const handleVolume = (event) => {
+    setVolume(event.target.value);
+  };
+
+  const handleAddComment = (commentText) => {
+    console.log(JSON.stringify(commentText));
+    const newComment = {
+      userName: localStorage.getItem("username"),
+      time: Date(),
+      text: commentText,
+    };
+    const newCommentList = [...commentList, newComment];
+    setCommentList(newCommentList);
+  };
   function handleMoveSong(prevIndex, currentIndex) {
     //swap the two elements inside a list based on prevIndex and currentIndex
     if (currentIndex === allSongList.length) return;
@@ -459,12 +467,17 @@ export default function Room() {
                 handleMuteUnmute={handleMuteUnmute}
               />
             </Box>
-            <Box sx={{ width: "54%" }}></Box>
-            {/* <UserUtilityPanel
-          isRoomCreator={isRoomCreator}
-          otherUsersList={otherUsersList}
-          isMuted={isMuted}
-        /> */}
+            <Box sx={{ background: "red", width: "54%" }}>
+              <UserUtilityPanel
+                isMuted={isMuted}
+                echo={echo}
+                volume={volume}
+                handleEcho={handleEcho}
+                handleVolume={handleVolume}
+                commentList={commentList}
+                handleAddComment={handleAddComment}
+              />
+            </Box>
             <Box sx={{ width: "23%" }}>
               <SongManagementPanel
                 allSongList={allSongList}
