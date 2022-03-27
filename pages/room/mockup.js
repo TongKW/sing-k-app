@@ -13,7 +13,14 @@ export const songInfo = [
   "Jiyuu no Daishou.flac",
 ];
 
-export const commentInfo = [];
+export const commentInfo = [
+  {
+    userName: "",
+    time: Date(),
+    text: `polar_bear have entered the room`,
+    isSystem: true,
+  },
+];
 
 export const userDataBase = {
   "6213dccf56d081552f54351b": {
