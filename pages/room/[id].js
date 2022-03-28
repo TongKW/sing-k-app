@@ -17,10 +17,7 @@ import { firebaseConfig } from '../../firebase/config';
 import Button from '../../component/elements/button';
 import sleep from '../../utils/sleep';
 
-// Peer connection global variables
-var peerConnections = {};
-// Existing users global variables
-var existingUsers = [];
+
 
 export default function Room() {
   // Routing parameter
@@ -31,9 +28,13 @@ export default function Room() {
   let localStream = useRef(null);
   let callbackStream = useRef(null);
   let pendingICEcandidates = useRef({});
+  // Peer connection global variables
+  let peerConnections = useRef({});
+  // Existing users global variables
+  let existingUsers = useRef([]);
 
   // Only reload when users enter/leave
-  const [load, reload] = useState(Date.now());  
+  const [value, setValue] = useState(0);  
 
   // Initialization indicates
   const [initialized, setInitialized] = useState(false);
@@ -48,7 +49,7 @@ export default function Room() {
 
   //--test--
   console.log('Peer connection:');
-  console.log(peerConnections)
+  console.log(peerConnections.current)
   //--test--
   
   // Get response of user info and display from local storage
@@ -112,7 +113,7 @@ export default function Room() {
       
       allUserSnapshot.forEach(async (docSnapshot) => {
         if (docSnapshot.id !== userId) {
-          existingUsers.push(docSnapshot.id);
+          existingUsers.current.push(docSnapshot.id);
           const newUserId = docSnapshot.id;
           // Create one WebRTC Peer Connection and update Firestore for every other user
           await initPeerConnection(newUserId);
@@ -143,23 +144,26 @@ export default function Room() {
           if (fromRTCoffer) {
             console.log("PROCESS 1.5")
 
-            if (peerConnections[newUserId].pc.remoteDescription === null) {
+            if (peerConnections.current[newUserId].pc.remoteDescription === null) {
               console.log(`Current remote desc:`)
-              console.log(peerConnections[newUserId].pc.remoteDescription)
+              console.log(peerConnections.current[newUserId].pc.remoteDescription)
               // If created the connection first and got answer back:
               // 1. if pc.currentRemote is null => setRemote
-              if (existingUsers.includes(newUserId)) {
+              if (existingUsers.current.includes(newUserId)) {
                 console.log("PROCESS 2")
                 const desc = new RTCSessionDescription(fromRTCoffer);
-                await peerConnections[newUserId].pc.setRemoteDescription(desc);
-                console.log(`[system] ${newUserId} joined the room.`);
-                console.log(peerConnections);
+
+                await peerConnections.current[newUserId].pc.setRemoteDescription(desc)
+
+                //console.log(`[system] ${newUserId} joined the room.`);
+                console.log(peerConnections.current);
+                
               }
               // If other created the connection first:
               // 1. setRemote
               // 2. createOffer
               // 3. setLocal
-              if (!(existingUsers.includes(newUserId))) {
+              if (!(existingUsers.current.includes(newUserId))) {
                 console.log("PROCESS 3")
                 await connectNewUser(newUserId, fromRTCoffer);
               }
@@ -174,11 +178,11 @@ export default function Room() {
             */
             
             // Force rerender on the UI
-            reload();
+            setValue(value => value + 1);;
           }
 
           if (fromICEcandidate) {
-            if (peerConnections[newUserId].pc.remoteDescription) {
+            if (peerConnections.current[newUserId].pc.remoteDescription) {
               try {
                 await addICEcandidate(newUserId, fromICEcandidate);
               } catch (error) {
@@ -201,19 +205,19 @@ export default function Room() {
           const leftUserId = newUserDoc.id;
           if (leftUserId === userId) return;
           await deleteDoc(doc(db, `rooms/${roomId}/RTCinfo/${userId}/callees/${leftUserId}`));
-          // Remove user from existingUsers
-          if (existingUsers.includes(leftUserId)) {
-            const index = existingUsers.indexOf(leftUserId);
-            existingUsers.splice(index, 1);
+          // Remove user from existingUsers.current
+          if (existingUsers.current.includes(leftUserId)) {
+            const index = existingUsers.current.indexOf(leftUserId);
+            existingUsers.current.splice(index, 1);
           }
           // Close WebRTC connection
-          peerConnections[leftUserId].pc.close();
+          peerConnections.current[leftUserId].pc.close();
           // delete user info
-          delete peerConnections[leftUserId];
+          delete peerConnections.current[leftUserId];
 
           console.log(`[system] ${leftUserId} left the room.`);
           // Force rerender on the UI
-          reload();
+          setValue(value => value + 1);;
         }
       });
     });
@@ -226,27 +230,26 @@ export default function Room() {
     async function initPeerConnection(userId) {
       console.log(`COUNT: initPeerConnection() is called on ${userId}`);
       // If peer Connection has been created before, return
-      if (peerConnections.hasOwnProperty(userId)) return;
+      if (peerConnections.current.hasOwnProperty(userId)) return;
       
       // Initialize and store new Peer Connection
       createNewPeerConnection(userId)
   
-      
   
       // Create offer descript and set to local
-      const description = await peerConnections[userId].pc.createOffer();
+      const description = await peerConnections.current[userId].pc.createOffer();
       const RTCoffer = {
         sdp: description.sdp,
         type: description.type,
       };
-      await peerConnections[userId].pc.setLocalDescription(description);
+      await peerConnections.current[userId].pc.setLocalDescription(description);
       console.log('Peer Connection after setLocalDescription');
-      console.log(peerConnections);
-      console.log(peerConnections[userId].pc);
+      console.log(peerConnections.current);
+      console.log(peerConnections.current[userId].pc);
 
       await sleep(2000);
       await updateConnectionData(userId, { RTCoffer: RTCoffer });
-      //const localDesc = peerConnections[userId].pc.localDescription;
+      //const localDesc = peerConnections.current[userId].pc.localDescription;
 
       // Create firestore document for new user to connect to you
       await createNewUserFirestore();
@@ -269,44 +272,49 @@ export default function Room() {
     async function connectNewUser(newUserId, remoteRTCoffer) {
       createNewPeerConnection(newUserId);
       const desc = new RTCSessionDescription(remoteRTCoffer);
-      await peerConnections[newUserId].pc.setRemoteDescription(desc);
-      const localRTCoffer = await peerConnections[newUserId].pc.createAnswer();
-      await peerConnections[newUserId].pc.setLocalDescription(localRTCoffer);
+      await peerConnections.current[newUserId].pc.setRemoteDescription(desc);
+      const localRTCoffer = await peerConnections.current[newUserId].pc.createAnswer();
+      await peerConnections.current[newUserId].pc.setLocalDescription(localRTCoffer);
       const offer = {
         type: localRTCoffer.type,
         sdp: localRTCoffer.sdp,
       };
       await updateConnectionData(newUserId, { RTCoffer: offer });
-      console.log(`[system] ${newUserId} joined the room.`);
-      console.log(peerConnections);
+      //console.log(`[system] ${newUserId} joined the room.`);
+      console.log(peerConnections.current);
     }
 
     function createNewPeerConnection(userId) {
-      if (peerConnections.hasOwnProperty(userId)) return;
-      peerConnections[userId] = {}
-      peerConnections[userId].pc = new RTCPeerConnection(servers);
+      if (peerConnections.current.hasOwnProperty(userId)) return;
+      peerConnections.current[userId] = {}
+      peerConnections.current[userId].pc = new RTCPeerConnection(servers);
       // Push tracks from local stream to peer connection
       localStream.current.getTracks().forEach((track) => {
         console.log(`Pushing track ... ${(new Date()).getTime()}`)
         console.log(track)
-        peerConnections[userId].pc.addTrack(track, localStream.current);
+        peerConnections.current[userId].pc.addTrack(track, localStream.current);
       });
 
-      peerConnections[userId].audioStream = new MediaStream();
-      peerConnections[userId].pc.ontrack = (event) => {
+      peerConnections.current[userId].audioStream = new MediaStream();
+      peerConnections.current[userId].pc.ontrack = (event) => {
         console.log(`Getting track ... ${(new Date()).getTime()}`)
         event.streams[0].getTracks().forEach((track) => {
-          peerConnections[userId].audioStream.addTrack(track);
+          peerConnections.current[userId].audioStream.addTrack(track);
         });
       };
 
       // Listen for any IceCandidate update and write to Firestore
-      peerConnections[userId].pc.onicecandidate = (event) => {
+      peerConnections.current[userId].pc.onicecandidate = (event) => {
         event.candidate && updateConnectionData(userId, {
           ICEcandidate: event.candidate.toJSON()
         });
       };
-      peerConnections[userId].mute = false;
+      peerConnections.current[userId].mute = false;
+
+      // Event listener for creating receive channel
+      peerConnections.current[userId].pc.ondatachannel = (event) => { receiveChannelCallback(event, userId) };
+      // Create send channel for chat text transmission
+      createChannel(userId);
     }
 
     async function handleICEqueue(userId) {
@@ -318,18 +326,30 @@ export default function Room() {
 
     function hasStableConnection(userId) {
       console.log('Connection Status:')
-      console.log(`has pc         : ${peerConnections.hasOwnProperty(userId)}`);
-      if (peerConnections.hasOwnProperty(userId)) {
-        console.log(`connectionState: ${peerConnections[userId].pc.connectionState}`)
-        console.log(`signalingState : ${peerConnections[userId].pc.signalingState}`)
+      console.log(`has pc         : ${peerConnections.current.hasOwnProperty(userId)}`);
+      if (peerConnections.current.hasOwnProperty(userId)) {
+        console.log(`connectionState: ${peerConnections.current[userId].pc.connectionState}`)
+        console.log(`signalingState : ${peerConnections.current[userId].pc.signalingState}`)
       }
       
-      if (!peerConnections.hasOwnProperty(userId)) return false;
-      if (peerConnections[userId].pc.signalingState !== "stable") return false;
+      if (!peerConnections.current.hasOwnProperty(userId)) return false;
+      if (peerConnections.current[userId].pc.signalingState !== "stable") return false;
       return true;
     }
 
-  }, [roomId, userId, initialized]);
+    // Channel is for chat text transmission
+    function createChannel(userId) {
+      console.log('create data Channel')
+      if (peerConnections.current[userId].hasOwnProperty('sendChannel')) return;
+      peerConnections.current[userId].sendChannel = peerConnections.current[userId].pc.createDataChannel("chat");
+    }
+
+    function receiveChannelCallback(event, userId) {
+      peerConnections.current[userId].receiveChannel = event.channel;
+      peerConnections.current[userId].receiveChannel.onmessage = handleReceiveMessage;
+    }
+
+  }, [roomId, userId, initialized, username]);
   
 
   
@@ -346,7 +366,7 @@ export default function Room() {
       <div className="flex-1 p-10 text-2xl font-bold">
         Room id: {roomId}
       </div>
-      {Object.keys(peerConnections).map(userId => (
+      {Object.keys(peerConnections.current).map(userId => (
         <span key={userId}>
           <h3>{userId}</h3>
           <video id={userId} autoPlay playsInline></video>
@@ -365,18 +385,24 @@ export default function Room() {
       <div onClick={leave}>
         <Button text="Leave"/>
       </div>
+      <div onClick={() => {sendMsgAll({
+        user: username,
+        message: 'Hello all.'
+      })}}>
+        <Button text="SendMsg"/>
+      </div>
       
     </HomePage>
   );
 
   function connectAudio() {
     console.log("connecting Audio")
-    Object.keys(peerConnections).map(userId => {
+    Object.keys(peerConnections.current).map(userId => {
       const remoteAudio = document.getElementById(userId);
       console.log(`remoteAudio of ${userId}`)
       console.log(remoteAudio)
       console.log()
-      remoteAudio.srcObject = peerConnections[userId].audioStream;
+      remoteAudio.srcObject = peerConnections.current[userId].audioStream;
     })
     const callbackAudio = document.getElementById("callbackAudio");
     callbackAudio.srcObject = callbackStream.current;
@@ -384,7 +410,7 @@ export default function Room() {
 
   function disconnectAudio() {
     console.log("Disconnecting Audio")
-    Object.keys(peerConnections).map(userId => {
+    Object.keys(peerConnections.current).map(userId => {
       const remoteAudio = document.getElementById(userId);
       remoteAudio.srcObject = null;
     })
@@ -412,10 +438,16 @@ export default function Room() {
       });
     }
     
+    // close all peer connections
+    Object.keys(peerConnections.current).map(userId => {
+      peerConnections.current[userId].pc.close();
+      peerConnections.current[userId].sendChannel.close();
+      peerConnections.current[userId].receiveChannel.close();
+    });
 
     // Clear data
-    peerConnections = {};
-    existingUsers = [];
+    peerConnections.current = {};
+    existingUsers.current = [];
     localStream.current = null;
     callbackStream.current = null;
     pendingICEcandidates.current = {};
@@ -434,7 +466,27 @@ export default function Room() {
 
   async function addICEcandidate(newUserId, ICEcandidate) {
     const candidate = new RTCIceCandidate(ICEcandidate);
-    await peerConnections[newUserId].pc.addIceCandidate(candidate);
+    await peerConnections.current[newUserId].pc.addIceCandidate(candidate);
+  }
+
+  function sendMsgAll(obj) {
+    Object.keys(peerConnections.current).map(userId => {
+      console.log(peerConnections.current[userId].sendChannel.readyState)
+      if (peerConnections.current[userId].sendChannel.readyState === 'open') {
+        //console.log(`sending to channel:`)
+        //console.log(peerConnections.current[userId].channel)
+        //console.log(`sending message:`)
+        //console.log(JSON.stringify(obj))
+        peerConnections.current[userId].sendChannel.send(JSON.stringify(obj));
+      }
+    });
+  }
+
+  function handleReceiveMessage(event) {
+    let data = JSON.parse(event.data);
+    let user = data.user;
+    let message = data.message
+    console.log(`${user}: ${message}`);
   }
 }
 
