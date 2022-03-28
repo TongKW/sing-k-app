@@ -368,7 +368,6 @@ export default function Room() {
   if (!initialized)
     return (
       <>
-        <HomePage>
           <Box
             className="hide-scrollbar"
             style={{
@@ -413,12 +412,10 @@ export default function Room() {
               />
             </Box>
           </Box>
-        </HomePage>
       </>
     );
   return (
     <>
-      <HomePage>
         <div style={{ display: "none" }}>
           <div className="flex-1 p-10 text-2xl font-bold">
             Room id: {roomId}
@@ -443,7 +440,6 @@ export default function Room() {
             <Button text="Leave" />
           </div>
         </div>
-      </HomePage>
       <div
         className="flex-1 p-10 text-2xl font-bold"
         style={{ width: "100%", height: "900px" }}
