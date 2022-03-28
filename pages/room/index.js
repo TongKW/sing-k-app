@@ -447,7 +447,6 @@ export default function Room() {
   if (!initialized)
     return (
       <>
-        <HomePage>
           <Box
             className="hide-scrollbar"
             style={{
@@ -492,7 +491,6 @@ export default function Room() {
               />
             </Box>
           </Box>
-        </HomePage>
       </>
     );
   return (
