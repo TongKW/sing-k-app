@@ -19,3 +19,25 @@ a {
 * {
   box-sizing: border-box;
 }
+
+.scrollbar::-webkit-scrollbar {
+  width: 10px;
+  border-radius: 100vh;
+  background-color: #f2f2f7;
+}
+
+.scrollbar::-webkit-scrollbar-track {
+  border-radius: 100vh;
+  -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  background-color: #f2f2f7;
+}
+
+.scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 100vh;
+  -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  background-color: #b0b0b8;
+}
+
+.hidden-scrollbar::-webkit-scrollbar {
+  display: none;
+}
