@@ -48,7 +48,6 @@ function OtherUserList(props) {
       style={{ background: "#ccc", height: "90%", overflowY: "auto" }}
     >
       {props.otherUsersList ? Object.keys(props.otherUsersList).map((userId, index) => {
-        //TODO: get user data from userId
 
         const username = userDataBase[userId].username;
         const userAvatar = userDataBase[userId].avatar;
