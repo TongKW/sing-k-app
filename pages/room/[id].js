@@ -31,7 +31,6 @@ export default function Room() {
 
   // WebRTC info and Stream parameters for the next newcomer
   let localStream = useRef(null);
-  let callbackStream = useRef(null);
   let pendingICEcandidates = useRef({});
   // Peer connection global variables
   let peerConnections = useRef({});
@@ -60,7 +59,7 @@ export default function Room() {
   const [echo, setEcho] = useState(50);
   const [volume, setVolume] = useState(50);
   const [otherUsersList, setOtherUsersList] = useState(otherParticipantsInfo);
-  const [commentList, setCommentList] = useState(commentInfo);
+  const [commentList, setCommentList] = useState([]);
   const [allSongList, setAllSongList] = useState(songInfo);
 
   // Initialize Firebase
@@ -109,14 +108,22 @@ export default function Room() {
 
   const handleAddComment = (commentText) => {
     const newComment = {
-      userName: localStorage.getItem("username"),
+      username: localStorage.getItem("username"),
       time: Date(),
       text: commentText,
       isSystem: false,
     };
     const newCommentList = [...commentList, newComment];
+    // Send the chat message to other users
+    sendMsgAll({
+      username: username,
+      type: 'chat',
+      message: commentText
+    });
+    // update own message to UI
     setCommentList(newCommentList);
   };
+
   function handleMoveSong(prevIndex, currentIndex) {
     //swap the two elements inside a list based on prevIndex and currentIndex
     if (currentIndex === allSongList.length) return;
@@ -186,8 +193,7 @@ export default function Room() {
       setInitialized(true);
 
       // Setup audio
-      localStream.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      callbackStream.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      localStream.current = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
 
       // Get Firebase
       const roomDoc = doc(db, "rooms", roomId);
@@ -210,6 +216,19 @@ export default function Room() {
 
       // Write Firebase to update offer
       await createNewUserFirestore();
+
+      // Send user info to other users
+      sendMsgAll({
+        username: username,
+        type: 'system',
+        message: `${username} has joined the room.`
+      });
+      sendMsgAll({
+        type: 'setUser',
+        username: username,
+        userId: userId,
+        avatar: avatar,
+      });
     }
 
     // Listen for any joined user
@@ -242,7 +261,7 @@ export default function Room() {
                 const desc = new RTCSessionDescription(fromRTCoffer);
 
                 await peerConnections.current[newUserId].pc.setRemoteDescription(desc)
-
+                
                 //console.log(`[system] ${newUserId} joined the room.`);
                 console.log(peerConnections.current);
                 
@@ -254,6 +273,19 @@ export default function Room() {
               if (!(existingUsers.current.includes(newUserId))) {
                 console.log("PROCESS 3")
                 await connectNewUser(newUserId, fromRTCoffer);
+
+                // Send user info to other users
+                sendMsgAll({
+                  username: username,
+                  type: 'system',
+                  message: `${username} has joined the room.`
+                });
+                sendMsgAll({
+                  username: username,
+                  type: 'setUser',
+                  userId: userId,
+                  avatar: avatar,
+                });
               }
             }
             // Add all pending ICE candidates
@@ -266,7 +298,7 @@ export default function Room() {
             */
             
             // Force rerender on the UI
-            setValue(value => value + 1);;
+            //setValue(value => value + 1);;
           }
 
           if (fromICEcandidate) {
@@ -300,10 +332,20 @@ export default function Room() {
           }
           // Close WebRTC connection
           peerConnections.current[leftUserId].pc.close();
+
+          // Update leaving message
+          const newComment = {
+            username: peerConnections.current[leftUserId].username,
+            time: Date(),
+            text: `${peerConnections.current[leftUserId].username} has left the room.`,
+            isSystem: true,
+          };
+          const newCommentList = [...commentList, newComment];
+          setCommentList(newCommentList);
+
           // delete user info
           delete peerConnections.current[leftUserId];
-
-          console.log(`[system] ${leftUserId} left the room.`);
+          
           // Force rerender on the UI
           setValue(value => value + 1);;
         }
@@ -546,8 +588,6 @@ export default function Room() {
       const remoteAudio = document.getElementById(userId);
       remoteAudio.srcObject = null;
     });
-    const callbackAudio = document.getElementById("callbackAudio");
-    callbackAudio.srcObject = null;
   }
 
   async function leave() {
@@ -581,7 +621,6 @@ export default function Room() {
     peerConnections.current = {};
     existingUsers.current = [];
     localStream.current = null;
-    callbackStream.current = null;
     pendingICEcandidates.current = {};
     setInitialized(false);
     
@@ -608,20 +647,43 @@ export default function Room() {
     Object.keys(peerConnections.current).map(userId => {
       console.log(peerConnections.current[userId].sendChannel.readyState)
       if (peerConnections.current[userId].sendChannel.readyState === 'open') {
-        //console.log(`sending to channel:`)
-        //console.log(peerConnections.current[userId].channel)
-        //console.log(`sending message:`)
-        //console.log(JSON.stringify(obj))
         peerConnections.current[userId].sendChannel.send(JSON.stringify(obj));
       }
     });
   }
 
   function handleReceiveMessage(event) {
-    let data = JSON.parse(event.data);
-    let user = data.user;
-    let message = data.message
-    console.log(`${user}: ${message}`);
+    const data = JSON.parse(event.data);
+    const username = data.username;
+    const message = data.message;
+    const type = data.type;
+    // console.log(`${user}: ${message}`);
+    // If message is chat, update in comment list
+    if (type === 'chat') {
+      const newComment = {
+        username: username,
+        time: Date(),
+        text: message,
+        isSystem: false,
+      };
+      const newCommentList = [...commentList, newComment];
+      setCommentList(newCommentList);
+    } else if (type === 'system') {
+      const newComment = {
+        username: localStorage.getItem("username"),
+        time: Date(),
+        text: commentText,
+        isSystem: true,
+      };
+      const newCommentList = [...commentList, newComment];
+      setCommentList(newCommentList);
+    } else if (type === 'setUser') {
+      const avatar = data.avatar;
+      peerConnections.current[userId].username = username;
+      peerConnections.current[userId].avatar = avatar;
+      // Force rerender on the UI
+      setValue(value => value + 1);;
+    }
   }
 }
 
