@@ -4,11 +4,17 @@ import Icon from "../../component/elements/Icon";
 import EllipsisText from "react-ellipsis-text";
 
 export default function SongManagementPanel(props) {
+  const songInfo = [
+    "senbonsakura.mp3",
+    "ddu-du ddu-du.flac",
+    "gunjou.mp3",
+    "Jiyuu no Daishou.flac",
+  ];
   return (
     <Box sx={{ height: "100%" }}>
       <Box sx={{ height: "5%" }}></Box>
       <SongListPanel
-        allSongList={props.allSongList}
+        allSongList={songInfo}
         currentRoomType={props.currentRoomType}
         isRoomCreator={props.isRoomCreator}
         handleMoveSong={props.handleMoveSong}
