@@ -92,7 +92,7 @@ function Song(props) {
         justifyContent: "space-between",
       }}
     >
-      <EllipsisText text={props.songName} length={"25"} />
+      <EllipsisText text={props.songName} length={25} />
       <Box
         sx={{
           display: "flex",
