@@ -1,5 +1,4 @@
-import * as fb from '../../../firebase/firebase_connect.js';
-import {createRoom, delRoom, getPublicRoomList} from "../../../firebase/firebase_connect.js";
+import * as fb from '../../../../firebase/firebase_connect.js';
 
 export default async function handler(req, res){
     if (req.method === "GET") {
