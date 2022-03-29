@@ -134,7 +134,8 @@ function MessageArea(props) {
       ref={messageArea}
     >
       {props.commentList.map((comment, index) => {
-        if (comment.isSystem) return <SystemMessage text={comment.text} />;
+        if (comment.isSystem)
+          return <SystemMessage key={index} text={comment.text} />;
         else
           return (
             <UserComment
@@ -217,7 +218,7 @@ function UserComment(props) {
           justifyContent: "flex-start",
         }}
       >
-        <p style={{ "overflowWrap": "anywhere" }}>{props.text}</p>
+        <p style={{ overflowWrap: "anywhere" }}>{props.text}</p>
       </Box>
     </Box>
   );
