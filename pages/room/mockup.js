@@ -15,7 +15,7 @@ export const songInfo = [
 
 export const commentInfo = [
   {
-    userName: "",
+    username: "",
     time: Date(),
     text: `polar_bear have entered the room`,
     isSystem: true,

@@ -59,7 +59,7 @@ function OtherUserList(props) {
         return (
           <User
             key={index}
-            userName={username}
+            username={username}
             userAvatar={userAvatar}
             otherIsMuted={otherIsMuted}
             isRoomCreator={isRoomCreator}
@@ -80,7 +80,7 @@ function User(props) {
         justifyContent: "space-between",
       }}
     >
-      <UserData userAvatar={props.userAvatar} userName={props.userName} />
+      <UserData userAvatar={props.userAvatar} username={props.username} />
       <Box
         sx={{
           display: "flex",
@@ -109,7 +109,7 @@ function UserData(props) {
       }}
     >
       <UserAvatar src={props.userAvatar} mx="auto" />
-      <h1>{props.userName}</h1>
+      <h1>{props.username}</h1>
     </Box>
   );
 }
