@@ -47,7 +47,7 @@ function OtherUserList(props) {
       className="scrollbar"
       style={{ background: "#ccc", height: "90%", overflowY: "auto" }}
     >
-      {Object.keys(props.otherUsersList).map((userId, index) => {
+      {props.otherUsersList ? Object.keys(props.otherUsersList).map((userId, index) => {
         //TODO: get user data from userId
 
         const username = userDataBase[userId].username;
@@ -66,7 +66,7 @@ function OtherUserList(props) {
             currentRoomType={currentRoomType}
           />
         );
-      })}
+      }) : <div/>}
     </div>
   );
 }
