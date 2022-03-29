@@ -22,8 +22,6 @@ import UserUtilityPanel from "./userUtility";
 import SongManagementPanel from "./songManagement";
 import { otherParticipantsInfo, songInfo, commentInfo } from "./mockup";
 
-
-
 export default function Room() {
   // Routing parameter
   const router = useRouter();
@@ -40,7 +38,7 @@ export default function Room() {
   let userInput = useRef(null);
 
   // Only reload when users enter/leave
-  const [value, setValue] = useState(0);  
+  const [value, setValue] = useState(0);
 
   // Initialization indicates
   const [initialized, setInitialized] = useState(false);
@@ -59,15 +57,15 @@ export default function Room() {
   const [echo, setEcho] = useState(50);
   const [volume, setVolume] = useState(50);
   const [otherUsersList, setOtherUsersList] = useState(otherParticipantsInfo);
-  const [commentList, setCommentList] = useState([]);
+  const [commentList, setCommentList] = useState(commentInfo);
   const [allSongList, setAllSongList] = useState(songInfo);
 
   // Initialize Firebase
   const app = firebase.initializeApp(firebaseConfig);
 
   //--test--
-  console.log('Peer connection:');
-  console.log(peerConnections.current)
+  console.log("Peer connection:");
+  console.log(peerConnections.current);
   //--test--
 
   const handleMuteUnmute = () => {
@@ -117,8 +115,8 @@ export default function Room() {
     // Send the chat message to other users
     sendMsgAll({
       username: username,
-      type: 'chat',
-      message: commentText
+      type: "chat",
+      message: commentText,
     });
     // update own message to UI
     setCommentList(newCommentList);
@@ -171,7 +169,7 @@ export default function Room() {
     window.onbeforeunload = async () => {
       await leave();
     };
-  })
+  });
 
   // Initialize audio stream and WebRTC
   // Get peer WebRTC info and connect
@@ -193,7 +191,10 @@ export default function Room() {
       setInitialized(true);
 
       // Setup audio
-      localStream.current = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+      localStream.current = await navigator.mediaDevices.getUserMedia({
+        video: false,
+        audio: true,
+      });
 
       // Get Firebase
       const roomDoc = doc(db, "rooms", roomId);
@@ -220,11 +221,11 @@ export default function Room() {
       // Send user info to other users
       sendMsgAll({
         username: username,
-        type: 'system',
-        message: `${username} has joined the room.`
+        type: "system",
+        message: `${username} has joined the room.`,
       });
       sendMsgAll({
-        type: 'setUser',
+        type: "setUser",
         username: username,
         userId: userId,
         avatar: avatar,
@@ -239,50 +240,55 @@ export default function Room() {
         const newUserId = newUserDoc.id;
         if (newUserId === userId) return;
         // If a new user joined, connect with WebRTC
-        if (change.type === 'added' || change.type === 'modified') {
+        if (change.type === "added" || change.type === "modified") {
           // Create new connection
           createNewPeerConnection(newUserId);
           // Initializing an empty ICE candidate queue for the new comer
-          if (!(pendingICEcandidates.current.hasOwnProperty(newUserId))) {
+          if (!pendingICEcandidates.current.hasOwnProperty(newUserId)) {
             pendingICEcandidates.current[newUserId] = [];
           }
-          const fromICEcandidate = newUserDoc.data().ICEcandidate
-          const fromRTCoffer = newUserDoc.data().RTCoffer
+          const fromICEcandidate = newUserDoc.data().ICEcandidate;
+          const fromRTCoffer = newUserDoc.data().RTCoffer;
           if (fromRTCoffer) {
-            console.log("PROCESS 1.5")
+            console.log("PROCESS 1.5");
 
-            if (peerConnections.current[newUserId].pc.remoteDescription === null) {
-              console.log(`Current remote desc:`)
-              console.log(peerConnections.current[newUserId].pc.remoteDescription)
+            if (
+              peerConnections.current[newUserId].pc.remoteDescription === null
+            ) {
+              console.log(`Current remote desc:`);
+              console.log(
+                peerConnections.current[newUserId].pc.remoteDescription
+              );
               // If created the connection first and got answer back:
               // 1. if pc.currentRemote is null => setRemote
               if (existingUsers.current.includes(newUserId)) {
-                console.log("PROCESS 2")
+                console.log("PROCESS 2");
                 const desc = new RTCSessionDescription(fromRTCoffer);
 
-                await peerConnections.current[newUserId].pc.setRemoteDescription(desc)
-                
+                await peerConnections.current[
+                  newUserId
+                ].pc.setRemoteDescription(desc);
+
                 //console.log(`[system] ${newUserId} joined the room.`);
                 console.log(peerConnections.current);
-                
               }
               // If other created the connection first:
               // 1. setRemote
               // 2. createOffer
               // 3. setLocal
-              if (!(existingUsers.current.includes(newUserId))) {
-                console.log("PROCESS 3")
+              if (!existingUsers.current.includes(newUserId)) {
+                console.log("PROCESS 3");
                 await connectNewUser(newUserId, fromRTCoffer);
 
                 // Send user info to other users
                 sendMsgAll({
                   username: username,
-                  type: 'system',
-                  message: `${username} has joined the room.`
+                  type: "system",
+                  message: `${username} has joined the room.`,
                 });
                 sendMsgAll({
                   username: username,
-                  type: 'setUser',
+                  type: "setUser",
                   userId: userId,
                   avatar: avatar,
                 });
@@ -296,7 +302,7 @@ export default function Room() {
             // Connect
             await connectNewUser(newUserId, fromICEcandidate, fromRTCoffer);
             */
-            
+
             // Force rerender on the UI
             //setValue(value => value + 1);;
           }
@@ -306,8 +312,10 @@ export default function Room() {
               try {
                 await addICEcandidate(newUserId, fromICEcandidate);
               } catch (error) {
-                console.log(`Error occurred when adding ICE candidate: ${error}`)
-              }        
+                console.log(
+                  `Error occurred when adding ICE candidate: ${error}`
+                );
+              }
             } else {
               pendingICEcandidates.current[newUserId].push(fromICEcandidate);
             }
@@ -324,7 +332,9 @@ export default function Room() {
           const newUserDoc = change.doc;
           const leftUserId = newUserDoc.id;
           if (leftUserId === userId) return;
-          await deleteDoc(doc(db, `rooms/${roomId}/RTCinfo/${userId}/callees/${leftUserId}`));
+          await deleteDoc(
+            doc(db, `rooms/${roomId}/RTCinfo/${userId}/callees/${leftUserId}`)
+          );
           // Remove user from existingUsers.current
           if (existingUsers.current.includes(leftUserId)) {
             const index = existingUsers.current.indexOf(leftUserId);
@@ -345,9 +355,9 @@ export default function Room() {
 
           // delete user info
           delete peerConnections.current[leftUserId];
-          
+
           // Force rerender on the UI
-          setValue(value => value + 1);;
+          setValue((value) => value + 1);
         }
       });
     });
@@ -361,19 +371,20 @@ export default function Room() {
       console.log(`COUNT: initPeerConnection() is called on ${userId}`);
       // If peer Connection has been created before, return
       if (peerConnections.current.hasOwnProperty(userId)) return;
-      
+
       // Initialize and store new Peer Connection
-      createNewPeerConnection(userId)
-  
-  
+      createNewPeerConnection(userId);
+
       // Create offer descript and set to local
-      const description = await peerConnections.current[userId].pc.createOffer();
+      const description = await peerConnections.current[
+        userId
+      ].pc.createOffer();
       const RTCoffer = {
         sdp: description.sdp,
         type: description.type,
       };
       await peerConnections.current[userId].pc.setLocalDescription(description);
-      console.log('Peer Connection after setLocalDescription');
+      console.log("Peer Connection after setLocalDescription");
       console.log(peerConnections.current);
       console.log(peerConnections.current[userId].pc);
 
@@ -406,8 +417,12 @@ export default function Room() {
       createNewPeerConnection(newUserId);
       const desc = new RTCSessionDescription(remoteRTCoffer);
       await peerConnections.current[newUserId].pc.setRemoteDescription(desc);
-      const localRTCoffer = await peerConnections.current[newUserId].pc.createAnswer();
-      await peerConnections.current[newUserId].pc.setLocalDescription(localRTCoffer);
+      const localRTCoffer = await peerConnections.current[
+        newUserId
+      ].pc.createAnswer();
+      await peerConnections.current[newUserId].pc.setLocalDescription(
+        localRTCoffer
+      );
       const offer = {
         type: localRTCoffer.type,
         sdp: localRTCoffer.sdp,
@@ -419,18 +434,18 @@ export default function Room() {
 
     function createNewPeerConnection(userId) {
       if (peerConnections.current.hasOwnProperty(userId)) return;
-      peerConnections.current[userId] = {}
+      peerConnections.current[userId] = {};
       peerConnections.current[userId].pc = new RTCPeerConnection(servers);
       // Push tracks from local stream to peer connection
       localStream.current.getTracks().forEach((track) => {
-        console.log(`Pushing track ... ${(new Date()).getTime()}`)
-        console.log(track)
+        console.log(`Pushing track ... ${new Date().getTime()}`);
+        console.log(track);
         peerConnections.current[userId].pc.addTrack(track, localStream.current);
       });
 
       peerConnections.current[userId].audioStream = new MediaStream();
       peerConnections.current[userId].pc.ontrack = (event) => {
-        console.log(`Getting track ... ${(new Date()).getTime()}`)
+        console.log(`Getting track ... ${new Date().getTime()}`);
         event.streams[0].getTracks().forEach((track) => {
           peerConnections.current[userId].audioStream.addTrack(track);
         });
@@ -438,14 +453,17 @@ export default function Room() {
 
       // Listen for any IceCandidate update and write to Firestore
       peerConnections.current[userId].pc.onicecandidate = (event) => {
-        event.candidate && updateConnectionData(userId, {
-          ICEcandidate: event.candidate.toJSON()
-        });
+        event.candidate &&
+          updateConnectionData(userId, {
+            ICEcandidate: event.candidate.toJSON(),
+          });
       };
       peerConnections.current[userId].mute = false;
 
       // Event listener for creating receive channel
-      peerConnections.current[userId].pc.ondatachannel = (event) => { receiveChannelCallback(event, userId) };
+      peerConnections.current[userId].pc.ondatachannel = (event) => {
+        receiveChannelCallback(event, userId);
+      };
       // Create send channel for chat text transmission
       createChannel(userId);
     }
@@ -458,81 +476,88 @@ export default function Room() {
     }
 
     function hasStableConnection(userId) {
-      console.log('Connection Status:')
-      console.log(`has pc         : ${peerConnections.current.hasOwnProperty(userId)}`);
+      console.log("Connection Status:");
+      console.log(
+        `has pc         : ${peerConnections.current.hasOwnProperty(userId)}`
+      );
       if (peerConnections.current.hasOwnProperty(userId)) {
-        console.log(`connectionState: ${peerConnections.current[userId].pc.connectionState}`)
-        console.log(`signalingState : ${peerConnections.current[userId].pc.signalingState}`)
+        console.log(
+          `connectionState: ${peerConnections.current[userId].pc.connectionState}`
+        );
+        console.log(
+          `signalingState : ${peerConnections.current[userId].pc.signalingState}`
+        );
       }
-      
+
       if (!peerConnections.current.hasOwnProperty(userId)) return false;
-      if (peerConnections.current[userId].pc.signalingState !== "stable") return false;
+      if (peerConnections.current[userId].pc.signalingState !== "stable")
+        return false;
       return true;
     }
 
     // Channel is for chat text transmission
     function createChannel(userId) {
-      console.log('create data Channel')
-      if (peerConnections.current[userId].hasOwnProperty('sendChannel')) return;
-      peerConnections.current[userId].sendChannel = peerConnections.current[userId].pc.createDataChannel("chat");
+      console.log("create data Channel");
+      if (peerConnections.current[userId].hasOwnProperty("sendChannel")) return;
+      peerConnections.current[userId].sendChannel =
+        peerConnections.current[userId].pc.createDataChannel("chat");
     }
 
     function receiveChannelCallback(event, userId) {
       peerConnections.current[userId].receiveChannel = event.channel;
-      peerConnections.current[userId].receiveChannel.onmessage = handleReceiveMessage;
+      peerConnections.current[userId].receiveChannel.onmessage =
+        handleReceiveMessage;
     }
-
   }, [roomId, userId, initialized, username]);
-  
 
   // Page UI
   if (!initialized)
     return (
       <>
-          <Box
-            className="hide-scrollbar"
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              width: "100%",
-              height: "100vh",
-              background: "#ccc",
-            }}
-          >
-            <Box sx={{ width: "23%" }}>
-              <RoomMangementPanel
-                roomId={roomId}
-                otherUsersList={otherUsersList}
-                roomCreatorId={roomCreatorId}
-                currentRoomType={currentRoomType}
-                isMuted={isMuted}
-                handleMuteUnmute={handleMuteUnmute}
-              />
-            </Box>
-            <Box sx={{ background: "red", width: "54%" }}>
-              <UserUtilityPanel
-                isMuted={isMuted}
-                echo={echo}
-                volume={volume}
-                handleEcho={handleEcho}
-                handleVolume={handleVolume}
-                commentList={commentList}
-                handleAddComment={handleAddComment}
-              />
-            </Box>
-            <Box sx={{ width: "23%" }}>
-              <SongManagementPanel
-                allSongList={allSongList}
-                currentRoomType={currentRoomType}
-                isRoomCreator={isRoomCreator}
-                handleStartSong={handleStartSong}
-                handleStopSong={handleStopSong}
-                handleAddSong={handleAddSong}
-                handleDeleteSong={handleDeleteSong}
-                handleMoveSong={handleMoveSong}
-              />
-            </Box>
+        <Box
+          className="hide-scrollbar"
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            width: "100%",
+            height: "100vh",
+            background: "#ccc",
+          }}
+        >
+          <Box sx={{ width: "23%" }}>
+            <RoomMangementPanel
+              roomId={roomId}
+              otherUsersList={otherUsersList}
+              roomCreatorId={roomCreatorId}
+              currentRoomType={currentRoomType}
+              isMuted={isMuted}
+              handleMuteUnmute={handleMuteUnmute}
+            />
           </Box>
+          <Box sx={{ background: "red", width: "54%" }}>
+            <UserUtilityPanel
+              isMuted={isMuted}
+              echo={echo}
+              volume={volume}
+              handleEcho={handleEcho}
+              handleVolume={handleVolume}
+              commentList={commentList}
+              handleAddComment={handleAddComment}
+            />
+          </Box>
+          <Box sx={{ width: "23%" }}>
+            <SongManagementPanel
+              allSongList={allSongList}
+              currentRoomType={currentRoomType}
+              isRoomCreator={isRoomCreator}
+              handleStartSong={handleStartSong}
+              handleStopSong={handleStopSong}
+              handleAddSong={handleAddSong}
+              handleDeleteSong={handleDeleteSong}
+              handleMoveSong={handleMoveSong}
+            />
+          </Box>
+        </Box>
       </>
     );
   return (
@@ -583,8 +608,8 @@ export default function Room() {
   }
 
   function disconnectAudio() {
-    console.log("Disconnecting Audio")
-    Object.keys(peerConnections.current).map(userId => {
+    console.log("Disconnecting Audio");
+    Object.keys(peerConnections.current).map((userId) => {
       const remoteAudio = document.getElementById(userId);
       remoteAudio.srcObject = null;
     });
@@ -609,9 +634,9 @@ export default function Room() {
         track.stop();
       });
     }
-    
+
     // close all peer connections
-    Object.keys(peerConnections.current).map(userId => {
+    Object.keys(peerConnections.current).map((userId) => {
       peerConnections.current[userId].pc.close();
       peerConnections.current[userId].sendChannel.close();
       peerConnections.current[userId].receiveChannel.close();
@@ -623,8 +648,8 @@ export default function Room() {
     localStream.current = null;
     pendingICEcandidates.current = {};
     setInitialized(false);
-    
-    location.href = '/'
+
+    location.href = "/";
   }
 
   async function unsubscribe() {
@@ -644,9 +669,9 @@ export default function Room() {
   }
 
   function sendMsgAll(obj) {
-    Object.keys(peerConnections.current).map(userId => {
-      console.log(peerConnections.current[userId].sendChannel.readyState)
-      if (peerConnections.current[userId].sendChannel.readyState === 'open') {
+    Object.keys(peerConnections.current).map((userId) => {
+      console.log(peerConnections.current[userId].sendChannel.readyState);
+      if (peerConnections.current[userId].sendChannel.readyState === "open") {
         peerConnections.current[userId].sendChannel.send(JSON.stringify(obj));
       }
     });
@@ -659,7 +684,7 @@ export default function Room() {
     const type = data.type;
     // console.log(`${user}: ${message}`);
     // If message is chat, update in comment list
-    if (type === 'chat') {
+    if (type === "chat") {
       const newComment = {
         username: username,
         time: Date(),
@@ -668,7 +693,7 @@ export default function Room() {
       };
       const newCommentList = [...commentList, newComment];
       setCommentList(newCommentList);
-    } else if (type === 'system') {
+    } else if (type === "system") {
       const newComment = {
         username: localStorage.getItem("username"),
         time: Date(),
@@ -677,12 +702,12 @@ export default function Room() {
       };
       const newCommentList = [...commentList, newComment];
       setCommentList(newCommentList);
-    } else if (type === 'setUser') {
+    } else if (type === "setUser") {
       const avatar = data.avatar;
       peerConnections.current[userId].username = username;
       peerConnections.current[userId].avatar = avatar;
       // Force rerender on the UI
-      setValue(value => value + 1);;
+      setValue((value) => value + 1);
     }
   }
 }

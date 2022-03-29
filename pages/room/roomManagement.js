@@ -45,7 +45,7 @@ function OtherUserList(props) {
     <div
       id="userlist"
       className="scrollbar"
-      style={{ background: "#ccc", height: "90%", "overflow-y": "auto" }}
+      style={{ background: "#ccc", height: "90%", overflowY: "auto" }}
     >
       {Object.keys(props.otherUsersList).map((userId, index) => {
         //TODO: get user data from userId

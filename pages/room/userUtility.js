@@ -128,8 +128,8 @@ function MessageArea(props) {
       className="py-4 px-2 scrollbar"
       sx={{
         height: "85%",
-        "overflow-y": "auto",
-        "overflow-x": "hidden",
+        overflowY: "auto",
+        overflowX: "hidden",
       }}
       ref={messageArea}
     >
@@ -207,7 +207,7 @@ function UserComment(props) {
           alignItem: "flex-start",
         }}
       >
-        <EllipsisText text={props.userName + ": "} length={"25"} />
+        <EllipsisText text={props.userName + ": "} length={25} />
       </Box>
 
       <Box
@@ -327,7 +327,7 @@ function InputBox(props) {
           "
       placeholder="Type something..."
       style={{
-        "overflow-y": "scroll",
+        overflowY: "scroll",
         color: "black",
         height: "80%",
         width: "80%",
