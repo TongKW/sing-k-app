@@ -40,9 +40,12 @@ export async function getPrivateRoomList() {
 }
 
 export async function getRoom(roomId) {
-    var rooms = db.collection('/rooms/' + roomId).listCollections();
-    const roomIds = rooms.map(col => col.id);
-    return {collections: collectionIds};
+    var querySnapshot = await getDocs(collection(db, 'rooms', roomId));
+    var result = [];
+    querySnapshot.forEach((doc) => {
+            result.push(doc);
+    });
+    return result;
 }
 
 export async function createRoom(roomId, creatorID, type, usersArray) {
