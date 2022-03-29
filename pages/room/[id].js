@@ -561,50 +561,83 @@ export default function Room() {
       </>
     );
   return (
-    <HomePage>
-      <div className="flex-1 p-10 text-2xl font-bold">
-        Room id: {roomId}
-      </div>
-      {Object.keys(peerConnections.current).map(userId => (
-        <span key={userId}>
-          <h3>{userId}</h3>
-          <video id={userId} autoPlay playsInline></video>
-        </span>
-      ))}
-      <span>
-        <h3>Callback</h3>
-        <video id="callbackAudio" autoPlay playsInline></video>
-      </span>
-      <div onClick={connectAudio}>
-        <Button text="Connect Audio"/>
-      </div>
-      <div onClick={disconnectAudio}>
-        <Button text="Disconnect Audio"/>
-      </div>
-      <div onClick={leave}>
-        <Button text="Leave"/>
-      </div>
-      <div onClick={() => {sendMsgAll({
-        user: username,
-        message: 'Hello all.'
-      })}}>
-        <Button text="SendMsg"/>
-      </div>
-      
-    </HomePage>
+    <>
+      {/* <div style={{ display: "none" }}>
+        <div className="flex-1 p-10 text-2xl font-bold">Room id: {roomId}</div>
+        {Object.keys(peerConnections).map((userId) => (
+          <span key={userId}>
+            <h3>{userId}</h3>
+            <video id={userId} autoPlay playsInline></video>
+          </span>
+        ))}
+        <div onClick={connectAudio}>
+          <Button text="Connect Audio" />
+        </div>
+        <div onClick={disconnectAudio}>
+          <Button text="Disconnect Audio" />
+        </div>
+        <div onClick={leave}>
+          <Button text="Leave" />
+        </div>
+      </div> */}
+      {/* <div
+        className="flex-1 p-10 text-2xl font-bold"
+        style={{ width: "100%", height: "900px" }}
+      > */}
+      <Box
+        className="hide-scrollbar"
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          width: "100%",
+          height: "100vh",
+          background: "#ccc",
+        }}
+      >
+        <Box sx={{ width: "23%" }}>
+          <RoomMangementPanel
+            roomId={roomId}
+            otherUsersList={otherUsersList}
+            roomCreatorId={roomCreatorId}
+            currentRoomType={currentRoomType}
+            isMuted={isMuted}
+            handleMuteUnmute={handleMuteUnmute}
+          />
+        </Box>
+        <Box sx={{ background: "red", width: "54%" }}>
+          <UserUtilityPanel
+            isMuted={isMuted}
+            echo={echo}
+            volume={volume}
+            handleEcho={handleEcho}
+            handleVolume={handleVolume}
+            commentList={commentList}
+            handleAddComment={handleAddComment}
+          />
+        </Box>
+        <Box sx={{ width: "23%" }}>
+          <SongManagementPanel
+            allSongList={allSongList}
+            currentRoomType={currentRoomType}
+            isRoomCreator={isRoomCreator}
+            handleStartSong={handleStartSong}
+            handleStopSong={handleStopSong}
+            handleAddSong={handleAddSong}
+            handleDeleteSong={handleDeleteSong}
+            handleMoveSong={handleMoveSong}
+          />
+        </Box>
+      </Box>
+      {/* </div> */}
+    </>
   );
 
   function connectAudio() {
-    console.log("connecting Audio")
-    Object.keys(peerConnections.current).map(userId => {
+    console.log("connecting Audio");
+    Object.keys(peerConnections.current).map((userId) => {
       const remoteAudio = document.getElementById(userId);
-      console.log(`remoteAudio of ${userId}`)
-      console.log(remoteAudio)
-      console.log()
-      remoteAudio.srcObject = peerConnections.current[userId].audioStream;
-    })
-    const callbackAudio = document.getElementById("callbackAudio");
-    callbackAudio.srcObject = callbackStream.current;
+      remoteAudio.srcObject = peerConnections.audioStream;
+    });
   }
 
   function disconnectAudio() {
