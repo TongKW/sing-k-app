@@ -115,21 +115,22 @@ function UserData(props) {
 
 function OtherMutedIcon(props) {
   if (props.currentRoomType === "streaming" && props.otherIsRoomCreator) {
-    if (props.otherIsMuted)
+    if (props.otherIsMuted) {
       return (
         <Icon
           icon="/images/others-mute-microphone.png"
           alt="mute_icon"
           length="50"
         />
-      );
-    else
+      )
+    } else {
       return (
         <Icon icon="/images/others-microphone.png" alt="mic_icon" length="75" />
       );
-  } else if (props.currentRoomType === "streaming" && !props.otherIsRoomCreator)
-    return <div>Nothing</div>;
-  else if (props.currentRoomType === "private" && props.otherIsMuted)
+    }
+  } else if (props.currentRoomType === "streaming" && !props.otherIsRoomCreator) {
+    return (<div>Nothing</div>);
+  } else if (props.currentRoomType === "private" && props.otherIsMuted) {
     return (
       <Icon
         icon="/images/others-mute-microphone.png"
@@ -137,10 +138,11 @@ function OtherMutedIcon(props) {
         length="25"
       />
     );
-  else
+  } else {
     return (
       <Icon icon="/images/others-microphone.png" alt="mic_icon" length="25" />
     );
+  }
 }
 
 function RoomFunctionKeys(props) {
@@ -216,4 +218,13 @@ function Mute(props) {
       />
     );
   }
+  return (
+    <Icon
+      icon="/images/microphone.png"
+      alt="mute_icon"
+      length="25"
+      onClick={props.handleMuteUnmute}
+      style={{ cursor: "pointer" }}
+    />
+  );
 }
