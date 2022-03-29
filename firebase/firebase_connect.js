@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore,collection,getDocs  } from "firebase/firestore";
+import { getFirestore,collection,getDocs, doc, setDoc  } from "firebase/firestore";
 import { firebaseConfig } from './config.js';
 initializeApp(firebaseConfig);
 const db = getFirestore();
@@ -44,13 +44,12 @@ export async function getRoom(roomId) {
     return { collections: collectionIds };
 }
 
-export async function createRoom(roomId, users_json) {
-    var ref = db.collection('rooms').doc(roomId);
-
-    ref.set(users_json).then(() => {
-        console.log('set data successful');
+export async function createRoom(roomId, creatorID, type, usersArray) {
+    console.log(roomId);
+    await setDoc(doc(db, "rooms", roomId), {
+        creator:creatorID,
+        type:type
     });
-
 }
 
 export async function delRoom(roomId) {
