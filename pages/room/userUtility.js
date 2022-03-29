@@ -139,7 +139,7 @@ function MessageArea(props) {
           return (
             <UserComment
               key={index}
-              userName={comment.userName}
+              username={comment.username}
               time={comment.time}
               text={comment.text}
             />
@@ -207,7 +207,7 @@ function UserComment(props) {
           alignItem: "flex-start",
         }}
       >
-        <EllipsisText text={props.userName + ": "} length={25} />
+        <EllipsisText text={props.username + ": "} length={25} />
       </Box>
 
       <Box
@@ -217,7 +217,7 @@ function UserComment(props) {
           justifyContent: "flex-start",
         }}
       >
-        <p style={{ "overflow-wrap": "anywhere" }}>{props.text}</p>
+        <p style={{ "overflowWrap": "anywhere" }}>{props.text}</p>
       </Box>
     </Box>
   );

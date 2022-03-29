@@ -106,7 +106,7 @@ export default function Room() {
 
   const handleAddComment = (commentText) => {
     const newComment = {
-      username: localStorage.getItem("username"),
+      username: username,
       time: Date(),
       text: commentText,
       isSystem: false,
@@ -695,7 +695,7 @@ export default function Room() {
       setCommentList(newCommentList);
     } else if (type === "system") {
       const newComment = {
-        username: localStorage.getItem("username"),
+        username: username,
         time: Date(),
         text: commentText,
         isSystem: true,
