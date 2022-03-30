@@ -37,6 +37,8 @@ export default function Room() {
 
   let userInput = useRef(null);
 
+  let commentList = useRef([]);
+
   // Only reload when users enter/leave
   const [value, setValue] = useState(0);
 
@@ -57,16 +59,11 @@ export default function Room() {
   const [echo, setEcho] = useState(50);
   const [volume, setVolume] = useState(50);
   //const [otherUsersList, setOtherUsersList] = useState(otherParticipantsInfo);
-  const [commentList, setCommentList] = useState([]);
+  
   const [allSongList, setAllSongList] = useState(songInfo);
 
   // Initialize Firebase
   const app = firebase.initializeApp(firebaseConfig);
-
-  //--test--
-  console.log("Peer connection:");
-  console.log(peerConnections.current);
-  //--test--
 
   const handleMuteUnmute = () => {
     if (isMuted) {
@@ -105,21 +102,23 @@ export default function Room() {
   };
 
   const handleAddComment = (commentText) => {
-    const newComment = {
+    commentList.current.push({
       username: username,
       time: Date(),
       text: commentText,
       isSystem: false,
-    };
-    const newCommentList = [...commentList, newComment];
+    });
+
+    // Force rerender on the UI
+    setValue(value => value + 1);;
+
     // Send the chat message to other users
     sendMsgAll({
+      userId: userId,
       username: username,
       type: "chat",
       message: commentText,
     });
-    // update own message to UI
-    setCommentList(newCommentList);
   };
 
   function handleMoveSong(prevIndex, currentIndex) {
@@ -229,12 +228,8 @@ export default function Room() {
       // Write Firebase to update offer
       await createNewUserFirestore();
 
+      await sleep(2000);
       // Send user info to other users
-      sendMsgAll({
-        username: username,
-        type: "system",
-        message: `${username} has joined the room.`,
-      });
       sendMsgAll({
         type: "setUser",
         username: username,
@@ -262,10 +257,10 @@ export default function Room() {
           const fromRTCoffer = newUserDoc.data().RTCoffer;
           if (fromRTCoffer) {
             console.log("PROCESS 1.5");
+            // return if the connection is already formed
+            if (hasStableConnection(newUserId)) return;
 
-            if (
-              peerConnections.current[newUserId].pc.remoteDescription === null
-            ) {
+            if (peerConnections.current[newUserId].pc.remoteDescription === null) {
               console.log(`Current remote desc:`);
               console.log(
                 peerConnections.current[newUserId].pc.remoteDescription
@@ -276,9 +271,7 @@ export default function Room() {
                 console.log("PROCESS 2");
                 const desc = new RTCSessionDescription(fromRTCoffer);
 
-                await peerConnections.current[
-                  newUserId
-                ].pc.setRemoteDescription(desc);
+                await peerConnections.current[newUserId].pc.setRemoteDescription(desc);
 
                 //console.log(`[system] ${newUserId} joined the room.`);
                 console.log(peerConnections.current);
@@ -291,6 +284,7 @@ export default function Room() {
                 console.log("PROCESS 3");
                 await connectNewUser(newUserId, fromRTCoffer);
 
+                await sleep(2000);
                 // Send user info to other users
                 sendMsgAll({
                   username: username,
@@ -305,6 +299,7 @@ export default function Room() {
                 });
               }
             }
+            
             // Add all pending ICE candidates
             await handleICEqueue(newUserId);
 
@@ -355,14 +350,14 @@ export default function Room() {
           peerConnections.current[leftUserId].pc.close();
 
           // Update leaving message
-          const newComment = {
+          console.log(`Left: ${leftUserId}`)
+          console.log(peerConnections.current)
+          commentList.current.push({
             username: peerConnections.current[leftUserId].username,
             time: Date(),
             text: `${peerConnections.current[leftUserId].username} has left the room.`,
             isSystem: true,
-          };
-          const newCommentList = [...commentList, newComment];
-          setCommentList(newCommentList);
+          });
 
           // delete user info
           delete peerConnections.current[leftUserId];
@@ -428,9 +423,7 @@ export default function Room() {
       createNewPeerConnection(newUserId);
       const desc = new RTCSessionDescription(remoteRTCoffer);
       await peerConnections.current[newUserId].pc.setRemoteDescription(desc);
-      const localRTCoffer = await peerConnections.current[
-        newUserId
-      ].pc.createAnswer();
+      const localRTCoffer = await peerConnections.current[newUserId].pc.createAnswer();
       await peerConnections.current[newUserId].pc.setLocalDescription(
         localRTCoffer
       );
@@ -487,22 +480,9 @@ export default function Room() {
     }
 
     function hasStableConnection(userId) {
-      console.log("Connection Status:");
-      console.log(
-        `has pc         : ${peerConnections.current.hasOwnProperty(userId)}`
-      );
-      if (peerConnections.current.hasOwnProperty(userId)) {
-        console.log(
-          `connectionState: ${peerConnections.current[userId].pc.connectionState}`
-        );
-        console.log(
-          `signalingState : ${peerConnections.current[userId].pc.signalingState}`
-        );
-      }
-
       if (!peerConnections.current.hasOwnProperty(userId)) return false;
-      if (peerConnections.current[userId].pc.signalingState !== "stable")
-        return false;
+      if (peerConnections.current[userId].pc.connectionState !== "connected" 
+        || peerConnections.current[userId].pc.signalingState === "stable") return false;
       return true;
     }
 
@@ -519,7 +499,52 @@ export default function Room() {
       peerConnections.current[userId].receiveChannel.onmessage =
         handleReceiveMessage;
     }
-  }, [roomId, userId, initialized, username]);
+
+    function handleReceiveMessage(event) {
+      const data = JSON.parse(event.data);
+      const username = data.username;
+      const message = data.message;
+      const userId = data.userId;
+      const type = data.type;
+
+      console.log(`message received:`)
+      console.log(data)
+      // console.log(`${user}: ${message}`);
+      // If message is chat, update in comment list
+      if (type === "chat") {
+        console.log(`message type: chat`)
+        commentList.current.push({
+          username: username,
+          time: Date(),
+          text: message,
+          isSystem: false,
+        });
+      } else if (type === "system") {
+        console.log(`message type: system`)
+        commentList.current.push({
+          username: username,
+          time: Date(),
+          text: message,
+          isSystem: true,
+        });
+      } else if (type === "setUser") {
+        console.log(`message type: setUser`)
+        const avatar = data.avatar;
+        peerConnections.current[userId].username = username;
+        peerConnections.current[userId].avatar = avatar;
+
+        commentList.current.push({
+          username: username,
+          time: Date(),
+          text: `${username} has joined the room.`,
+          isSystem: true,
+        });
+      }
+      // Force rerender on the UI
+      setValue((value) => value + 1);
+    }
+
+  }, [roomId, userId, initialized, username, avatar, commentList]);
 
   // Page UI
   if (!initialized)
@@ -552,7 +577,7 @@ export default function Room() {
               volume={volume}
               handleEcho={handleEcho}
               handleVolume={handleVolume}
-              commentList={commentList}
+              commentList={commentList.current}
               handleAddComment={handleAddComment}
             />
           </Box>
@@ -607,6 +632,7 @@ export default function Room() {
       >
         <Box sx={{ width: "23%" }}>
           <RoomMangementPanel
+            leave={leave}
             roomId={roomId}
             otherUsersList={getUsersList()}
             roomCreatorId={roomCreatorId}
@@ -622,7 +648,7 @@ export default function Room() {
             volume={volume}
             handleEcho={handleEcho}
             handleVolume={handleVolume}
-            commentList={commentList}
+            commentList={commentList.current}
             handleAddComment={handleAddComment}
           />
         </Box>
@@ -714,45 +740,12 @@ export default function Room() {
 
   function sendMsgAll(obj) {
     Object.keys(peerConnections.current).map((userId) => {
-      console.log(peerConnections.current[userId].sendChannel.readyState);
       if (peerConnections.current[userId].sendChannel.readyState === "open") {
+        console.log(`Sending message to ${userId}:`)
+        console.log(obj)
         peerConnections.current[userId].sendChannel.send(JSON.stringify(obj));
       }
     });
-  }
-
-  function handleReceiveMessage(event) {
-    const data = JSON.parse(event.data);
-    const username = data.username;
-    const message = data.message;
-    const type = data.type;
-    // console.log(`${user}: ${message}`);
-    // If message is chat, update in comment list
-    if (type === "chat") {
-      const newComment = {
-        username: username,
-        time: Date(),
-        text: message,
-        isSystem: false,
-      };
-      const newCommentList = [...commentList, newComment];
-      setCommentList(newCommentList);
-    } else if (type === "system") {
-      const newComment = {
-        username: username,
-        time: Date(),
-        text: commentText,
-        isSystem: true,
-      };
-      const newCommentList = [...commentList, newComment];
-      setCommentList(newCommentList);
-    } else if (type === "setUser") {
-      const avatar = data.avatar;
-      peerConnections.current[userId].username = username;
-      peerConnections.current[userId].avatar = avatar;
-      // Force rerender on the UI
-      setValue((value) => value + 1);
-    }
   }
 
   // Transfer peer connection to otherUsersList

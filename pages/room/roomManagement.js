@@ -2,6 +2,7 @@ import { React } from "react";
 import Icon from "../../component/elements/Icon";
 import { styled } from "@mui/material/styles";
 import { Box, Avatar } from "@mui/material";
+import Button from "../../component/elements/button";
 //import { userDataBase } from "./mockup";
 
 const UserAvatar = styled(Avatar, {
@@ -16,7 +17,10 @@ const UserAvatar = styled(Avatar, {
 export default function RoomMangementPanel(props) {
   return (
     <Box sx={{ height: "100%" }}>
-      <RoomId roomId={props.roomId} />
+      <RoomId 
+        roomId={props.roomId}
+        leave={props.leave} 
+      />
       <OtherUserList
         otherUsersList={props.otherUsersList}
         currentRoomType={props.currentRoomType}
@@ -35,7 +39,10 @@ export default function RoomMangementPanel(props) {
 function RoomId(props) {
   return (
     <Box sx={{ display: "flex", height: "5%" }}>
-      <h1>Room ID: {props.roomId}</h1>
+        <h1>Room ID: {props.roomId}</h1>
+        <div onClick={async () => {await props.leave()}}>
+          <Button text="Leave" />
+        </div>     
     </Box>
   );
 }
