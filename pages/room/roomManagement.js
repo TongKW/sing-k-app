@@ -2,7 +2,7 @@ import { React } from "react";
 import Icon from "../../component/elements/Icon";
 import { styled } from "@mui/material/styles";
 import { Box, Avatar } from "@mui/material";
-import { userDataBase } from "./mockup";
+//import { userDataBase } from "./mockup";
 
 const UserAvatar = styled(Avatar, {
   shouldForwardProp: (prop) => ["src"].includes(prop),
@@ -50,21 +50,22 @@ function OtherUserList(props) {
       {Object.keys(props.otherUsersList).map((userId, index) => {
         //TODO: get user data from userId
 
-        const username = userDataBase[userId].username;
-        const userAvatar = userDataBase[userId].avatar;
+        const username = props.otherUsersList[userId].username;
+        const userAvatar = props.otherUsersList[userId].avatar;
         const otherIsMuted = props.otherUsersList[userId].isMuted;
         const isRoomCreator = userId === props.roomCreatorId;
         const currentRoomType = props.currentRoomType;
 
         return (
-          <User
-            key={index}
-            username={username}
-            userAvatar={userAvatar}
-            otherIsMuted={otherIsMuted}
-            isRoomCreator={isRoomCreator}
-            currentRoomType={currentRoomType}
-          />
+            <User
+              key={index}
+              userId={userId}
+              username={username}
+              userAvatar={userAvatar}
+              otherIsMuted={otherIsMuted}
+              isRoomCreator={isRoomCreator}
+              currentRoomType={currentRoomType}
+            />
         );
       })}
     </div>
@@ -94,6 +95,9 @@ function User(props) {
           currentRoomType={props.currentRoomType}
         />
       </Box>
+      <audio autoPlay={true} className="hidden" id={`audio-${props.userId}`}>
+        <source type="audio/ogg"/>
+      </audio>
     </Box>
   );
 }

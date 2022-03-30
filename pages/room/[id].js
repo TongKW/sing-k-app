@@ -20,7 +20,7 @@ import sleep from "../../utils/sleep";
 import RoomMangementPanel from "./roomManagement";
 import UserUtilityPanel from "./userUtility";
 import SongManagementPanel from "./songManagement";
-import { otherParticipantsInfo, songInfo, commentInfo } from "./mockup";
+import { songInfo } from "./mockup";
 
 export default function Room() {
   // Routing parameter
@@ -56,8 +56,8 @@ export default function Room() {
   const [isMuted, setIsMuted] = useState(false);
   const [echo, setEcho] = useState(50);
   const [volume, setVolume] = useState(50);
-  const [otherUsersList, setOtherUsersList] = useState(otherParticipantsInfo);
-  const [commentList, setCommentList] = useState(commentInfo);
+  //const [otherUsersList, setOtherUsersList] = useState(otherParticipantsInfo);
+  const [commentList, setCommentList] = useState([]);
   const [allSongList, setAllSongList] = useState(songInfo);
 
   // Initialize Firebase
@@ -170,6 +170,17 @@ export default function Room() {
       await leave();
     };
   });
+
+  // Update audio stream every time reload (setValue) is called
+  useEffect(() => {
+    Object.keys(peerConnections.current).map((userId) => {
+      if (peerConnections.current[userId].isMuted) {
+        document.getElementById(`audio-${userId}`).srcObject = peerConnections.current[userId].audioStream;
+      } else {
+        document.getElementById(`audio-${userId}`).srcObject = null;
+      }
+    });
+  }, [value]);
 
   // Initialize audio stream and WebRTC
   // Get peer WebRTC info and connect
@@ -458,7 +469,7 @@ export default function Room() {
             ICEcandidate: event.candidate.toJSON(),
           });
       };
-      peerConnections.current[userId].mute = false;
+      peerConnections.current[userId].isMuted = false;
 
       // Event listener for creating receive channel
       peerConnections.current[userId].pc.ondatachannel = (event) => {
@@ -527,7 +538,7 @@ export default function Room() {
           <Box sx={{ width: "23%" }}>
             <RoomMangementPanel
               roomId={roomId}
-              otherUsersList={otherUsersList}
+              otherUsersList={getUsersList()}
               roomCreatorId={roomCreatorId}
               currentRoomType={currentRoomType}
               isMuted={isMuted}
@@ -597,7 +608,7 @@ export default function Room() {
         <Box sx={{ width: "23%" }}>
           <RoomMangementPanel
             roomId={roomId}
-            otherUsersList={otherUsersList}
+            otherUsersList={getUsersList()}
             roomCreatorId={roomCreatorId}
             currentRoomType={currentRoomType}
             isMuted={isMuted}
@@ -636,7 +647,7 @@ export default function Room() {
     console.log("connecting Audio");
     Object.keys(peerConnections.current).map((userId) => {
       const remoteAudio = document.getElementById(userId);
-      remoteAudio.srcObject = peerConnections.audioStream;
+      remoteAudio.srcObject = peerConnections.current[userId].audioStream;
     });
   }
 
@@ -742,6 +753,23 @@ export default function Room() {
       // Force rerender on the UI
       setValue((value) => value + 1);
     }
+  }
+
+  // Transfer peer connection to otherUsersList
+  function getUsersList() {
+    let otherUsersList = {userId: {
+      isMuted: isMuted,
+      username: username,
+      avatar: avatar
+    }};
+    Object.keys(peerConnections.current).map((userId) => (
+      otherUsersList[userId] = {
+        isMuted: peerConnections.current[userId].isMuted,
+        username: peerConnections.current[userId].username,
+        avatar: peerConnections.current[userId].avatar
+      }
+    ));
+    return otherUsersList;
   }
 }
 

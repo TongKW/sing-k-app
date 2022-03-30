@@ -23,12 +23,14 @@ export default function Admin() {
         {
           userId: '1',
           username: 'username1',
-          email: 'email1'
+          email: 'email1',
+          avatar: 'avatar1'
         },
         {
           userId: '2',
           username: 'username2',
-          email: 'email2'
+          email: 'email2',
+          avatar: 'avatar1'
         }
       ]
       setUserList(testUserList);
