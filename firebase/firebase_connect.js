@@ -1,5 +1,5 @@
 import {initializeApp} from 'firebase/app';
-import {getFirestore, collection, getDocs, doc, setDoc, deleteDoc } from "firebase/firestore";
+import {getFirestore, collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from "firebase/firestore";
 import {firebaseConfig} from './config.js';
 
 initializeApp(firebaseConfig);
@@ -48,9 +48,9 @@ export async function getRoom(roomId) {
     return result;
 }
 
-export async function createRoom(roomId, creatorID, type, usersArray) {
+export async function createRoom(roomID, creatorID, type, usersArray) {
     console.log(roomId);
-    await setDoc(doc(db, "rooms", roomId), {
+    await setDoc(doc(db, "rooms", roomID), {
         creator: creatorID,
         type: type
     });
@@ -58,6 +58,11 @@ export async function createRoom(roomId, creatorID, type, usersArray) {
 
 export async function delRoom(roomID) {
     await deleteDoc(doc(db, "rooms", roomID));
+}
+
+export async function changeRoom(roomID, changes) {
+
+    await updateDoc(doc(db, "rooms", roomID),changes);
 }
 
 export async function delUserFromRoom(roomId, userId) {

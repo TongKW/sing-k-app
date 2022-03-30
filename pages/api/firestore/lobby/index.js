@@ -31,9 +31,12 @@ export default async function handler(req, res){
         return res.status(200).json(result);
     }
     else if (req.method === "PUT") {
-        const {roomID,users_json} = req.body;
-        const result = fb.createRoom(roomID,users_json);
-        return res.status(200).json(result);
+        const roomID = req.body.roomID;
+        let change_json = req.body;
+        delete change_json.roomID;
+        console.log("roomID",roomID, "change_json",change_json);
+        const result = fb.changeRoom(roomID,change_json);
+        return res.status(200).json(change_json);
     }
     else if (req.method === "DELETE") {
         const {roomID} = req.body;
