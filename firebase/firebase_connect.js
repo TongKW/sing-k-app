@@ -1,5 +1,5 @@
 import {initializeApp} from 'firebase/app';
-import {getFirestore, collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from "firebase/firestore";
+import {getFirestore, collection, getDocs, doc, setDoc, deleteDoc, updateDoc} from "firebase/firestore";
 import {firebaseConfig} from './config.js';
 
 initializeApp(firebaseConfig);
@@ -43,7 +43,7 @@ export async function getRoom(roomId) {
     var querySnapshot = await getDocs(collection(db, 'rooms', roomId));
     var result = [];
     querySnapshot.forEach((doc) => {
-            result.push(doc);
+        result.push(doc);
     });
     return result;
 }
@@ -62,7 +62,7 @@ export async function delRoom(roomID) {
 
 export async function changeRoom(roomID, changes) {
 
-    await updateDoc(doc(db, "rooms", roomID),changes);
+    await updateDoc(doc(db, "rooms", roomID), changes);
 }
 
 export async function delUserFromRoom(roomId, userId) {
