@@ -66,13 +66,12 @@ export default function Room() {
   const app = firebase.initializeApp(firebaseConfig);
 
   const handleMuteUnmute = () => {
-    if (isMuted) {
-      setIsMuted(false);
-      console.log("Now Unmute!");
-    } else {
-      setIsMuted(true);
-      console.log("Now mute!");
-    }
+    setIsMuted(!isMuted);
+    sendMsgAll({
+      userId: userId,
+      username: username,
+      type: "setMute",
+    })
   };
 
   const handleStartSong = () => {
@@ -523,6 +522,8 @@ export default function Room() {
           text: `${username} has joined the room.`,
           isSystem: true,
         });
+      } else if (type === "setMute") {
+        peerConnections.current[userId].isMuted = !peerConnections.current[userId].isMuted;
       }
       // Force rerender on the UI
       setValue((value) => value + 1);

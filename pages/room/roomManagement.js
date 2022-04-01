@@ -193,55 +193,27 @@ function RoomFunctionKeys(props) {
 }
 
 function Mute(props) {
-  if (
-    props.currentRoomType === "streaming" &&
-    props.isRoomCreator &&
-    !props.isMuted
-  ) {
+  if (props.currentRoomType === "streaming" && props.isRoomCreator) {
     return (
       <Icon
-        icon="/images/microphone.png"
-        alt="mute_icon"
+        icon={props.isMuted ? "/images/mute-microphone.png" : "/images/microphone.png"}
+        alt={props.isMuted ? "mute_microphone" : "mute_microphone"}
         length="25"
         onClick={props.handleMuteUnmute}
         style={{ cursor: "pointer" }}
       />
     );
-  } else if (
-    props.currentRoomType === "streaming" &&
-    props.isRoomCreator &&
-    props.isMuted
-  ) {
+  } else if (props.currentRoomType === "private") {
     return (
       <Icon
-        icon="/images/mute-microphone.png"
-        alt="unmute_icon"
+        icon={props.isMuted ? "/images/mute-microphone.png" : "/images/microphone.png"}
+        alt={props.isMuted ? "mute_microphone" : "mute_microphone"}
         length="25"
         onClick={props.handleMuteUnmute}
         style={{ cursor: "pointer" }}
       />
     );
-  } else if (props.currentRoomType === "streaming" && !props.isRoomCreator) {
+  } else {
     return <div className="flex">Nothing</div>;
-  } else if (props.currentRoomType === "private" && !props.isMuted) {
-    return (
-      <Icon
-        icon="/images/microphone.png"
-        alt="mute_icon"
-        length="25"
-        onClick={props.handleMuteUnmute}
-        style={{ cursor: "pointer" }}
-      />
-    );
-  } else if (props.currentRoomType === "private" && props.isMuted) {
-    return (
-      <Icon
-        icon="/images/mute-microphone.png"
-        alt="unmute_icon"
-        length="25"
-        onClick={props.handleMuteUnmute}
-        style={{ cursor: "pointer" }}
-      />
-    );
   }
 }
