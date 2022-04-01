@@ -1,4 +1,4 @@
-import { React } from "react";
+import { React, useEffect } from "react";
 import Icon from "../../component/elements/Icon";
 import { styled } from "@mui/material/styles";
 import { Box, Avatar } from "@mui/material";
@@ -22,6 +22,7 @@ export default function RoomMangementPanel(props) {
         leave={props.leave} 
       />
       <OtherUserList
+        peerConnections={props.peerConnections}
         otherUsersList={props.otherUsersList}
         currentRoomType={props.currentRoomType}
         roomCreatorId={props.roomCreatorId}
@@ -47,6 +48,8 @@ function RoomId(props) {
   );
 }
 
+
+
 function OtherUserList(props) {
   return (
     <div
@@ -66,6 +69,7 @@ function OtherUserList(props) {
         return (
             <User
               key={index}
+              peerConnections={props.peerConnections}
               userId={userId}
               username={username}
               userAvatar={userAvatar}
@@ -79,7 +83,19 @@ function OtherUserList(props) {
   );
 }
 
-function User(props) {
+function User(props) {  
+  useEffect(() => {
+    Object.keys(props.peerConnections.current).map((userId) => {
+      if (!(props.peerConnections.current.hasOwnProperty(userId))) return;
+      if (!(props.peerConnections.current[userId].hasOwnProperty('audioStream'))) return;
+      const audioElem = document.getElementById(`audio-${userId}`);
+      if (props.peerConnections.current[userId].isMuted) {
+        audioElem.srcObject = null;
+      } else {
+        audioElem.srcObject = props.peerConnections.current[userId].audioStream;
+      }
+    })
+  }, [props.peerConnections]);
   return (
     <Box
       sx={{
@@ -102,7 +118,7 @@ function User(props) {
           currentRoomType={props.currentRoomType}
         />
       </Box>
-      <audio autoPlay={true} className="hidden" id={`audio-${props.userId}`}>
+      <audio autoPlay className="hidden" id={`audio-${props.userId}`}>
         <source type="audio/ogg"/>
       </audio>
     </Box>

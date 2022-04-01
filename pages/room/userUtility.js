@@ -8,7 +8,7 @@ import EllipsisText from "react-ellipsis-text";
 import dynamic from "next/dynamic";
 const Picker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
-export default function UserUtilityPanel(props) {
+export default function UserUtilityPanel(props, ref) {
   return (
     <Box
       sx={{
@@ -118,20 +118,28 @@ function CommentArea(props) {
 }
 
 function MessageArea(props) {
+  const [value, setValue] = useState(0);
   //auto scroll till bottom
-  const messageArea = useRef();
   useEffect(() => {
-    messageArea.current.scrollTop = messageArea.current.scrollHeight;
+    const box = document.getElementById('chat-message-area');
+    const isScrolledToBottom = box.scrollHeight - box.clientHeight <= box.scrollTop + 1;
+    console.log(isScrolledToBottom)
+    // scroll to bottom if isScrolledToBottom is true
+    if (isScrolledToBottom) {
+      box.scrollTop = box.scrollHeight - box.clientHeight
+      // Force rerender on the UI
+      setValue(value => value + 1);;
+    }
   }, [props.commentList]);
   return (
     <Box
+      id="chat-message-area"
       className="py-4 px-2 scrollbar"
       sx={{
         height: "85%",
         overflowY: "auto",
         overflowX: "hidden",
       }}
-      ref={messageArea}
     >
       {props.commentList.map((comment, index) => {
         if (comment.isSystem)

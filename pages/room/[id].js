@@ -170,17 +170,6 @@ export default function Room() {
     };
   });
 
-  // Update audio stream every time reload (setValue) is called
-  useEffect(() => {
-    Object.keys(peerConnections.current).map((userId) => {
-      if (peerConnections.current[userId].isMuted) {
-        document.getElementById(`audio-${userId}`).srcObject = peerConnections.current[userId].audioStream;
-      } else {
-        document.getElementById(`audio-${userId}`).srcObject = null;
-      }
-    });
-  }, [value]);
-
   // Initialize audio stream and WebRTC
   // Get peer WebRTC info and connect
   // Only run once after roomId is get
@@ -227,15 +216,6 @@ export default function Room() {
 
       // Write Firebase to update offer
       await createNewUserFirestore();
-
-      await sleep(2000);
-      // Send user info to other users
-      sendMsgAll({
-        type: "setUser",
-        username: username,
-        userId: userId,
-        avatar: avatar,
-      });
     }
 
     // Listen for any joined user
@@ -275,6 +255,15 @@ export default function Room() {
 
                 //console.log(`[system] ${newUserId} joined the room.`);
                 console.log(peerConnections.current);
+
+                await sleep(1000);
+                // Send user info to other users
+                sendMsg(newUserId, {
+                  type: "setUser",
+                  username: username,
+                  userId: userId,
+                  avatar: avatar,
+                });
               }
               // If other created the connection first:
               // 1. setRemote
@@ -284,7 +273,7 @@ export default function Room() {
                 console.log("PROCESS 3");
                 await connectNewUser(newUserId, fromRTCoffer);
 
-                await sleep(2000);
+                await sleep(1000);
                 // Send user info to other users
                 sendMsgAll({
                   username: username,
@@ -507,12 +496,9 @@ export default function Room() {
       const userId = data.userId;
       const type = data.type;
 
-      console.log(`message received:`)
-      console.log(data)
       // console.log(`${user}: ${message}`);
       // If message is chat, update in comment list
       if (type === "chat") {
-        console.log(`message type: chat`)
         commentList.current.push({
           username: username,
           time: Date(),
@@ -520,7 +506,6 @@ export default function Room() {
           isSystem: false,
         });
       } else if (type === "system") {
-        console.log(`message type: system`)
         commentList.current.push({
           username: username,
           time: Date(),
@@ -528,7 +513,6 @@ export default function Room() {
           isSystem: true,
         });
       } else if (type === "setUser") {
-        console.log(`message type: setUser`)
         const avatar = data.avatar;
         peerConnections.current[userId].username = username;
         peerConnections.current[userId].avatar = avatar;
@@ -543,6 +527,8 @@ export default function Room() {
       // Force rerender on the UI
       setValue((value) => value + 1);
     }
+
+    
 
   }, [roomId, userId, initialized, username, avatar, commentList]);
 
@@ -562,8 +548,10 @@ export default function Room() {
         >
           <Box sx={{ width: "23%" }}>
             <RoomMangementPanel
-              roomId={roomId}
               otherUsersList={getUsersList()}
+              peerConnections={peerConnections}
+              leave={leave}
+              roomId={roomId}
               roomCreatorId={roomCreatorId}
               currentRoomType={currentRoomType}
               isMuted={isMuted}
@@ -632,9 +620,10 @@ export default function Room() {
       >
         <Box sx={{ width: "23%" }}>
           <RoomMangementPanel
+            otherUsersList={getUsersList()}
+            peerConnections={peerConnections}
             leave={leave}
             roomId={roomId}
-            otherUsersList={getUsersList()}
             roomCreatorId={roomCreatorId}
             currentRoomType={currentRoomType}
             isMuted={isMuted}
@@ -669,12 +658,21 @@ export default function Room() {
     </>
   );
 
+  /*
   function connectAudio() {
     console.log("connecting Audio");
     Object.keys(peerConnections.current).map((userId) => {
-      const remoteAudio = document.getElementById(userId);
-      remoteAudio.srcObject = peerConnections.current[userId].audioStream;
-    });
+      if (!(peerConnections.current.hasOwnProperty(userId))) return;
+      if (!(peerConnections.current[userId].hasOwnProperty('audioStream'))) return;
+      const audioElem = document.getElementById(`audio-${userId}`);
+      console.log(audioElem);
+      console.log(peerConnections.current[userId].audioStream);
+      if (peerConnections.current[userId].isMuted) {
+        audioElem.srcObject = null;
+      } else {
+        audioElem.srcObject = peerConnections.current[userId].audioStream;
+      }
+    })
   }
 
   function disconnectAudio() {
@@ -684,9 +682,10 @@ export default function Room() {
       remoteAudio.srcObject = null;
     });
   }
+  */
 
   async function leave() {
-    await unsubscribe();
+    unscribeFirestore();
     const db = getFirestore();
     await deleteDoc(doc(db, `rooms/${roomId}/RTCinfo/${userId}`));
     // remove user in Firestore
@@ -717,20 +716,8 @@ export default function Room() {
     existingUsers.current = [];
     localStream.current = null;
     pendingICEcandidates.current = {};
-    setInitialized(false);
 
-    location.href = "/";
-  }
-
-  async function unsubscribe() {
-    const db = getFirestore();
-    const allUserDoc = collection(db, `rooms/${roomId}/RTCinfo`);
-    const calleeDoc = collection(
-      db,
-      `rooms/${roomId}/RTCinfo/${userId}/callees`
-    );
-    onSnapshot(allUserDoc, () => {});
-    onSnapshot(calleeDoc, () => {});
+    location.href = '/';
   }
 
   async function addICEcandidate(newUserId, ICEcandidate) {
@@ -738,31 +725,46 @@ export default function Room() {
     await peerConnections.current[newUserId].pc.addIceCandidate(candidate);
   }
 
-  function sendMsgAll(obj) {
-    Object.keys(peerConnections.current).map((userId) => {
-      if (peerConnections.current[userId].sendChannel.readyState === "open") {
-        console.log(`Sending message to ${userId}:`)
-        console.log(obj)
-        peerConnections.current[userId].sendChannel.send(JSON.stringify(obj));
-      }
-    });
+  // Firestore unscribe onsnapshot
+  function unscribeFirestore() {
+    const db = getFirestore();
+    onSnapshot(collection(db, `rooms/${roomId}/RTCinfo`), () => {});
+    onSnapshot(collection(db, `rooms/${roomId}/RTCinfo/${userId}/callees`), () => {});
   }
 
+  
+
   // Transfer peer connection to otherUsersList
+  
   function getUsersList() {
-    let otherUsersList = {userId: {
+    let otherUsersList = {}
+    otherUsersList[userId] = {
       isMuted: isMuted,
       username: username,
       avatar: avatar
-    }};
-    Object.keys(peerConnections.current).map((userId) => (
-      otherUsersList[userId] = {
-        isMuted: peerConnections.current[userId].isMuted,
-        username: peerConnections.current[userId].username,
-        avatar: peerConnections.current[userId].avatar
+    };
+    Object.keys(peerConnections.current).map((id) => {
+      if (id === userId) return;
+      otherUsersList[id] = {
+        isMuted: peerConnections.current[id].isMuted,
+        username: peerConnections.current[id].username,
+        avatar: peerConnections.current[id].avatar
       }
-    ));
+    });
     return otherUsersList;
+  }
+  
+
+  function sendMsgAll(obj) {
+    Object.keys(peerConnections.current).map((userId) => {
+      sendMsg(userId, obj)
+    });
+  }
+
+  function sendMsg(userId, obj) {
+    if (peerConnections.current[userId].sendChannel.readyState === "open") {
+      peerConnections.current[userId].sendChannel.send(JSON.stringify(obj));
+    }
   }
 }
 
