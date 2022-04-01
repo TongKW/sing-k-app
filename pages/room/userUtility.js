@@ -120,6 +120,7 @@ function CommentArea(props) {
 function MessageArea(props) {
   const [value, setValue] = useState(0);
   //auto scroll till bottom
+  /*
   useEffect(() => {
     const box = document.getElementById('chat-message-area');
     const isScrolledToBottom = box.scrollHeight - box.clientHeight <= box.scrollTop + 1;
@@ -131,14 +132,17 @@ function MessageArea(props) {
       setValue(value => value + 1);;
     }
   }, [props.commentList]);
+  */
   return (
     <Box
       id="chat-message-area"
       className="py-4 px-2 scrollbar"
       sx={{
+        display: "flex",
         height: "85%",
         overflowY: "auto",
         overflowX: "hidden",
+        flexDirection: "column-reverse"
       }}
     >
       {props.commentList.map((comment, index) => {

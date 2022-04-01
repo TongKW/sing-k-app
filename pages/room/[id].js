@@ -101,7 +101,7 @@ export default function Room() {
   };
 
   const handleAddComment = (commentText) => {
-    commentList.current.push({
+    commentList.current.unshift({
       username: username,
       time: Date(),
       text: commentText,
@@ -331,7 +331,7 @@ export default function Room() {
           // Update leaving message
           console.log(`Left: ${leftUserId}`)
           console.log(peerConnections.current)
-          commentList.current.push({
+          commentList.current.unshift({
             username: peerConnections.current[leftUserId].username,
             time: Date(),
             text: `${peerConnections.current[leftUserId].username} has left the room.`,
@@ -489,14 +489,14 @@ export default function Room() {
       // console.log(`${user}: ${message}`);
       // If message is chat, update in comment list
       if (type === "chat") {
-        commentList.current.push({
+        commentList.current.unshift({
           username: username,
           time: Date(),
           text: message,
           isSystem: false,
         });
       } else if (type === "system") {
-        commentList.current.push({
+        commentList.current.unshift({
           username: username,
           time: Date(),
           text: message,
@@ -507,7 +507,7 @@ export default function Room() {
         peerConnections.current[userId].username = username;
         peerConnections.current[userId].avatar = avatar;
 
-        commentList.current.push({
+        commentList.current.unshift({
           username: username,
           time: Date(),
           text: `${username} has joined the room.`,
