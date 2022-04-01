@@ -290,15 +290,6 @@ export default function Room() {
             
             // Add all pending ICE candidates
             await handleICEqueue(newUserId);
-
-            /*
-            if (!fromICEcandidate || !fromRTCoffer) return;
-            // Connect
-            await connectNewUser(newUserId, fromICEcandidate, fromRTCoffer);
-            */
-
-            // Force rerender on the UI
-            //setValue(value => value + 1);;
           }
 
           if (fromICEcandidate) {
@@ -587,28 +578,6 @@ export default function Room() {
     );
   return (
     <>
-      {/* <div style={{ display: "none" }}>
-        <div className="flex-1 p-10 text-2xl font-bold">Room id: {roomId}</div>
-        {Object.keys(peerConnections).map((userId) => (
-          <span key={userId}>
-            <h3>{userId}</h3>
-            <video id={userId} autoPlay playsInline></video>
-          </span>
-        ))}
-        <div onClick={connectAudio}>
-          <Button text="Connect Audio" />
-        </div>
-        <div onClick={disconnectAudio}>
-          <Button text="Disconnect Audio" />
-        </div>
-        <div onClick={leave}>
-          <Button text="Leave" />
-        </div>
-      </div> */}
-      {/* <div
-        className="flex-1 p-10 text-2xl font-bold"
-        style={{ width: "100%", height: "900px" }}
-      > */}
       <Box
         className="hide-scrollbar"
         style={{
@@ -659,45 +628,11 @@ export default function Room() {
     </>
   );
 
-  /*
-  function connectAudio() {
-    console.log("connecting Audio");
-    Object.keys(peerConnections.current).map((userId) => {
-      if (!(peerConnections.current.hasOwnProperty(userId))) return;
-      if (!(peerConnections.current[userId].hasOwnProperty('audioStream'))) return;
-      const audioElem = document.getElementById(`audio-${userId}`);
-      console.log(audioElem);
-      console.log(peerConnections.current[userId].audioStream);
-      if (peerConnections.current[userId].isMuted) {
-        audioElem.srcObject = null;
-      } else {
-        audioElem.srcObject = peerConnections.current[userId].audioStream;
-      }
-    })
-  }
-
-  function disconnectAudio() {
-    console.log("Disconnecting Audio");
-    Object.keys(peerConnections.current).map((userId) => {
-      const remoteAudio = document.getElementById(userId);
-      remoteAudio.srcObject = null;
-    });
-  }
-  */
-
   async function leave() {
     unscribeFirestore();
     const db = getFirestore();
     await deleteDoc(doc(db, `rooms/${roomId}/RTCinfo/${userId}`));
-    // remove user in Firestore
-    /*
-    const calleesDoc = collection(db, `rooms/${roomId}/RTCinfo/${userId}/callees`);
-    const calleesDocSnapshot = await getDocs(calleesDoc);
-    calleesDocSnapshot.forEach(async (docSnapshot) => {
-      if (docSnapshot === undefined) return;
-      await deleteDoc(docSnapshot.doc);
-    });
-    */
+
     // stop audio transfer
     if (localStream.current) {
       localStream.current.getTracks().forEach((track) => {
