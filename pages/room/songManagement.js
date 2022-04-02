@@ -1,7 +1,8 @@
-import { React } from "react";
+import { React, useState } from "react";
 import { Box } from "@mui/material";
 import Icon from "../../component/elements/Icon";
 import EllipsisText from "react-ellipsis-text";
+import { Input, Button } from "@mui/material";
 
 export default function SongManagementPanel(props) {
   return (
@@ -43,6 +44,7 @@ function SongListPanel(props) {
 }
 
 function SongFunctionKeys(props) {
+  const [fileInputRef, setFileInputRef] = useState({});
   return (
     <Box
       sx={{
@@ -65,13 +67,26 @@ function SongFunctionKeys(props) {
         onClick={props.handleStopSong}
         style={{ cursor: "pointer" }}
       />
-      <Icon
-        icon="/images/plus.png"
-        alt="plus"
-        length="20"
-        onClick={props.handleAddSong}
-        style={{ cursor: "pointer" }}
-      />
+      <label htmlFor="upload-song">
+        <input
+          id="upload-song"
+          name="upload-song"
+          type="file"
+          onInput={props.handleAddSong}
+          style={{
+            display: "none",
+          }}
+          ref={(ref) => {
+            setFileInputRef(ref);
+          }}
+        />
+        <Icon
+          icon="/images/plus.png"
+          alt="plus"
+          length="20"
+          style={{ cursor: "pointer" }}
+        />
+      </label>
       <Icon
         icon="/images/minus.png"
         alt="minus"

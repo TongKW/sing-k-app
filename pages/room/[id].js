@@ -21,6 +21,7 @@ import RoomMangementPanel from "./roomManagement";
 import UserUtilityPanel from "./userUtility";
 import SongManagementPanel from "./songManagement";
 import { songInfo } from "./mockup";
+import { processFile } from "../../utils/fileUtils";
 
 export default function Room() {
   // Routing parameter
@@ -36,11 +37,14 @@ export default function Room() {
   let existingUsers = useRef([]);
 
   let userInput = useRef(null);
+  const isRoomCreator = true;
 
   let commentList = useRef([]);
+  let allSongList = useRef([]);
+  let allAudioList = useRef([]);
 
   // Only reload when users enter/leave
-  const [value, setValue] = useState(0);
+  const [value, setValue] = useState(false);
 
   // Initialization indicates
   const [initialized, setInitialized] = useState(false);
@@ -54,13 +58,14 @@ export default function Room() {
   );
 
   const [currentRoomType, setCurrentRoomType] = useState("private");
-  const [isRoomCreator, setIsRoomCreator] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [echo, setEcho] = useState(50);
   const [volume, setVolume] = useState(50);
-  //const [otherUsersList, setOtherUsersList] = useState(otherParticipantsInfo);
-  
-  const [allSongList, setAllSongList] = useState(songInfo);
+
+  // const [allSongList, setAllSongList] = useState([]);
+  // const [audioList, setAudioList] = useState([]);
+  const [currentSong, setCurrentSong] = useState(null);
+  const [currentSongIsPlaying, setCurrentSongIsPlaying] = useState(false);
 
   // Initialize Firebase
   const app = firebase.initializeApp(firebaseConfig);
@@ -71,25 +76,69 @@ export default function Room() {
       userId: userId,
       username: username,
       type: "setMute",
-    })
+    });
   };
 
-  const handleStartSong = () => {
-    console.log("Start song!");
+  const updateUI = () => {
+    setValue((value) => !value);
   };
+
+  useEffect(() => {
+    if (currentSongIsPlaying) currentSong?.play();
+    else currentSong?.pause();
+  }, [currentSong, currentSongIsPlaying]);
+
+  const handleStartSong = () => {
+    if (currentSong === allAudioList.current[0]) {
+      // The user has paused, and now we need to resume
+      console.log("Resume song!");
+    } else {
+      setCurrentSong(allAudioList.current[0]);
+      console.log("Start song!");
+    }
+    setCurrentSongIsPlaying(true);
+  };
+
   const handleStopSong = () => {
+    setCurrentSongIsPlaying(false);
     console.log("Stopped song!");
   };
 
-  const handleAddSong = (newSong) => {
-    const newAllSongList = [...allSongList, newSong];
-    setAllSongList(newAllSongList);
+  const handleFinishedSong = () => {
+    allSongList.current = allSongList.current.slice(1);
+    allAudioList.current = allAudioList.current.slice(1);
+    setCurrentSongIsPlaying(false);
+    setCurrentSong(null);
+    console.log("Finished song!");
+  };
+
+  const handleAddSong = async (event) => {
+    if (!event.target.files.length) return; //if clicked cancel button
+    const [file] = event.target.files;
+    event.target.value = null;
+    const data = await processFile(file);
+    const audio = new Audio(data.content);
+    audio.onended = handleFinishedSong;
+
+    const newAllSongList = [...allSongList.current, file.name];
+    const newAudioList = [...allAudioList.current, audio];
+    // setAllSongList(newAllSongList);
+    // setAudioList(newAudioList);
+    allSongList.current = newAllSongList;
+    allAudioList.current = newAudioList;
+    console.log(allSongList.current);
+    updateUI();
   };
 
   const handleDeleteSong = () => {
     //delete the last element in allSongList if it is not empty
-    const newAllSongList = allSongList.slice(0, -1);
-    setAllSongList(newAllSongList);
+    // const newAllSongList = allSongList.slice(0, -1);
+    // const newAudioList = audioList.slice(0, -1);
+    // setAllSongList(newAllSongList);
+    // setAudioList(newAudioList);
+    allSongList.current = allSongList.current.slice(0, -1);
+    allAudioList.current = allAudioList.current.slice(0, -1);
+    updateUI();
   };
 
   const handleEcho = (event) => {
@@ -101,7 +150,7 @@ export default function Room() {
   };
 
   const handleAddComment = (commentText) => {
-    commentList.current.unshift({
+    commentList.current.push({
       username: username,
       time: Date(),
       text: commentText,
@@ -109,7 +158,8 @@ export default function Room() {
     });
 
     // Force rerender on the UI
-    setValue(value => value + 1);;
+    // setValue((value) => value + 1);
+    updateUI();
 
     // Send the chat message to other users
     sendMsgAll({
@@ -122,12 +172,22 @@ export default function Room() {
 
   function handleMoveSong(prevIndex, currentIndex) {
     //swap the two elements inside a list based on prevIndex and currentIndex
-    if (currentIndex === allSongList.length) return;
+    if (currentIndex === allSongList.current.length) return;
     else if (currentIndex === -1) return;
-    let newAllSongList = [...allSongList];
+
+    let newAllSongList = [...allSongList.current];
     newAllSongList[prevIndex] = allSongList[currentIndex];
     newAllSongList[currentIndex] = allSongList[prevIndex];
-    setAllSongList(newAllSongList);
+    // setAllSongList(newAllSongList);
+    allSongList.current = newAllSongList;
+
+    let newAudioList = [...allAudioList.current];
+    newAudioList[prevIndex] = allAudioList[currentIndex];
+    newAudioList[currentIndex] = allAudioList[prevIndex];
+    // setAudioList(newAudioList);
+    audioList.current = newAudioList;
+
+    updateUI();
   }
 
   // useEffect(() => {
@@ -239,7 +299,9 @@ export default function Room() {
             // return if the connection is already formed
             if (hasStableConnection(newUserId)) return;
 
-            if (peerConnections.current[newUserId].pc.remoteDescription === null) {
+            if (
+              peerConnections.current[newUserId].pc.remoteDescription === null
+            ) {
               console.log(`Current remote desc:`);
               console.log(
                 peerConnections.current[newUserId].pc.remoteDescription
@@ -250,7 +312,9 @@ export default function Room() {
                 console.log("PROCESS 2");
                 const desc = new RTCSessionDescription(fromRTCoffer);
 
-                await peerConnections.current[newUserId].pc.setRemoteDescription(desc);
+                await peerConnections.current[
+                  newUserId
+                ].pc.setRemoteDescription(desc);
 
                 //console.log(`[system] ${newUserId} joined the room.`);
                 console.log(peerConnections.current);
@@ -287,7 +351,7 @@ export default function Room() {
                 });
               }
             }
-            
+
             // Add all pending ICE candidates
             await handleICEqueue(newUserId);
           }
@@ -329,8 +393,8 @@ export default function Room() {
           peerConnections.current[leftUserId].pc.close();
 
           // Update leaving message
-          console.log(`Left: ${leftUserId}`)
-          console.log(peerConnections.current)
+          console.log(`Left: ${leftUserId}`);
+          console.log(peerConnections.current);
           commentList.current.unshift({
             username: peerConnections.current[leftUserId].username,
             time: Date(),
@@ -402,7 +466,9 @@ export default function Room() {
       createNewPeerConnection(newUserId);
       const desc = new RTCSessionDescription(remoteRTCoffer);
       await peerConnections.current[newUserId].pc.setRemoteDescription(desc);
-      const localRTCoffer = await peerConnections.current[newUserId].pc.createAnswer();
+      const localRTCoffer = await peerConnections.current[
+        newUserId
+      ].pc.createAnswer();
       await peerConnections.current[newUserId].pc.setLocalDescription(
         localRTCoffer
       );
@@ -460,8 +526,11 @@ export default function Room() {
 
     function hasStableConnection(userId) {
       if (!peerConnections.current.hasOwnProperty(userId)) return false;
-      if (peerConnections.current[userId].pc.connectionState !== "connected" 
-        || peerConnections.current[userId].pc.signalingState === "stable") return false;
+      if (
+        peerConnections.current[userId].pc.connectionState !== "connected" ||
+        peerConnections.current[userId].pc.signalingState === "stable"
+      )
+        return false;
       return true;
     }
 
@@ -514,14 +583,12 @@ export default function Room() {
           isSystem: true,
         });
       } else if (type === "setMute") {
-        peerConnections.current[userId].isMuted = !peerConnections.current[userId].isMuted;
+        peerConnections.current[userId].isMuted =
+          !peerConnections.current[userId].isMuted;
       }
       // Force rerender on the UI
       setValue((value) => value + 1);
     }
-
-    
-
   }, [roomId, userId, initialized, username, avatar, commentList]);
 
   // Page UI
@@ -563,7 +630,7 @@ export default function Room() {
           </Box>
           <Box sx={{ width: "23%" }}>
             <SongManagementPanel
-              allSongList={allSongList}
+              allSongList={allSongList.current}
               currentRoomType={currentRoomType}
               isRoomCreator={isRoomCreator}
               handleStartSong={handleStartSong}
@@ -613,7 +680,7 @@ export default function Room() {
         </Box>
         <Box sx={{ width: "23%" }}>
           <SongManagementPanel
-            allSongList={allSongList}
+            allSongList={allSongList.current}
             currentRoomType={currentRoomType}
             isRoomCreator={isRoomCreator}
             handleStartSong={handleStartSong}
@@ -653,7 +720,7 @@ export default function Room() {
     localStream.current = null;
     pendingICEcandidates.current = {};
 
-    location.href = '/';
+    location.href = "/";
   }
 
   async function addICEcandidate(newUserId, ICEcandidate) {
@@ -665,35 +732,35 @@ export default function Room() {
   function unscribeFirestore() {
     const db = getFirestore();
     onSnapshot(collection(db, `rooms/${roomId}/RTCinfo`), () => {});
-    onSnapshot(collection(db, `rooms/${roomId}/RTCinfo/${userId}/callees`), () => {});
+    onSnapshot(
+      collection(db, `rooms/${roomId}/RTCinfo/${userId}/callees`),
+      () => {}
+    );
   }
 
-  
-
   // Transfer peer connection to otherUsersList
-  
+
   function getUsersList() {
-    let otherUsersList = {}
+    let otherUsersList = {};
     otherUsersList[userId] = {
       isMuted: isMuted,
       username: username,
-      avatar: avatar
+      avatar: avatar,
     };
     Object.keys(peerConnections.current).map((id) => {
       if (id === userId) return;
       otherUsersList[id] = {
         isMuted: peerConnections.current[id].isMuted,
         username: peerConnections.current[id].username,
-        avatar: peerConnections.current[id].avatar
-      }
+        avatar: peerConnections.current[id].avatar,
+      };
     });
     return otherUsersList;
   }
-  
 
   function sendMsgAll(obj) {
     Object.keys(peerConnections.current).map((userId) => {
-      sendMsg(userId, obj)
+      sendMsg(userId, obj);
     });
   }
 
