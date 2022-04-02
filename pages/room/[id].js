@@ -282,141 +282,137 @@ export default function Room() {
     }
 
     // Listen for any joined user
-    onSnapshot(calleeDoc, async (snapshot) => {
-      await Promise.all(
-        snapshot.docChanges().map(async (change) => {
-          // Get new user info
-          const newUserDoc = change.doc;
-          const newUserId = newUserDoc.id;
-          if (newUserId === userId) return;
-          // If a new user joined, connect with WebRTC
-          if (change.type === "added" || change.type === "modified") {
-            // Create new connection
-            createNewPeerConnection(newUserId);
-            // Initializing an empty ICE candidate queue for the new comer
-            if (!pendingICEcandidates.current.hasOwnProperty(newUserId)) {
-              pendingICEcandidates.current[newUserId] = [];
-            }
-            const fromICEcandidate = newUserDoc.data().ICEcandidate;
-            const fromRTCoffer = newUserDoc.data().RTCoffer;
-            if (fromRTCoffer) {
-              console.log("PROCESS 1.5");
-              // return if the connection is already formed
-              if (hasStableConnection(newUserId)) return;
+    onSnapshot(calleeDoc, (snapshot) => {
+      snapshot.docChanges().forEach(async (change) => {
+        // Get new user info
+        const newUserDoc = change.doc;
+        const newUserId = newUserDoc.id;
+        if (newUserId === userId) return;
+        // If a new user joined, connect with WebRTC
+        if (change.type === "added" || change.type === "modified") {
+          // Create new connection
+          createNewPeerConnection(newUserId);
+          // Initializing an empty ICE candidate queue for the new comer
+          if (!pendingICEcandidates.current.hasOwnProperty(newUserId)) {
+            pendingICEcandidates.current[newUserId] = [];
+          }
+          const fromICEcandidate = newUserDoc.data().ICEcandidate;
+          const fromRTCoffer = newUserDoc.data().RTCoffer;
+          if (fromRTCoffer) {
+            console.log("PROCESS 1.5");
+            // return if the connection is already formed
+            if (hasStableConnection(newUserId)) return;
 
-              if (
-                peerConnections.current[newUserId].pc.remoteDescription === null
-              ) {
-                console.log(`Current remote desc:`);
+            if (
+              peerConnections.current[newUserId].pc.remoteDescription === null
+            ) {
+              console.log(`Current remote desc:`);
+              console.log(
+                peerConnections.current[newUserId].pc.remoteDescription
+              );
+              // If created the connection first and got answer back:
+              // 1. if pc.currentRemote is null => setRemote
+              if (existingUsers.current.includes(newUserId)) {
+                console.log("PROCESS 2");
+                const desc = new RTCSessionDescription(fromRTCoffer);
+
+                await peerConnections.current[
+                  newUserId
+                ].pc.setRemoteDescription(desc);
+
+                //console.log(`[system] ${newUserId} joined the room.`);
+                console.log(peerConnections.current);
+
+                await sleep(1000);
+                // Send user info to other users
+                sendMsg(newUserId, {
+                  type: "setUser",
+                  username: username,
+                  userId: userId,
+                  avatar: avatar,
+                });
+              }
+              // If other created the connection first:
+              // 1. setRemote
+              // 2. createOffer
+              // 3. setLocal
+              if (!existingUsers.current.includes(newUserId)) {
+                console.log("PROCESS 3");
+                await connectNewUser(newUserId, fromRTCoffer);
+
+                await sleep(1000);
+                // Send user info to other users
+                sendMsgAll({
+                  username: username,
+                  type: "system",
+                  message: `${username} has joined the room.`,
+                });
+                sendMsgAll({
+                  username: username,
+                  type: "setUser",
+                  userId: userId,
+                  avatar: avatar,
+                });
+              }
+            }
+
+            // Add all pending ICE candidates
+            await handleICEqueue(newUserId);
+          }
+
+          if (fromICEcandidate) {
+            if (peerConnections.current[newUserId].pc.remoteDescription) {
+              try {
+                await addICEcandidate(newUserId, fromICEcandidate);
+              } catch (error) {
                 console.log(
-                  peerConnections.current[newUserId].pc.remoteDescription
+                  `Error occurred when adding ICE candidate: ${error}`
                 );
-                // If created the connection first and got answer back:
-                // 1. if pc.currentRemote is null => setRemote
-                if (existingUsers.current.includes(newUserId)) {
-                  console.log("PROCESS 2");
-                  const desc = new RTCSessionDescription(fromRTCoffer);
-
-                  await peerConnections.current[
-                    newUserId
-                  ].pc.setRemoteDescription(desc);
-
-                  //console.log(`[system] ${newUserId} joined the room.`);
-                  console.log(peerConnections.current);
-
-                  await sleep(1000);
-                  // Send user info to other users
-                  sendMsg(newUserId, {
-                    type: "setUser",
-                    username: username,
-                    userId: userId,
-                    avatar: avatar,
-                  });
-                }
-                // If other created the connection first:
-                // 1. setRemote
-                // 2. createOffer
-                // 3. setLocal
-                if (!existingUsers.current.includes(newUserId)) {
-                  console.log("PROCESS 3");
-                  await connectNewUser(newUserId, fromRTCoffer);
-
-                  await sleep(1000);
-                  // Send user info to other users
-                  sendMsgAll({
-                    username: username,
-                    type: "system",
-                    message: `${username} has joined the room.`,
-                  });
-                  sendMsgAll({
-                    username: username,
-                    type: "setUser",
-                    userId: userId,
-                    avatar: avatar,
-                  });
-                }
               }
-
-              // Add all pending ICE candidates
-              await handleICEqueue(newUserId);
-            }
-
-            if (fromICEcandidate) {
-              if (peerConnections.current[newUserId].pc.remoteDescription) {
-                try {
-                  await addICEcandidate(newUserId, fromICEcandidate);
-                } catch (error) {
-                  console.log(
-                    `Error occurred when adding ICE candidate: ${error}`
-                  );
-                }
-              } else {
-                pendingICEcandidates.current[newUserId].push(fromICEcandidate);
-              }
+            } else {
+              pendingICEcandidates.current[newUserId].push(fromICEcandidate);
             }
           }
-        })
-      );
+        }
+      });
     });
 
     // Listen for any left user
-    onSnapshot(allUserDoc, async (snapshot) => {
-      await Promise.all(
-        snapshot.docChanges().map(async (change) => {
-          // If an user left, delete info and close the WebRTC connection
-          if (change.type === "removed") {
-            const newUserDoc = change.doc;
-            const leftUserId = newUserDoc.id;
-            if (leftUserId === userId) return;
-            await deleteDoc(
-              doc(db, `rooms/${roomId}/RTCinfo/${userId}/callees/${leftUserId}`)
-            );
-            // Remove user from existingUsers.current
-            if (existingUsers.current.includes(leftUserId)) {
-              const index = existingUsers.current.indexOf(leftUserId);
-              existingUsers.current.splice(index, 1);
-            }
-            // Close WebRTC connection
-            peerConnections.current[leftUserId].pc.close();
-
-            // Update leaving message
-            console.log(`Left: ${leftUserId}`);
-            console.log(peerConnections.current);
-            commentList.current.push({
-              username: peerConnections.current[leftUserId].username,
-              time: Date(),
-              text: `${peerConnections.current[leftUserId].username} has left the room.`,
-              isSystem: true,
-            });
-
-            // delete user info
-            delete peerConnections.current[leftUserId];
-
-            // Force rerender on the UI
-            setValue((value) => value + 1);
+    onSnapshot(allUserDoc, (snapshot) => {
+      snapshot.docChanges().forEach(async (change) => {
+        // If an user left, delete info and close the WebRTC connection
+        if (change.type === "removed") {
+          const newUserDoc = change.doc;
+          const leftUserId = newUserDoc.id;
+          if (leftUserId === userId) return;
+          await deleteDoc(
+            doc(db, `rooms/${roomId}/RTCinfo/${userId}/callees/${leftUserId}`)
+          );
+          // Remove user from existingUsers.current
+          if (existingUsers.current.includes(leftUserId)) {
+            const index = existingUsers.current.indexOf(leftUserId);
+            existingUsers.current.splice(index, 1);
           }
-        })
-      );
+          // Close WebRTC connection
+          peerConnections.current[leftUserId].pc.close();
+
+          // Update leaving message
+          console.log(`Left: ${leftUserId}`);
+          console.log(peerConnections.current);
+          commentList.current.push({
+            username: peerConnections.current[leftUserId].username,
+            time: Date(),
+            text: `${peerConnections.current[leftUserId].username} has left the room.`,
+            isSystem: true,
+          });
+
+          // delete user info
+          delete peerConnections.current[leftUserId];
+
+          // Force rerender on the UI
+          setValue((value) => value + 1);
+        }
+      });
     });
 
     //return () => {}
