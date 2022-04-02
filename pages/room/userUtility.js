@@ -118,21 +118,11 @@ function CommentArea(props) {
 }
 
 function MessageArea(props) {
-  const [value, setValue] = useState(0);
+  const messageBoxRef = useRef(null);
   //auto scroll till bottom
-  /*
   useEffect(() => {
-    const box = document.getElementById('chat-message-area');
-    const isScrolledToBottom = box.scrollHeight - box.clientHeight <= box.scrollTop + 1;
-    console.log(isScrolledToBottom)
-    // scroll to bottom if isScrolledToBottom is true
-    if (isScrolledToBottom) {
-      box.scrollTop = box.scrollHeight - box.clientHeight
-      // Force rerender on the UI
-      setValue(value => value + 1);;
-    }
-  }, [props.commentList]);
-  */
+    messageBoxRef.current?.scrollIntoView();
+  }, [props.commentList.length]);
   return (
     <Box
       id="chat-message-area"
@@ -142,7 +132,7 @@ function MessageArea(props) {
         height: "85%",
         overflowY: "auto",
         overflowX: "hidden",
-        flexDirection: "column-reverse"
+        flexDirection: "column",
       }}
     >
       {props.commentList.map((comment, index) => {
@@ -158,6 +148,7 @@ function MessageArea(props) {
             />
           );
       })}
+      <div ref={messageBoxRef} />
     </Box>
   );
 }
