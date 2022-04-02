@@ -62,8 +62,6 @@ export default function Room() {
   const [echo, setEcho] = useState(50);
   const [volume, setVolume] = useState(50);
 
-  // const [allSongList, setAllSongList] = useState([]);
-  // const [audioList, setAudioList] = useState([]);
   const [currentSong, setCurrentSong] = useState(null);
   const [currentSongIsPlaying, setCurrentSongIsPlaying] = useState(false);
 
@@ -86,7 +84,13 @@ export default function Room() {
   useEffect(() => {
     if (currentSongIsPlaying) currentSong?.play();
     else currentSong?.pause();
-  }, [currentSong, currentSongIsPlaying]);
+  }, [currentSongIsPlaying]);
+
+  useEffect(() => {
+    if (currentSong !== null) {
+      currentSong.volume = volume / 100;
+    }
+  }, [volume, currentSong]);
 
   const handleStartSong = () => {
     if (currentSong === allAudioList.current[0]) {
@@ -122,20 +126,17 @@ export default function Room() {
 
     const newAllSongList = [...allSongList.current, file.name];
     const newAudioList = [...allAudioList.current, audio];
-    // setAllSongList(newAllSongList);
-    // setAudioList(newAudioList);
     allSongList.current = newAllSongList;
     allAudioList.current = newAudioList;
-    console.log(allSongList.current);
     updateUI();
   };
 
   const handleDeleteSong = () => {
+    if (allSongList.current.length === 1) {
+      //if deleting the playing song
+      setCurrentSongIsPlaying(false);
+    }
     //delete the last element in allSongList if it is not empty
-    // const newAllSongList = allSongList.slice(0, -1);
-    // const newAudioList = audioList.slice(0, -1);
-    // setAllSongList(newAllSongList);
-    // setAudioList(newAudioList);
     allSongList.current = allSongList.current.slice(0, -1);
     allAudioList.current = allAudioList.current.slice(0, -1);
     updateUI();
@@ -158,7 +159,6 @@ export default function Room() {
     });
 
     // Force rerender on the UI
-    // setValue((value) => value + 1);
     updateUI();
 
     // Send the chat message to other users
@@ -172,19 +172,23 @@ export default function Room() {
 
   function handleMoveSong(prevIndex, currentIndex) {
     //swap the two elements inside a list based on prevIndex and currentIndex
+    if (prevIndex === 0 || currentIndex === 0) {
+      if (allSongList.current.length !== 1) {
+        setCurrentSongIsPlaying(false);
+        if (currentSong !== null) currentSong.currentTime = 0; // redial the current time of the song
+      }
+    }
     if (currentIndex === allSongList.current.length) return;
     else if (currentIndex === -1) return;
 
     let newAllSongList = [...allSongList.current];
-    newAllSongList[prevIndex] = allSongList[currentIndex];
-    newAllSongList[currentIndex] = allSongList[prevIndex];
-    // setAllSongList(newAllSongList);
+    newAllSongList[prevIndex] = allSongList.current[currentIndex];
+    newAllSongList[currentIndex] = allSongList.current[prevIndex];
     allSongList.current = newAllSongList;
 
     let newAudioList = [...allAudioList.current];
-    newAudioList[prevIndex] = allAudioList[currentIndex];
-    newAudioList[currentIndex] = allAudioList[prevIndex];
-    // setAudioList(newAudioList);
+    newAudioList[prevIndex] = allAudioList.current[currentIndex];
+    newAudioList[currentIndex] = allAudioList.current[prevIndex];
     allAudioList.current = newAudioList;
 
     updateUI();

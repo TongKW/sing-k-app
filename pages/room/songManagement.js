@@ -44,7 +44,7 @@ function SongListPanel(props) {
 }
 
 function SongFunctionKeys(props) {
-  const [fileInputRef, setFileInputRef] = useState({});
+  // const [fileInputRef, setFileInputRef] = useState({});
   return (
     <Box
       sx={{
@@ -76,9 +76,9 @@ function SongFunctionKeys(props) {
           style={{
             display: "none",
           }}
-          ref={(ref) => {
-            setFileInputRef(ref);
-          }}
+          // ref={(ref) => {
+          //   setFileInputRef(ref);
+          // }}
         />
         <Icon
           icon="/images/plus.png"
