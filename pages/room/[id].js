@@ -185,7 +185,7 @@ export default function Room() {
     newAudioList[prevIndex] = allAudioList[currentIndex];
     newAudioList[currentIndex] = allAudioList[prevIndex];
     // setAudioList(newAudioList);
-    audioList.current = newAudioList;
+    allAudioList.current = newAudioList;
 
     updateUI();
   }
