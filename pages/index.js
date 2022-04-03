@@ -266,20 +266,12 @@ function JoinRoomButton(props) {
   const [waitingOpen, setWaitingOpen] = useState(false);
   const [roomId, setRoomid] = useState();
   const [roomidError, setRoomidError] = useState();
-  const [localStream, setLocalStream] = useState(null);
   const [canEnterRoom, setCanEnterRoom] = useState(false);
   const [userIdError, setUserIdError] = useState(false);
   const [queuePosition, setQueuePosition] = useState(null);
 
   const db = getFirestore();
   const router = useRouter();
-
-  useEffect(() => {
-    if (localStream !== null) {
-      console.log("Got the media stream!");
-      console.log(localStream);
-    }
-  }, [localStream]);
 
   useEffect(() => {
     if (canEnterRoom || userIdError) {
@@ -365,7 +357,7 @@ function JoinRoomButton(props) {
       <EnterRoomIdDialog
         open={enterRoomIdOpen}
         close={handleEnterRoomIdClose}
-        warning={roomidError}
+        warning={roomIdError}
         validate={validateRoomId}
       />
       <CheckMicDialog
@@ -416,10 +408,7 @@ function CheckMicDialog(props) {
     if (props.open) {
       navigator.mediaDevices
         .getUserMedia({ audio: true })
-        .then((localStream) => {
-          props.setLocalStream(localStream);
-          props.close();
-        })
+        .then(props.close)
         .catch(props.close);
     }
   });
