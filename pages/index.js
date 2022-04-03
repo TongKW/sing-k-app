@@ -33,6 +33,7 @@ import getUserId from "../utils/jwt/decrypt";
 
 export default function Home() {
   const [username, setUsername] = useState("");
+  console.log(firebaseConfig);
   const app = firebase.initializeApp(firebaseConfig);
 
   useEffect(() => {
@@ -94,7 +95,7 @@ function CreateRoomButton(props) {
   const [canEnterRoom, setCanEnterRoom] = useState(false);
   const [userIdError, setUserIdError] = useState(false);
   const [roomType, setRoomType] = useState();
-  const [roomid, setRoomId] = useState();
+  const [roomId, setRoomId] = useState();
   const db = getFirestore(props.app);
   const router = useRouter();
 
@@ -108,7 +109,7 @@ function CreateRoomButton(props) {
     if (canEnterRoom || userIdError) {
       handleCheckMicClose();
       if (canEnterRoom) {
-        router.push(`/room/${roomid}`);
+        router.push(`/room/${roomId}`);
       } else {
         router.push("/login");
       }
@@ -118,13 +119,13 @@ function CreateRoomButton(props) {
   const handleEnterCreatedRoom = async () => {
     const userId = await getUserId();
     if (userId !== null) {
-      await setDoc(doc(db, "rooms", roomid), {
+      await setDoc(doc(db, "rooms", roomId), {
         creator: userId,
         queue: [],
         type: roomType,
       });
       //   await collection(db, "rooms")
-      //     .doc(roomid)
+      //     .doc(roomId)
       //     .collection("RTCinfo")
       //     .doc(userId)
       //     .set({});
@@ -136,8 +137,8 @@ function CreateRoomButton(props) {
   };
 
   const createRoom = async () => {
-    const roomid = await generateRoomId();
-    setRoomId(roomid);
+    const roomId = await generateRoomId();
+    setRoomId(roomId);
     handleCreateRoomClose();
     handleCheckMicOpen();
   };
@@ -230,8 +231,8 @@ function JoinRoomButton(props) {
   const [enterRoomIdOpen, setEnterRoomIdOpen] = useState(false);
   const [checkMicOpen, setCheckMicOpen] = useState(false);
   const [waitingOpen, setWaitingOpen] = useState(false);
-  const [roomid, setRoomid] = useState();
-  const [roomidError, setRoomidError] = useState();
+  const [roomId, setRoomid] = useState();
+  const [roomIdError, setRoomidError] = useState();
   const [localStream, setLocalStream] = useState(null);
   const [canEnterRoom, setCanEnterRoom] = useState(false);
   const [userIdError, setUserIdError] = useState(false);
@@ -251,7 +252,7 @@ function JoinRoomButton(props) {
     if (canEnterRoom || userIdError) {
       handleCheckMicClose();
       if (canEnterRoom) {
-        router.push(`/room/${roomid}`);
+        router.push(`/room/${roomId}`);
       } else {
         router.push("/login");
       }
@@ -281,31 +282,32 @@ function JoinRoomButton(props) {
     handleWaitingOpen();
   };
 
-  const validateRoomId = (roomid) => {
-    const findRoomIdInFirebase = async () => await queryFireBase(roomid);
+  const validateRoomId = (roomId) => {
+    const findRoomIdInFirebase = async () => await queryFireBase(roomId);
     findRoomIdInFirebase().then((result) => {
       if (result) {
         handleEnterRoomIdClose();
         handleCheckMicOpen();
-        setRoomid(roomid);
+        setRoomid(roomId);
       } else setRoomidError("Room ID not found");
     });
   };
 
-  const queryFireBase = async (roomid) => {
+  const queryFireBase = async (roomId) => {
     const roomsSnapshot = await getDocs(collection(db, "rooms"));
     const roomIdExists = roomsSnapshot.docs
       .map((doc) => doc.id)
-      .some((roomsSnapshotId) => roomsSnapshotId === roomid);
+      .some((roomsSnapshotId) => roomsSnapshotId === roomId);
     return roomIdExists;
   };
 
   const appendUserIdToQueue = async () => {
     const userId = await getUserId();
     if (userId !== null) {
-      const roomSnapshot = await getDoc(doc(db, "rooms", roomid));
+      const roomDoc = doc(db, "rooms", roomId);
+      const roomSnapshot = await getDoc(roomDoc);
       const newQueue = [...roomSnapshot.data().queue, userId];
-      await updateDoc(room, { queue: newQueue });
+      await updateDoc(roomDoc, { queue: newQueue });
       return newQueue.indexOf(userId);
     } else {
       setUserIdError(true);
@@ -315,7 +317,7 @@ function JoinRoomButton(props) {
 
   const joinRoom = async () => {
     //TODO: push the userId to firebase in a queue
-    //router.push('/room/'+roomid);
+    //router.push('/room/'+roomId);
   };
 
   return (
@@ -330,7 +332,7 @@ function JoinRoomButton(props) {
       <EnterRoomIdDialog
         open={enterRoomIdOpen}
         close={handleEnterRoomIdClose}
-        warning={roomidError}
+        warning={roomIdError}
         validate={validateRoomId}
       />
       <CheckMicDialog
@@ -339,7 +341,7 @@ function JoinRoomButton(props) {
         setLocalStream={setLocalStream}
       />
       <WaitingDialog
-        roomid={roomid}
+        roomId={roomId}
         open={waitingOpen}
         position={queuePosition}
         close={handleWaitingClose}
@@ -349,14 +351,14 @@ function JoinRoomButton(props) {
 }
 
 function EnterRoomIdDialog(props) {
-  const [roomid, setRoomid] = useState();
+  const [roomId, setRoomid] = useState();
   return (
     <Dialog open={props.open} onClose={props.close}>
       <DialogTitle>Enter Room ID: </DialogTitle>
       <DialogContent>
         <FormInputBlock
           category="Room ID"
-          value={roomid}
+          value={roomId}
           onChange={setRoomid}
           warning={props.warning}
         />
@@ -365,7 +367,7 @@ function EnterRoomIdDialog(props) {
             <button
               className="bg-indigo-700 hover:bg-indigo-800 text-white py-2 px-4 text-xs rounded focus:outline-none focus:shadow-outline"
               type="button"
-              onClick={() => props.validate(roomid.trim())}
+              onClick={() => props.validate(roomId.trim())}
             >
               Confirm
             </button>
@@ -425,7 +427,7 @@ function WaitingDialog(props) {
       aria-describedby="waiting-dialog-description"
     >
       <DialogTitle aria-labelledby="check-audio-dialog-title">
-        {`Waiting to enter room ${props.roomid}...`}
+        {`Waiting to enter room ${props.roomId}...`}
       </DialogTitle>
       <DialogContent>
         <DialogContentText aria-describedby="waiting-dialog-description">
