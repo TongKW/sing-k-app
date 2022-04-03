@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import HomePage from "../component/wrapper/HomePage";
 import { useRouter } from "next/router";
 import firebase from "firebase/compat/app";
@@ -117,7 +117,6 @@ const UserAvatar = styled(Avatar, {
 function CreateRoomButton(props) {
   const [createRoomOpen, setCreateRoomOpen] = useState(false);
   const [checkMicOpen, setCheckMicOpen] = useState(false);
-  const [localStream, setLocalStream] = useState(null);
   const [creatorName, setCreatorName] = useState();
   const [creatorAvatar, setCreatorAvatar] = useState();
   const [userId, setUserId] = useState();
@@ -134,6 +133,7 @@ function CreateRoomButton(props) {
 
   const handleCheckMicOpen = () => setCheckMicOpen(true);
   const handleCheckMicClose = () => setCheckMicOpen(false);
+
   useEffect(() => {
     if (canEnterRoom || userIdError) {
       handleCreateRoomClose();
@@ -203,11 +203,7 @@ function CreateRoomButton(props) {
         clickStreaming={createStreamingRoom}
         clickPrivate={createPrivateRoom}
       />
-      <CheckMicDialog
-        open={checkMicOpen}
-        close={handleEnterCreatedRoom}
-        setLocalStream={setLocalStream}
-      />
+      <CheckMicDialog open={checkMicOpen} close={handleEnterCreatedRoom} />
     </>
   );
 }
@@ -264,8 +260,8 @@ function JoinRoomButton(props) {
   const [enterRoomIdOpen, setEnterRoomIdOpen] = useState(false);
   const [checkMicOpen, setCheckMicOpen] = useState(false);
   const [waitingOpen, setWaitingOpen] = useState(false);
-  const [roomId, setRoomid] = useState();
-  const [roomidError, setRoomidError] = useState();
+  const [roomId, setRoomId] = useState();
+  const [roomIdError, setRoomIdError] = useState();
   const [canEnterRoom, setCanEnterRoom] = useState(false);
   const [userIdError, setUserIdError] = useState(false);
   const [queuePosition, setQueuePosition] = useState(null);
@@ -313,8 +309,8 @@ function JoinRoomButton(props) {
       if (result) {
         handleEnterRoomIdClose();
         handleCheckMicOpen();
-        setRoomid(roomId);
-      } else setRoomidError("Room ID not found");
+        setRoomId(roomId);
+      } else setRoomIdError("Room ID not found");
     });
   };
 
@@ -360,11 +356,7 @@ function JoinRoomButton(props) {
         warning={roomIdError}
         validate={validateRoomId}
       />
-      <CheckMicDialog
-        open={checkMicOpen}
-        close={handleGetLocalStream}
-        setLocalStream={setLocalStream}
-      />
+      <CheckMicDialog open={checkMicOpen} close={handleGetLocalStream} />
       <WaitingDialog
         roomId={roomId}
         open={waitingOpen}
@@ -411,7 +403,7 @@ function CheckMicDialog(props) {
         .then(props.close)
         .catch(props.close);
     }
-  });
+  }, [props.open]);
   return (
     <Dialog
       open={props.open}
