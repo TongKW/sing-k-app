@@ -5,6 +5,7 @@ import firebase from "firebase/compat/app";
 import { firebaseConfig } from "../firebase/config";
 import {
   getFirestore,
+  onSnapshot,
   collection,
   getDocs,
   getDoc,
@@ -29,14 +30,37 @@ import PeopleIcon from "@mui/icons-material/People";
 import generateRoomId from "../utils/room/generate-id";
 import LoadingCircle from "../utils/inlineLoading";
 import { TapAndPlayTwoTone } from "@mui/icons-material";
-import getUserId from "../utils/jwt/decrypt";
+import { getUserId, setUsernameAvatar } from "../utils/jwt/decrypt";
+
+const mockUpRoomInfos = [
+  {
+    username: "polar_bear",
+    userAvatar: "",
+    roomId: "",
+    numberOfParticipants: 0,
+  },
+];
 
 export default function Home() {
   const [username, setUsername] = useState("");
+  const [roomInfos, setRoomInfos] = useState(mockUpRoomInfos);
   const app = firebase.initializeApp(firebaseConfig);
+  const db = getFirestore();
 
   useEffect(() => {
     setUsername(localStorage.getItem("username"));
+    const unsub = onSnapshot(collection(db, "rooms"), (snapshot) => {
+      const roomInfos = snapshot.docs.map((doc) => {
+        return {
+          username: doc.data().creator,
+          userAvatar: "",
+          roomId: doc.id,
+          numberOfParticipants: 0,
+        };
+      });
+      setRoomInfos(roomInfos);
+    });
+    return () => unsub();
   }, []);
   return (
     <HomePage>
@@ -50,8 +74,8 @@ export default function Home() {
             my: 5,
           }}
         >
-          <CreateRoomButton app={app} username={username} />
-          <JoinRoomButton app={app} username={username} />
+          <CreateRoomButton />
+          <JoinRoomButton />
         </Box>
         <Box
           sx={{
@@ -64,14 +88,17 @@ export default function Home() {
             borderRadius: 2,
           }}
         >
-          <Box>Current streaming room: 4</Box>
+          <Box>Current streaming room: {roomInfos.length}</Box>
           <Box mt={2} />
-          <CurrentStreamRoom
-            id="test"
-            image="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9pBh-vAxx703zgbQBqOUEREnogEa23F_xFw&usqp=CAU"
-            hostname="abc"
-            audience="3"
-          />
+          {roomInfos.map((roomInfo, index) => (
+            <CurrentStreamRoom
+              key={index}
+              id={roomInfo.roomId}
+              image={roomInfo.userAvatar}
+              hostname={roomInfo.username}
+              audience={roomInfo.numberOfParticipants}
+            />
+          ))}
         </Box>
       </div>
     </HomePage>
@@ -91,11 +118,14 @@ function CreateRoomButton(props) {
   const [createRoomOpen, setCreateRoomOpen] = useState(false);
   const [checkMicOpen, setCheckMicOpen] = useState(false);
   const [localStream, setLocalStream] = useState(null);
+  const [creatorName, setCreatorName] = useState();
+  const [creatorAvatar, setCreatorAvatar] = useState();
+  const [userId, setUserId] = useState();
   const [canEnterRoom, setCanEnterRoom] = useState(false);
   const [userIdError, setUserIdError] = useState(false);
   const [roomType, setRoomType] = useState();
-  const [roomid, setRoomId] = useState();
-  const db = getFirestore(props.app);
+  const [roomId, setRoomId] = useState();
+  const db = getFirestore();
   const router = useRouter();
 
   const handleCreateRoomOpen = () => setCreateRoomOpen(true);
@@ -106,9 +136,10 @@ function CreateRoomButton(props) {
   const handleCheckMicClose = () => setCheckMicOpen(false);
   useEffect(() => {
     if (canEnterRoom || userIdError) {
+      handleCreateRoomClose();
       handleCheckMicClose();
       if (canEnterRoom) {
-        router.push(`/room/${roomid}`);
+        router.push(`/room/${roomId}`);
       } else {
         router.push("/login");
       }
@@ -116,28 +147,31 @@ function CreateRoomButton(props) {
   }, [canEnterRoom, userIdError]);
 
   const handleEnterCreatedRoom = async () => {
-    const userId = await getUserId();
-    if (userId !== null) {
-      await setDoc(doc(db, "rooms", roomid), {
-        creator: userId,
-        queue: [],
-        type: roomType,
-      });
-      //   await collection(db, "rooms")
-      //     .doc(roomid)
-      //     .collection("RTCinfo")
-      //     .doc(userId)
-      //     .set({});
-
-      setCanEnterRoom(true);
-    } else {
-      setUserIdError(true);
-    }
+    console.log(
+      "handleEnterCreatedRoom [line 149-155]: setDoc creator, creatorAvatar, queue, type"
+    );
+    await setDoc(doc(db, "rooms", roomId), {
+      creator: creatorName,
+      creatorAvatar: creatorAvatar,
+      queue: [],
+      type: roomType,
+    });
+    console.log(
+      "handleEnterCreatedRoom [line 159-160]: setDoc rooms/roomId/RTCinfo/userId"
+    );
+    await setDoc(doc(db, `rooms/${roomId}/RTCinfo/${userId}`), {});
+    setCanEnterRoom(true);
   };
 
   const createRoom = async () => {
-    const roomid = await generateRoomId();
-    setRoomId(roomid);
+    const roomId = await generateRoomId();
+    const userId = await setUsernameAvatar(setCreatorName, setCreatorAvatar);
+    if (userId === null) {
+      setUserIdError(true);
+      return;
+    }
+    setUserId(userId);
+    setRoomId(roomId);
     handleCreateRoomClose();
     handleCheckMicOpen();
   };
@@ -230,14 +264,14 @@ function JoinRoomButton(props) {
   const [enterRoomIdOpen, setEnterRoomIdOpen] = useState(false);
   const [checkMicOpen, setCheckMicOpen] = useState(false);
   const [waitingOpen, setWaitingOpen] = useState(false);
-  const [roomid, setRoomid] = useState();
+  const [roomId, setRoomid] = useState();
   const [roomidError, setRoomidError] = useState();
   const [localStream, setLocalStream] = useState(null);
   const [canEnterRoom, setCanEnterRoom] = useState(false);
   const [userIdError, setUserIdError] = useState(false);
   const [queuePosition, setQueuePosition] = useState(null);
 
-  const db = getFirestore(props.app);
+  const db = getFirestore();
   const router = useRouter();
 
   useEffect(() => {
@@ -251,7 +285,7 @@ function JoinRoomButton(props) {
     if (canEnterRoom || userIdError) {
       handleCheckMicClose();
       if (canEnterRoom) {
-        router.push(`/room/${roomid}`);
+        router.push(`/room/${roomId}`);
       } else {
         router.push("/login");
       }
@@ -281,31 +315,32 @@ function JoinRoomButton(props) {
     handleWaitingOpen();
   };
 
-  const validateRoomId = (roomid) => {
-    const findRoomIdInFirebase = async () => await queryFireBase(roomid);
+  const validateRoomId = (roomId) => {
+    const findRoomIdInFirebase = async () => await queryFireBase(roomId);
     findRoomIdInFirebase().then((result) => {
       if (result) {
         handleEnterRoomIdClose();
         handleCheckMicOpen();
-        setRoomid(roomid);
+        setRoomid(roomId);
       } else setRoomidError("Room ID not found");
     });
   };
 
-  const queryFireBase = async (roomid) => {
+  const queryFireBase = async (roomId) => {
     const roomsSnapshot = await getDocs(collection(db, "rooms"));
     const roomIdExists = roomsSnapshot.docs
       .map((doc) => doc.id)
-      .some((roomsSnapshotId) => roomsSnapshotId === roomid);
+      .some((roomsSnapshotId) => roomsSnapshotId === roomId);
     return roomIdExists;
   };
 
   const appendUserIdToQueue = async () => {
     const userId = await getUserId();
     if (userId !== null) {
-      const roomSnapshot = await getDoc(doc(db, "rooms", roomid));
+      const roomDoc = doc(db, "rooms", roomId);
+      const roomSnapshot = await getDoc(roomDoc);
       const newQueue = [...roomSnapshot.data().queue, userId];
-      await updateDoc(room, { queue: newQueue });
+      await updateDoc(roomDoc, { queue: newQueue });
       return newQueue.indexOf(userId);
     } else {
       setUserIdError(true);
@@ -315,7 +350,7 @@ function JoinRoomButton(props) {
 
   const joinRoom = async () => {
     //TODO: push the userId to firebase in a queue
-    //router.push('/room/'+roomid);
+    //router.push('/room/'+roomId);
   };
 
   return (
@@ -339,7 +374,7 @@ function JoinRoomButton(props) {
         setLocalStream={setLocalStream}
       />
       <WaitingDialog
-        roomid={roomid}
+        roomId={roomId}
         open={waitingOpen}
         position={queuePosition}
         close={handleWaitingClose}
@@ -349,14 +384,14 @@ function JoinRoomButton(props) {
 }
 
 function EnterRoomIdDialog(props) {
-  const [roomid, setRoomid] = useState();
+  const [roomId, setRoomid] = useState();
   return (
     <Dialog open={props.open} onClose={props.close}>
       <DialogTitle>Enter Room ID: </DialogTitle>
       <DialogContent>
         <FormInputBlock
           category="Room ID"
-          value={roomid}
+          value={roomId}
           onChange={setRoomid}
           warning={props.warning}
         />
@@ -365,7 +400,7 @@ function EnterRoomIdDialog(props) {
             <button
               className="bg-indigo-700 hover:bg-indigo-800 text-white py-2 px-4 text-xs rounded focus:outline-none focus:shadow-outline"
               type="button"
-              onClick={() => props.validate(roomid.trim())}
+              onClick={() => props.validate(roomId.trim())}
             >
               Confirm
             </button>
@@ -425,7 +460,7 @@ function WaitingDialog(props) {
       aria-describedby="waiting-dialog-description"
     >
       <DialogTitle aria-labelledby="check-audio-dialog-title">
-        {`Waiting to enter room ${props.roomid}...`}
+        {`Waiting to enter room ${props.roomId}...`}
       </DialogTitle>
       <DialogContent>
         <DialogContentText aria-describedby="waiting-dialog-description">
