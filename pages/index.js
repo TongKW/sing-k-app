@@ -49,19 +49,21 @@ export default function Home() {
 
   useEffect(() => {
     setUsername(localStorage.getItem("username"));
-    const unsub = onSnapshot(collection(db, "rooms"), (snapshot) => {
-      const roomInfos = snapshot.docs.map((doc) => {
+    const unsub = onSnapshot(collection(db, "rooms"), async (snapshot) => {
+      const roomInfos = await Promise.all(snapshot.docs.map(async (doc) => {
+        const userDoc = collection(db, `rooms/${doc.id}/RTCinfo`);
+        const userSnapshot = await getDocs(userDoc);
         return {
           username: doc.data().creator,
-          userAvatar: "",
+          userAvatar: doc.data().creatorAvatar,
           roomId: doc.id,
-          numberOfParticipants: 0,
+          numberOfParticipants: userSnapshot.size,
         };
-      });
+      }));
       setRoomInfos(roomInfos);
     });
     return () => unsub();
-  }, []);
+  }, [db]);
   return (
     <HomePage>
       <div className="flex-1 p-10 text-2xl font-bold">
