@@ -27,3 +27,12 @@ export function checkFileSize(base64) {
   const fileSize = base64.length * (3 / 4) - 2;
   return fileSize;
 }
+
+export function stripFileExtension(fileName) {
+  // given a file name , return the file name without the extension
+  const fileNameArray = fileName.split(".");
+  if (fileNameArray.length === 1)
+    // there is no extension
+    return fileName;
+  else return fileNameArray.slice(0, fileNameArray.length - 1).join(".");
+}

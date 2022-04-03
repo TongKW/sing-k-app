@@ -15,13 +15,11 @@ import {
 } from "firebase/firestore";
 import { Box } from "@mui/material";
 import { firebaseConfig } from "../../firebase/config";
-import Button from "../../component/elements/button";
 import sleep from "../../utils/sleep";
 import RoomMangementPanel from "./roomManagement";
 import UserUtilityPanel from "./userUtility";
 import SongManagementPanel from "./songManagement";
-import { songInfo } from "./mockup";
-import { processFile } from "../../utils/fileUtils";
+import { processFile, stripFileExtension } from "../../utils/fileUtils";
 
 export default function Room() {
   // Routing parameter
@@ -123,8 +121,8 @@ export default function Room() {
     const data = await processFile(file);
     const audio = new Audio(data.content);
     audio.onended = handleFinishedSong;
-
-    const newAllSongList = [...allSongList.current, file.name];
+    const cleantFileName = stripFileExtension(file.name);
+    const newAllSongList = [...allSongList.current, cleantFileName];
     const newAudioList = [...allAudioList.current, audio];
     allSongList.current = newAllSongList;
     allAudioList.current = newAudioList;
