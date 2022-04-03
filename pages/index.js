@@ -32,18 +32,11 @@ import LoadingCircle from "../utils/inlineLoading";
 import { TapAndPlayTwoTone } from "@mui/icons-material";
 import { getUserId, setUsernameAvatar } from "../utils/jwt/decrypt";
 
-const mockUpRoomInfos = [
-  {
-    username: "polar_bear",
-    userAvatar: "",
-    roomId: "",
-    numberOfParticipants: 0,
-  },
-];
+
 
 export default function Home() {
   const [username, setUsername] = useState("");
-  const [roomInfos, setRoomInfos] = useState(mockUpRoomInfos);
+  const [roomInfos, setRoomInfos] = useState([]);
   const app = firebase.initializeApp(firebaseConfig);
   const db = getFirestore();
 
@@ -53,14 +46,17 @@ export default function Home() {
       const roomInfos = await Promise.all(snapshot.docs.map(async (doc) => {
         const userDoc = collection(db, `rooms/${doc.id}/RTCinfo`);
         const userSnapshot = await getDocs(userDoc);
+
         return {
           username: doc.data().creator,
+          type: doc.data().type,
           userAvatar: doc.data().creatorAvatar,
           roomId: doc.id,
           numberOfParticipants: userSnapshot.size,
         };
       }));
-      setRoomInfos(roomInfos);
+      const publicRoomInfos = roomInfos.filter(roomInfo => roomInfo.type === "streaming");
+      setRoomInfos(publicRoomInfos);
     });
     return () => unsub();
   }, [db]);
