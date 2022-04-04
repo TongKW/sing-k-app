@@ -34,15 +34,6 @@ export default function HomePage(props) {
                 User Profile
               </a>
             </Link>
-            <Link href="/room">
-              <a
-                className={
-                  navElemClass + (props.href == "room" ? "bg-indigo-900" : "")
-                }
-              >
-                Room
-              </a>
-            </Link>
             <a
               href="change-password"
               className={
