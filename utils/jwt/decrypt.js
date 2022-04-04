@@ -1,4 +1,4 @@
-export default async function getUserId() {
+export async function getUserId() {
   const token = localStorage.getItem("token");
   const response = await fetch("/api/jwt/decrypt", {
     method: "POST",

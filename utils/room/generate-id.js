@@ -3,7 +3,7 @@ import firebase from "firebase/compat/app";
 import { firebaseConfig } from "../../firebase/config";
 
 // Generate alphanumeric random string of 6 characters
-function generateRandomString(length = 8) {
+function generateRandomString(length = 6) {
   // [65, 66, ..., 90]
   const lowerCaseAscii = Array(26)
     .fill(65)

@@ -31,6 +31,7 @@ import generateRoomId from "../utils/room/generate-id";
 import LoadingCircle from "../utils/inlineLoading";
 import { TapAndPlayTwoTone } from "@mui/icons-material";
 import { getUserId, setUsernameAvatar } from "../utils/jwt/decrypt";
+import sleep from "../utils/sleep"
 
 
 
@@ -137,12 +138,13 @@ function CreateRoomButton(props) {
       handleCreateRoomClose();
       handleCheckMicClose();
       if (canEnterRoom) {
-        router.push(`/room/${roomId}`);
+        localStorage.setItem('roomId', roomId);
+        window.open(`/room/${roomId}`);
       } else {
         router.push("/login");
       }
     }
-  }, [canEnterRoom, userIdError]);
+  }, [canEnterRoom, roomId, router, userIdError]);
 
   const handleEnterCreatedRoom = async () => {
     console.log(
@@ -151,6 +153,7 @@ function CreateRoomButton(props) {
     await setDoc(doc(db, "rooms", roomId), {
       creator: creatorName,
       creatorAvatar: creatorAvatar,
+      creatorId: userId,
       queue: [],
       type: roomType,
     });
@@ -158,6 +161,7 @@ function CreateRoomButton(props) {
       "handleEnterCreatedRoom [line 159-160]: setDoc rooms/roomId/RTCinfo/userId"
     );
     await setDoc(doc(db, `rooms/${roomId}/RTCinfo/${userId}`), {});
+    await sleep(2000);
     setCanEnterRoom(true);
   };
 
@@ -271,12 +275,14 @@ function JoinRoomButton(props) {
     if (canEnterRoom || userIdError) {
       handleCheckMicClose();
       if (canEnterRoom) {
-        router.push(`/room/${roomId}`);
+        localStorage.setItem('roomId', roomId);
+        window.open(`/room/${roomId}`);
+        //router.push(`/room/${roomId}`);
       } else {
         router.push("/login");
       }
     }
-  }, [canEnterRoom, userIdError]);
+  }, [canEnterRoom, roomId, router, userIdError]);
 
   const handleEnterRoomIdOpen = () => setEnterRoomIdOpen(true);
 
@@ -322,6 +328,8 @@ function JoinRoomButton(props) {
 
   const appendUserIdToQueue = async () => {
     const userId = await getUserId();
+    console.log(userId)
+    console.log(roomId)
     if (userId !== null) {
       const roomDoc = doc(db, "rooms", roomId);
       const roomSnapshot = await getDoc(roomDoc);
@@ -482,7 +490,7 @@ function CurrentStreamRoom(props) {
   });
 
   return (
-    <StyledButton width="100%" textTransform="none" onClick={handleJoinRoom}>
+    <StyledButton width="100%" texttransform="none" onClick={handleJoinRoom}>
       <Box
         sx={{
           width: "100%",
