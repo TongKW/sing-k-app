@@ -2,7 +2,7 @@ import { MongoClient, ObjectId } from 'mongodb';
 import fs from 'fs'
 import path from 'path'
 
-const uri = "mongodb://admin:admin@alexauwork.com:30000/";
+const uri = process.env.MONGODB_SERVER;
 
 export default async function handler(req, res) {
   if (req.method === "POST") {

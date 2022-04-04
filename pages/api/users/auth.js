@@ -2,7 +2,7 @@ import { MongoClient } from "mongodb";
 import sign_token from "../../../utils/jwt/sign";
 import getConfig from "next/config";
 
-const uri = "mongodb://admin:admin@alexauwork.com:30000/";
+const uri = process.env.MONGODB_SERVER;
 const bcrypt = require("bcryptjs");
 const { serverRuntimeConfig } = getConfig();
 
