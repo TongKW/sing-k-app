@@ -13,15 +13,14 @@ import {
   onSnapshot,
   deleteDoc,
 } from "firebase/firestore";
-import { Box } from "@mui/material";
+import { Box, Dialog, DialogTitle, DialogContent } from "@mui/material";
 import { firebaseConfig } from "../../firebase/config";
-import Button from "../../component/elements/button";
 import sleep from "../../utils/sleep";
 import RoomMangementPanel from "./roomManagement";
 import UserUtilityPanel from "./userUtility";
 import SongManagementPanel from "./songManagement";
-import { songInfo } from "./mockup";
-import { processFile } from "../../utils/fileUtils";
+import { processFile, stripFileExtension } from "../../utils/fileUtils";
+import Button from "../../component/elements/button";
 
 export default function Room() {
   // Routing parameter
@@ -35,13 +34,12 @@ export default function Room() {
   let peerConnections = useRef({});
   // Existing users global variables
   let existingUsers = useRef([]);
-
-  let userInput = useRef(null);
-  const isRoomCreator = true;
-
   let commentList = useRef([]);
   let allSongList = useRef([]);
   let allAudioList = useRef([]);
+
+  // Check if user enters from Lobby
+  const [fromLobby, setFromLobby] = useState(true);
 
   // Only reload when users enter/leave
   const [value, setValue] = useState(false);
@@ -53,9 +51,7 @@ export default function Room() {
   const [username, setUsername] = useState();
   const [avatar, setAvatar] = useState();
   const [userId, setUserId] = useState();
-  const [roomCreatorId, setRoomCreatorId] = useState(
-    "621635d92eecb0a4b18574e4"
-  );
+  const [roomCreatorId, setRoomCreatorId] = useState();
 
   const [currentRoomType, setCurrentRoomType] = useState("private");
   const [isMuted, setIsMuted] = useState(false);
@@ -123,8 +119,8 @@ export default function Room() {
     const data = await processFile(file);
     const audio = new Audio(data.content);
     audio.onended = handleFinishedSong;
-
-    const newAllSongList = [...allSongList.current, file.name];
+    const cleantFileName = stripFileExtension(file.name);
+    const newAllSongList = [...allSongList.current, cleantFileName];
     const newAudioList = [...allAudioList.current, audio];
     allSongList.current = newAllSongList;
     allAudioList.current = newAudioList;
@@ -233,6 +229,21 @@ export default function Room() {
     };
   });
 
+  useEffect(()=> {
+    if (!roomId) return;
+    checkRoomCreator();
+    async function checkRoomCreator() {
+      const db = getFirestore();
+      const roomDoc = doc(db, `rooms/${roomId}`);
+      console.log('roomId: ');
+      console.log(roomId);
+      const roomSnapshot = await getDoc(roomDoc);
+      const data = roomSnapshot.data();
+      const creatorId = data.creatorId;
+      setRoomCreatorId(creatorId);
+    }
+  }, [roomId])
+
   // Initialize audio stream and WebRTC
   // Get peer WebRTC info and connect
   // Only run once after roomId is get
@@ -243,6 +254,14 @@ export default function Room() {
       db,
       `rooms/${roomId}/RTCinfo/${userId}/callees`
     );
+
+    // Check if user is from lobby
+    const storedRoomId = localStorage.getItem("roomId");
+    if (!roomId) return;
+    if (storedRoomId !== roomId) {
+      setFromLobby(false);
+      return;
+    }
 
     if (initialized || !roomId || !userId) return;
     initialize();
@@ -596,59 +615,16 @@ export default function Room() {
   }, [roomId, userId, initialized, username, avatar, commentList]);
 
   // Page UI
-  if (!initialized)
-    return (
-      <>
-        <Box
-          className="hide-scrollbar"
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            width: "100%",
-            height: "100vh",
-            background: "#ccc",
-          }}
-        >
-          <Box sx={{ width: "23%" }}>
-            <RoomMangementPanel
-              otherUsersList={getUsersList()}
-              peerConnections={peerConnections}
-              leave={leave}
-              roomId={roomId}
-              roomCreatorId={roomCreatorId}
-              currentRoomType={currentRoomType}
-              isMuted={isMuted}
-              handleMuteUnmute={handleMuteUnmute}
-            />
-          </Box>
-          <Box sx={{ background: "red", width: "54%" }}>
-            <UserUtilityPanel
-              isMuted={isMuted}
-              echo={echo}
-              volume={volume}
-              handleEcho={handleEcho}
-              handleVolume={handleVolume}
-              commentList={commentList.current}
-              handleAddComment={handleAddComment}
-            />
-          </Box>
-          <Box sx={{ width: "23%" }}>
-            <SongManagementPanel
-              allSongList={allSongList.current}
-              currentRoomType={currentRoomType}
-              isRoomCreator={isRoomCreator}
-              handleStartSong={handleStartSong}
-              handleStopSong={handleStopSong}
-              handleAddSong={handleAddSong}
-              handleDeleteSong={handleDeleteSong}
-              handleMoveSong={handleMoveSong}
-            />
-          </Box>
-        </Box>
-      </>
-    );
   return (
     <>
+      <Dialog open={!fromLobby}>
+        <DialogTitle>Please join the room from Lobby.</DialogTitle>
+        <DialogContent>
+          <div onClick={() => {leave(true)}}>
+            <Button text="Close"></Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <Box
         className="hide-scrollbar"
         style={{
@@ -686,7 +662,7 @@ export default function Room() {
           <SongManagementPanel
             allSongList={allSongList.current}
             currentRoomType={currentRoomType}
-            isRoomCreator={isRoomCreator}
+            isRoomCreator={(roomCreatorId == userId)}
             handleStartSong={handleStartSong}
             handleStopSong={handleStopSong}
             handleAddSong={handleAddSong}
@@ -699,12 +675,25 @@ export default function Room() {
     </>
   );
 
-  async function leave() {
+  async function leave(redirect = false) {
+    // Remove roomId from localStorage
+    localStorage.removeItem('roomId')
+
+    // Remove any listeners to Firestore
     unscribeFirestore();
+
     const db = getFirestore();
+
+    // Remove the user record in the room
     await deleteDoc(doc(db, `rooms/${roomId}/RTCinfo/${userId}`));
 
-    // stop audio transfer
+    // If the left user is the creator of the room,
+    // Delete the room when the creator left
+    if (roomCreatorId == userId) {
+      await deleteDoc(doc(db, `rooms/${roomId}`));
+    }
+
+    // Stop audio transfer
     if (localStream.current) {
       localStream.current.getTracks().forEach((track) => {
         track.stop();
@@ -724,7 +713,11 @@ export default function Room() {
     localStream.current = null;
     pendingICEcandidates.current = {};
 
-    location.href = "/";
+    if (redirect) {
+      router.push('/')
+    } else {
+      window.close();
+    } 
   }
 
   async function addICEcandidate(newUserId, ICEcandidate) {
