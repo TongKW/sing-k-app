@@ -275,14 +275,40 @@ function JoinRoomButton(props) {
     if (canEnterRoom || userIdError) {
       handleCheckMicClose();
       if (canEnterRoom) {
+        unsubscribeFirestore();
         localStorage.setItem('roomId', roomId);
         window.open(`/room/${roomId}`);
-        //router.push(`/room/${roomId}`);
       } else {
         router.push("/login");
       }
     }
+    function unsubscribeFirestore() {
+      const db = getFirestore();
+      const roomDoc = doc(db, `rooms/${roomId}`);
+      onSnapshot(roomDoc, (doc) => {});
+    }
   }, [canEnterRoom, roomId, router, userIdError]);
+
+  // Firestore listener for queue change
+  useEffect(() => {
+    (async () => {
+      if (!roomId) return;
+      const userId = await getUserId();
+      const db = getFirestore();
+      const roomDoc = doc(db, `rooms/${roomId}`);
+      onSnapshot(roomDoc, (doc) => {
+        if (!doc.data()) return;
+        console.log('snapshot changed:')
+        console.log(doc.data());
+        const newPosition = doc.data().queue.indexOf(userId)
+        if (newPosition == 0) {
+          setCanEnterRoom(true);
+        } else {
+          setQueuePosition(newPosition);
+        }
+      });
+    })();
+  }, [roomId])
 
   const handleEnterRoomIdOpen = () => setEnterRoomIdOpen(true);
 
@@ -311,9 +337,9 @@ function JoinRoomButton(props) {
     const findRoomIdInFirebase = async () => await queryFireBase(roomId);
     findRoomIdInFirebase().then((result) => {
       if (result) {
+        setRoomId(roomId);
         handleEnterRoomIdClose();
         handleCheckMicOpen();
-        setRoomId(roomId);
       } else setRoomIdError("Room ID not found");
     });
   };
@@ -374,7 +400,7 @@ function JoinRoomButton(props) {
 }
 
 function EnterRoomIdDialog(props) {
-  const [roomId, setRoomid] = useState();
+  const [roomId, setRoomId] = useState();
   return (
     <Dialog open={props.open} onClose={props.close}>
       <DialogTitle>Enter Room ID: </DialogTitle>
@@ -382,7 +408,7 @@ function EnterRoomIdDialog(props) {
         <FormInputBlock
           category="Room ID"
           value={roomId}
-          onChange={setRoomid}
+          onChange={setRoomId}
           warning={props.warning}
         />
         <DialogActions>
@@ -461,7 +487,7 @@ function WaitingDialog(props) {
           }}
         >
           <DialogContentText aria-describedby="waiting-dialog-description">
-            Your current position: {props.position + 1}
+            Your current position: {props.position}
           </DialogContentText>
         </Box>
         <Box
@@ -482,7 +508,7 @@ function CurrentStreamRoom(props) {
   const router = useRouter();
 
   const handleJoinRoom = () => {
-    router.push("/room/" + props.id);
+    // router.push("/room/" + props.id);
   };
 
   const StyledButton = styled(Button)({
