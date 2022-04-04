@@ -190,12 +190,6 @@ export default function Room() {
     updateUI();
   }
 
-  // useEffect(() => {
-  //   if (!initialized) {
-  //     //TODO: Update the firebase when the song list is changed
-  //   }
-  // }, [allSongList]);
-
   // Get response of user info and display from local storage
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -229,6 +223,7 @@ export default function Room() {
     };
   });
 
+  // Retrieve the userId of the room creator
   useEffect(()=> {
     if (!roomId) return;
     checkRoomCreator();
@@ -318,7 +313,6 @@ export default function Room() {
           const fromICEcandidate = newUserDoc.data().ICEcandidate;
           const fromRTCoffer = newUserDoc.data().RTCoffer;
           if (fromRTCoffer) {
-            console.log("PROCESS 1.5");
             // return if the connection is already formed
             if (hasStableConnection(newUserId)) return;
 
@@ -329,10 +323,10 @@ export default function Room() {
               console.log(
                 peerConnections.current[newUserId].pc.remoteDescription
               );
+              // Case: Joined room as a new comer
               // If created the connection first and got answer back:
               // 1. if pc.currentRemote is null => setRemote
               if (existingUsers.current.includes(newUserId)) {
-                console.log("PROCESS 2");
                 const desc = new RTCSessionDescription(fromRTCoffer);
 
                 await peerConnections.current[
@@ -350,13 +344,15 @@ export default function Room() {
                   userId: userId,
                   avatar: avatar,
                 });
+                //TODO: Delete your userId in Firebase queue
+
               }
+              // Case: A new comer has joined the room
               // If other created the connection first:
               // 1. setRemote
               // 2. createOffer
               // 3. setLocal
               if (!existingUsers.current.includes(newUserId)) {
-                console.log("PROCESS 3");
                 await connectNewUser(newUserId, fromRTCoffer);
 
                 await sleep(1000);
