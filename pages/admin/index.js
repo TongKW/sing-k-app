@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Button from "../../component/elements/button";
+import { TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Paper, Box } from "@mui/material";
+import { FormInputBlock } from "../../component/elements/form-input";
 
 export default function Admin() {
-  const [validated, setValidated] = useState(false);
-  const [userList, setUserList] = useState()
+  const [validated, setValidated] = useState(true);
+  const [userList, setUserList] = useState();
   useEffect(() => {
     // validate admin user again by validating the token stored in local storage
     const token = localStorage.getItem('token');
     // TODO change if (true) to check valid
     if (true) {
-      setValidated(true)
+      setValidated(true);
     } else {
       // Redirect to login page 
     }
@@ -34,6 +36,8 @@ export default function Admin() {
         }
       ]
       setUserList(testUserList);
+      
+      console.log(userList);
     }
 
   }, [validated]);
@@ -49,21 +53,32 @@ export default function Admin() {
 
     return (
       <>
-        <tr>
-          <th>username</th>
-          <th>email</th>
-          <th>new password</th>
-          <th></th>
-        </tr>
-        {userList.map((userObj) => (
-          <tr key={userObj.userId}>
-            <td>{userObj.username}</td>
-            <td>{userObj.email}</td>
-            <td>new password text field:</td>
-            <td><Button text="confirm"></Button></td>
-          </tr>
-        ))}
+        <TableContainer component={Paper} sx={{width: "70%", margin: "auto", mt: 5}} >
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>username</TableCell>
+                <TableCell>email</TableCell>
+                <TableCell>new password</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {userList && userList.map((userObj) => ListUsers(userObj.username, userObj.email))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </>
     )
   }
+}
+
+
+function ListUsers(username, email){
+  return(
+    <TableRow>
+      <TableCell>{username}</TableCell>
+      <TableCell>{email}</TableCell>
+      <TableCell><Box display="flex" pt={2}><FormInputBlock category="password"/><Box pl={2}/><Button text="confirm" /></Box></TableCell>
+    </TableRow>
+  );
 }
