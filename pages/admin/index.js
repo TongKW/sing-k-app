@@ -16,41 +16,50 @@ import { FormInputBlock } from "../../component/elements/form-input";
 import logout from "../../utils/logout";
 import pwValidateSetError from "../../utils/validate-password-format";
 import { Loading } from "notiflix/build/notiflix-loading-aio";
-import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
 export default function Admin() {
   const router = useRouter();
+  const [fetching, setFetching] = useState(true);
   const [username, setUsername] = useState();
   const [validated, setValidated] = useState(false);
   const [userList, setUserList] = useState();
   useEffect(() => {
     // validate admin user again by validating the token stored in local storage
-    const token = localStorage.getItem("token");
-    decrypt_jwt(token);
+    if (fetching) {
+      async function decrypt_jwt(token) {
+        const response = await fetch("/api/jwt/decrypt", {
+          method: "POST",
+          body: JSON.stringify({ token: token }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const data = await response.json();
+        console.log(data);
+        if (data.authorized) {
+          const user = data.body;
+          setUsername(user.username);
 
-    async function decrypt_jwt(token) {
-      const response = await fetch("/api/jwt/decrypt", {
-        method: "POST",
-        body: JSON.stringify({ token: token }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const data = await response.json();
-      console.log(data);
-      if (data.authorized) {
-        const user = data.body;
-        setUsername(user.username);
-        if (user.username == "admin"){
-          setValidated(true);
+          if (user.username == "admin") {
+            setValidated(true);
+          } else {
+            // logout();
+            router.push("/profile");
+          }
+        } else {
+          // Unauthorized user or jwt expired
+          // Prompt to login page
+          alert("Invalid operation");
+          logout();
         }
-      } else {
-        // Unauthorized user or jwt expired
-        // Prompt to login page
-        alert("Invalid operation");
-        logout();
       }
+      (async () => {
+        const token = localStorage.getItem("token");
+        decrypt_jwt(token);
+      })();
     }
+    setFetching(false);
   }, []);
 
   useEffect(() => {
@@ -92,11 +101,11 @@ export default function Admin() {
     }
   }
 
-  async function handleChangePw(userId, password, setPasswordError){
+  async function handleChangePw(userId, password, setPasswordError) {
     console.log(password);
     console.log(userId);
     setPasswordError();
-    if(pwValidateSetError(password, setPasswordError)){
+    if (pwValidateSetError(password, setPasswordError)) {
       return;
     }
     Loading.circle({ svgColor: "#283593" });
@@ -114,9 +123,9 @@ export default function Admin() {
       alert("Unknown error occurs");
       return;
     }
-  };
+  }
 
-  function handleViewProfile(userId){
+  function handleViewProfile(userId) {
     router.push(`/admin/view-profile/${userId}`);
   }
 
@@ -129,33 +138,37 @@ export default function Admin() {
 
     return (
       <>
-        <TableContainer
-          component={Paper}
-          sx={{ width: {xs: "80%", sm:"70%"}, margin: "auto", mt: 5 }}
-        >
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Username</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>New password</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {userList &&
-                userList.map((userObj, index) => (
-                  <ListUser
-                    key={index}
-                    username={userObj.username}
-                    email={userObj.email}
-                    userId={userObj.userId}
-                    handleChangePw={handleChangePw}
-                    handleViewProfile={handleViewProfile}
-                  />
-                ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        {fetching ? (
+          <div>Validating...</div>
+        ) : (
+          <TableContainer
+            component={Paper}
+            sx={{ width: { xs: "80%", sm: "70%" }, margin: "auto", mt: 5 }}
+          >
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Username</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>New password</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {userList &&
+                  userList.map((userObj, index) => (
+                    <ListUser
+                      key={index}
+                      username={userObj.username}
+                      email={userObj.email}
+                      userId={userObj.userId}
+                      handleChangePw={handleChangePw}
+                      handleViewProfile={handleViewProfile}
+                    />
+                  ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
       </>
     );
   }
@@ -164,7 +177,7 @@ export default function Admin() {
 function ListUser(props) {
   const [password, setPassword] = useState();
   const [passwordError, setPasswordError] = useState();
-  
+
   return (
     <TableRow>
       <TableCell>{props.username}</TableCell>
@@ -179,12 +192,14 @@ function ListUser(props) {
               warning={passwordError}
             />
           </Box>
-          <Box sx={{pl: {xs: 1, sm: 2}}} />
+          <Box sx={{ pl: { xs: 1, sm: 2 } }} />
           <Button
             text="confirm"
-            onClick={() => props.handleChangePw(props.userId, password, setPasswordError)}
+            onClick={() =>
+              props.handleChangePw(props.userId, password, setPasswordError)
+            }
           />
-          <Box sx={{pl: {xs: 0, sm: 1}}} />
+          <Box sx={{ pl: { xs: 0, sm: 1 } }} />
           <IconButton onClick={() => props.handleViewProfile(props.userId)}>
             <VisibilityIcon />
           </IconButton>
