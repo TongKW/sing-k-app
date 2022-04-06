@@ -111,7 +111,7 @@ function CommentArea(props) {
         height: "65%",
       }}
     >
-      <MessageArea commentList={props.commentList} />
+      <MessageArea commentList={props.commentList} length={props.commentList ? props.commentList.length : 0}/>
       <InputArea handleAddComment={props.handleAddComment} />
     </Box>
   );
@@ -122,7 +122,7 @@ function MessageArea(props) {
   //auto scroll till bottom
   useEffect(() => {
     messageBoxRef.current?.scrollIntoView();
-  }, [props.commentList.length]);
+  }, [props.length]);
   return (
     <Box
       id="chat-message-area"
