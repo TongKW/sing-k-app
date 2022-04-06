@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import Button from "../../component/elements/button";
 import {
   TableContainer,
@@ -9,13 +10,16 @@ import {
   TableBody,
   Paper,
   Box,
+  IconButton,
 } from "@mui/material";
 import { FormInputBlock } from "../../component/elements/form-input";
 import logout from "../../utils/logout";
 import pwValidateSetError from "../../utils/validate-password-format";
 import { Loading } from "notiflix/build/notiflix-loading-aio";
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 export default function Admin() {
+  const router = useRouter();
   const [username, setUsername] = useState();
   const [validated, setValidated] = useState(true);
   const [userList, setUserList] = useState();
@@ -112,6 +116,10 @@ export default function Admin() {
     }
   };
 
+  function handleViewProfile(userId){
+    router.push(`/admin/view-profile/${userId}`);
+  }
+
   if (!validated) {
     return <div>Validating... </div>;
   } else {
@@ -123,7 +131,7 @@ export default function Admin() {
       <>
         <TableContainer
           component={Paper}
-          sx={{ width: "70%", margin: "auto", mt: 5 }}
+          sx={{ width: {xs: "80%", sm:"70%"}, margin: "auto", mt: 5 }}
         >
           <Table>
             <TableHead>
@@ -142,6 +150,7 @@ export default function Admin() {
                     email={userObj.email}
                     userId={userObj.userId}
                     handleChangePw={handleChangePw}
+                    handleViewProfile={handleViewProfile}
                   />
                 ))}
             </TableBody>
@@ -155,28 +164,32 @@ export default function Admin() {
 function ListUser(props) {
   const [password, setPassword] = useState();
   const [passwordError, setPasswordError] = useState();
-  const userId = props.userId;
+  
   return (
     <TableRow>
       <TableCell>{props.username}</TableCell>
       <TableCell>{props.email}</TableCell>
       <TableCell>
-        <Box display="flex" pt={2}>
-          <FormInputBlock
-            category="password"
-            value={password}
-            onChange={setPassword}
-            warning={passwordError}
-          />
-          <Box pl={2} />
+        <Box display="flex" alignItems="center">
+          <Box pt={2} width="70%">
+            <FormInputBlock
+              category="password"
+              value={password}
+              onChange={setPassword}
+              warning={passwordError}
+            />
+          </Box>
+          <Box sx={{pl: {xs: 1, sm: 2}}} />
           <Button
             text="confirm"
-            onClick={() => props.handleChangePw(userId, password, setPasswordError)}
+            onClick={() => props.handleChangePw(props.userId, password, setPasswordError)}
           />
+          <Box sx={{pl: {xs: 0, sm: 1}}} />
+          <IconButton onClick={() => props.handleViewProfile(props.userId)}>
+            <VisibilityIcon />
+          </IconButton>
         </Box>
       </TableCell>
     </TableRow>
   );
-
-  
 }
