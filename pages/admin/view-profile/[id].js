@@ -9,7 +9,7 @@ export default function ViewProfile(){
     const router = useRouter();
     const userId = router.query.id;
     const [username, setUsername] = useState();
-    const [validated, setValidated] = useState(true);
+    const [validated, setValidated] = useState(false);
     const [userList, setUserList] = useState([]);
     const [userInfo, setUserInfo] = useState();
     

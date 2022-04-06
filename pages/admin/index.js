@@ -21,7 +21,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 export default function Admin() {
   const router = useRouter();
   const [username, setUsername] = useState();
-  const [validated, setValidated] = useState(true);
+  const [validated, setValidated] = useState(false);
   const [userList, setUserList] = useState();
   useEffect(() => {
     // validate admin user again by validating the token stored in local storage
