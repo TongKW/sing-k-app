@@ -6,8 +6,20 @@ import { Input, Button } from "@mui/material";
 
 export default function SongManagementPanel(props) {
   return (
-    <Box sx={{ height: "100%" }}>
-      <Box sx={{ height: "5%" }}></Box>
+    <Box sx={{ height: "100%", background: "#323846" }}>
+      <Box
+        sx={{
+          display: "flex",
+          height: "5%",
+          fontSize: "30px",
+        }}
+        style={{
+          backgroundColor: "#376E6F",
+          justifyContent: "center",
+        }}
+      >
+        <h1>Song List</h1>
+      </Box>
       <SongListPanel
         allSongList={props.allSongList}
         currentRoomType={props.currentRoomType}
@@ -56,41 +68,28 @@ function SongFunctionKeys(props) {
       <Icon
         icon="/images/play.png"
         alt="play"
-        length="20"
+        length="25"
         onClick={props.handleStartSong}
         style={{ cursor: "pointer" }}
       />
       <Icon
         icon="/images/pause.png"
         alt="pause"
-        length="20"
+        length="25"
         onClick={props.handleStopSong}
         style={{ cursor: "pointer" }}
       />
-      <label htmlFor="upload-song">
-        <input
-          id="upload-song"
-          name="upload-song"
-          type="file"
-          onInput={props.handleAddSong}
-          style={{
-            display: "none",
-          }}
-          // ref={(ref) => {
-          //   setFileInputRef(ref);
-          // }}
-        />
-        <Icon
-          icon="/images/plus.png"
-          alt="plus"
-          length="20"
-          style={{ cursor: "pointer" }}
-        />
-      </label>
+      <Icon
+        icon="/images/plus.png"
+        alt="plus"
+        length="25"
+        onClick={props.handleAddSong}
+        style={{ cursor: "pointer" }}
+      />
       <Icon
         icon="/images/minus.png"
         alt="minus"
-        length="20"
+        length="25"
         onClick={props.handleDeleteSong}
         style={{ cursor: "pointer" }}
       />
@@ -105,6 +104,8 @@ function Song(props) {
         display: "flex",
         flexDirection: "row",
         justifyContent: "space-between",
+        fontSize: "20px",
+        padding: "10px",
       }}
     >
       <EllipsisText text={props.songName} length={25} />
@@ -117,7 +118,7 @@ function Song(props) {
           props.currentRoomType === "private") && (
           <>
             <Icon
-              icon="/images/up-chevron.png"
+              icon="/images/scroll-up.png"
               alt="move_up"
               length="20"
               onClick={() => props.handleMoveSong(props.index, props.index - 1)}
@@ -125,7 +126,7 @@ function Song(props) {
             />
 
             <Icon
-              icon="/images/down-chevron.png"
+              icon="/images/scroll-down.png"
               alt="move_down"
               length="20"
               onClick={() => props.handleMoveSong(props.index, props.index + 1)}
