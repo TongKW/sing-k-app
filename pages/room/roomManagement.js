@@ -3,7 +3,6 @@ import Icon from "../../component/elements/Icon";
 import { styled } from "@mui/material/styles";
 import { Box, Avatar } from "@mui/material";
 import Button from "../../component/elements/button";
-//import { userDataBase } from "./mockup";
 
 const UserAvatar = styled(Avatar, {
   shouldForwardProp: (prop) => ["src"].includes(prop),
