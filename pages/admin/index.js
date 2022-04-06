@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import Button from "../../component/elements/button";
 import {
   TableContainer,
@@ -11,18 +11,41 @@ import {
   Box,
 } from "@mui/material";
 import { FormInputBlock } from "../../component/elements/form-input";
+import logout from "../../utils/logout";
+import pwValidateSetError from "../../utils/validate-password-format";
+import { Loading } from "notiflix/build/notiflix-loading-aio";
 
 export default function Admin() {
+  const [username, setUsername] = useState();
   const [validated, setValidated] = useState(true);
   const [userList, setUserList] = useState();
   useEffect(() => {
     // validate admin user again by validating the token stored in local storage
     const token = localStorage.getItem("token");
-    // TODO change if (true) to check valid
-    if (true) {
-      setValidated(true);
-    } else {
-      // Redirect to login page
+    decrypt_jwt(token);
+
+    async function decrypt_jwt(token) {
+      const response = await fetch("/api/jwt/decrypt", {
+        method: "POST",
+        body: JSON.stringify({ token: token }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      console.log(data);
+      if (data.authorized) {
+        const user = data.body;
+        setUsername(user.username);
+        if (username == "admin"){
+          setValidated(true);
+        }
+      } else {
+        // Unauthorized user or jwt expired
+        // Prompt to login page
+        alert("Invalid operation");
+        logout();
+      }
     }
   }, []);
 
@@ -45,13 +68,48 @@ export default function Admin() {
         },
       ];
       setUserList(testUserList);
-
-      console.log(userList);
     }
   }, [validated]);
 
-  const handleChangePw = (password) => {
+  async function changePw(userId, newPw) {
+    const requestBody = { id: userId, password: newPw };
+    const response = await fetch("/api/users/update", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    try {
+      const data = await response.json();
+      return { success: data.success, error: data.message };
+    } catch (error) {
+      return { success: false, error: null };
+    }
+  }
+
+  async function handleChangePw(userId, password, setPasswordError){
     console.log(password);
+    console.log(userId);
+    setPasswordError();
+    if(pwValidateSetError(password, setPasswordError)){
+      return;
+    }
+    Loading.circle({ svgColor: "#283593" });
+    let uploadedPw;
+    try {
+      uploadedPw = await changePw(userId, password);
+      console.log("uploadedPw = ", uploadedPw);
+    } catch (error) {
+      alert(`Unknown error occurs: ${error}`);
+      return;
+    } finally {
+      Loading.remove();
+    }
+    if (!uploadedPw.success) {
+      alert("Unknown error occurs");
+      return;
+    }
   };
 
   if (!validated) {
@@ -70,9 +128,9 @@ export default function Admin() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>username</TableCell>
-                <TableCell>email</TableCell>
-                <TableCell>new password</TableCell>
+                <TableCell>Username</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>New password</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -82,6 +140,7 @@ export default function Admin() {
                     key={index}
                     username={userObj.username}
                     email={userObj.email}
+                    userId={userObj.userId}
                     handleChangePw={handleChangePw}
                   />
                 ))}
@@ -95,6 +154,8 @@ export default function Admin() {
 
 function ListUser(props) {
   const [password, setPassword] = useState();
+  const [passwordError, setPasswordError] = useState();
+  const userId = props.userId;
   return (
     <TableRow>
       <TableCell>{props.username}</TableCell>
@@ -105,14 +166,17 @@ function ListUser(props) {
             category="password"
             value={password}
             onChange={setPassword}
+            warning={passwordError}
           />
           <Box pl={2} />
           <Button
             text="confirm"
-            onClick={() => props.handleChangePw(password)}
+            onClick={() => props.handleChangePw(userId, password, setPasswordError)}
           />
         </Box>
       </TableCell>
     </TableRow>
   );
+
+  
 }
