@@ -8,7 +8,6 @@ import FormTitle from "../../../component/elements/form-title";
 export default function ViewProfile(){
     const router = useRouter();
     const userId = router.query.id;
-    const [username, setUsername] = useState();
     const [validated, setValidated] = useState(false);
     const [userList, setUserList] = useState([]);
     const [userInfo, setUserInfo] = useState();
@@ -30,9 +29,8 @@ export default function ViewProfile(){
             console.log(data);
             if (data.authorized) {
                 const user = data.body;
-                setUsername(user.username);
-                if (username == "admin"){
-                setValidated(true);
+                if (user.username == "admin"){
+                    setValidated(true);
                 }
             } else {
                 // Unauthorized user or jwt expired
@@ -117,9 +115,9 @@ export default function ViewProfile(){
                                     />
                                     <FormTitle title="email" />
                                     <FormInputBlock
-                                    category="email"
-                                    value={userInfo.email}
-                                    readOnly={true}
+                                        category="email"
+                                        value={userInfo.email}
+                                        readOnly={true}
                                     />
                                 </form>
                             </Box>

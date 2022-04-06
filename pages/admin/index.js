@@ -41,7 +41,7 @@ export default function Admin() {
       if (data.authorized) {
         const user = data.body;
         setUsername(user.username);
-        if (username == "admin"){
+        if (user.username == "admin"){
           setValidated(true);
         }
       } else {
