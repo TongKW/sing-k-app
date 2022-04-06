@@ -44,7 +44,7 @@ export default function Admin() {
           if (user.username == "admin") {
             setValidated(true);
           } else {
-            // logout();
+            alert("Unauthorized user. Redirect to user profile...");
             router.push("/profile");
           }
         } else {
@@ -129,6 +129,10 @@ export default function Admin() {
     router.push(`/admin/view-profile/${userId}`);
   }
 
+  function handleLogout(){
+    logout();
+  }
+
   if (!validated) {
     return <div>Validating... </div>;
   } else {
@@ -141,33 +145,41 @@ export default function Admin() {
         {fetching ? (
           <div>Validating...</div>
         ) : (
-          <TableContainer
-            component={Paper}
-            sx={{ width: { xs: "80%", sm: "70%" }, margin: "auto", mt: 5 }}
-          >
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Username</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>New password</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {userList &&
-                  userList.map((userObj, index) => (
-                    <ListUser
-                      key={index}
-                      username={userObj.username}
-                      email={userObj.email}
-                      userId={userObj.userId}
-                      handleChangePw={handleChangePw}
-                      handleViewProfile={handleViewProfile}
-                    />
-                  ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <>
+            <Box sx={{display: "flex", flexDirection: "row-reverse", mt: 2, pr: 2}}>
+              <Button 
+                text="Logout" 
+                onClick={() => handleLogout()}
+              />
+            </Box>
+            <TableContainer
+              component={Paper}
+              sx={{ width: { xs: "80%", sm: "70%" }, margin: "auto", mt: 5 }}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Username</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>New password</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {userList &&
+                    userList.map((userObj, index) => (
+                      <ListUser
+                        key={index}
+                        username={userObj.username}
+                        email={userObj.email}
+                        userId={userObj.userId}
+                        handleChangePw={handleChangePw}
+                        handleViewProfile={handleViewProfile}
+                      />
+                    ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </>
         )}
       </>
     );
