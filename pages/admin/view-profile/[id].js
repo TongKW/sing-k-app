@@ -128,7 +128,9 @@ export default function ViewProfile(){
         );
     }else{
         return (
-            <Box>Loading...</Box>
+            <>
+                <Box>Loading...</Box>
+            </>
         );
     }
 }
