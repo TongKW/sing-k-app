@@ -345,6 +345,12 @@ export default function Room() {
                   avatar: avatar,
                 });
                 //TODO: Delete your userId in Firebase queue
+                const roomIdDoc = doc(db, `rooms/${roomId}`);
+                const roomIdSnapshot = await getDoc(roomIdDoc);
+                const roomIdData = roomIdSnapshot.data();
+                const queue = roomIdData.queue;
+                const newQueue = queue.filter((id) => id !== userId);
+                await updateDoc(roomIdDoc, { queue: newQueue });
               }
               // Case: A new comer has joined the room
               // If other created the connection first:
