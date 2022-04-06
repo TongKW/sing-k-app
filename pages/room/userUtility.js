@@ -135,7 +135,7 @@ function MessageArea(props) {
         flexDirection: "column",
       }}
     >
-      {props.commentList ? props.commentList.map((comment, index) => {
+      {props.commentList.map((comment, index) => {
         if (comment.isSystem)
           return <SystemMessage key={index} text={comment.text} />;
         else
