@@ -89,6 +89,7 @@ export default function Room() {
   }, [volume, currentSong]);
 
   const handleStartSong = () => {
+    if (!allAudioList.current) return;
     if (currentSong === allAudioList.current[0]) {
       // The user has paused, and now we need to resume
       console.log("Resume song!");
