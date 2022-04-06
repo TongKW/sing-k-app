@@ -21,6 +21,10 @@ export function middleware(req) {
     url.pathname = '/login';
     return NextResponse.rewrite(url);
   } else {
+    if (req.cookies.username === 'admin') {
+      url.pathname = '/admin';
+      return NextResponse.rewrite(url);
+    }
     if (req.url.includes('/login')) {
       url.pathname = '/';
       return NextResponse.rewrite(url);

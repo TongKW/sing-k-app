@@ -13,14 +13,14 @@ import {
   onSnapshot,
   deleteDoc,
 } from "firebase/firestore";
-import { Box } from "@mui/material";
+import { Box, Dialog, DialogTitle, DialogContent } from "@mui/material";
 import { firebaseConfig } from "../../firebase/config";
-import Button from "../../component/elements/button";
 import sleep from "../../utils/sleep";
 import RoomMangementPanel from "./roomManagement";
 import UserUtilityPanel from "./userUtility";
 import SongManagementPanel from "./songManagement";
-import { otherParticipantsInfo, songInfo, commentInfo } from "./mockup";
+import { processFile, stripFileExtension } from "../../utils/fileUtils";
+import Button from "../../component/elements/button";
 
 export default function Room() {
   // Routing parameter
@@ -34,11 +34,15 @@ export default function Room() {
   let peerConnections = useRef({});
   // Existing users global variables
   let existingUsers = useRef([]);
+  let commentList = useRef([]);
+  let allSongList = useRef([]);
+  let allAudioList = useRef([]);
 
-  let userInput = useRef(null);
+  // Check if user enters from Lobby
+  const [fromLobby, setFromLobby] = useState(true);
 
   // Only reload when users enter/leave
-  const [value, setValue] = useState(0);
+  const [value, setValue] = useState(false);
 
   // Initialization indicates
   const [initialized, setInitialized] = useState(false);
@@ -47,53 +51,91 @@ export default function Room() {
   const [username, setUsername] = useState();
   const [avatar, setAvatar] = useState();
   const [userId, setUserId] = useState();
-  const [roomCreatorId, setRoomCreatorId] = useState(
-    "621635d92eecb0a4b18574e4"
-  );
+  const [roomCreatorId, setRoomCreatorId] = useState();
 
   const [currentRoomType, setCurrentRoomType] = useState("private");
-  const [isRoomCreator, setIsRoomCreator] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [echo, setEcho] = useState(50);
   const [volume, setVolume] = useState(50);
-  const [otherUsersList, setOtherUsersList] = useState(otherParticipantsInfo);
-  const [commentList, setCommentList] = useState(commentInfo);
-  const [allSongList, setAllSongList] = useState(songInfo);
+
+  const [currentSong, setCurrentSong] = useState(null);
+  const [currentSongIsPlaying, setCurrentSongIsPlaying] = useState(false);
 
   // Initialize Firebase
   const app = firebase.initializeApp(firebaseConfig);
 
-  //--test--
-  console.log("Peer connection:");
-  console.log(peerConnections.current);
-  //--test--
-
   const handleMuteUnmute = () => {
-    if (isMuted) {
-      setIsMuted(false);
-      console.log("Now Unmute!");
-    } else {
-      setIsMuted(true);
-      console.log("Now mute!");
-    }
+    setIsMuted(!isMuted);
+    sendMsgAll({
+      userId: userId,
+      username: username,
+      type: "setMute",
+    });
   };
+
+  const updateUI = () => {
+    setValue((value) => !value);
+  };
+
+  useEffect(() => {
+    if (currentSongIsPlaying) currentSong?.play();
+    else currentSong?.pause();
+  }, [currentSongIsPlaying]);
+
+  useEffect(() => {
+    if (currentSong !== null) {
+      currentSong.volume = volume / 100;
+    }
+  }, [volume, currentSong]);
 
   const handleStartSong = () => {
-    console.log("Start song!");
+    if (currentSong === allAudioList.current[0]) {
+      // The user has paused, and now we need to resume
+      console.log("Resume song!");
+    } else {
+      setCurrentSong(allAudioList.current[0]);
+      console.log("Start song!");
+    }
+    setCurrentSongIsPlaying(true);
   };
+
   const handleStopSong = () => {
+    setCurrentSongIsPlaying(false);
     console.log("Stopped song!");
   };
 
-  const handleAddSong = (newSong) => {
-    const newAllSongList = [...allSongList, newSong];
-    setAllSongList(newAllSongList);
+  const handleFinishedSong = () => {
+    allSongList.current = allSongList.current.slice(1);
+    allAudioList.current = allAudioList.current.slice(1);
+    setCurrentSongIsPlaying(false);
+    setCurrentSong(null);
+    console.log("Finished song!");
+  };
+
+  const handleAddSong = async (event) => {
+    if (!event.target.files.length) return; //if clicked cancel button
+    const [file] = event.target.files;
+    event.target.value = null;
+    const data = await processFile(file);
+    const audio = new Audio(data.content);
+    audio.onended = handleFinishedSong;
+    const cleantFileName = stripFileExtension(file.name);
+    const newAllSongList = [...allSongList.current, cleantFileName];
+    const newAudioList = [...allAudioList.current, audio];
+    allSongList.current = newAllSongList;
+    allAudioList.current = newAudioList;
+    updateUI();
   };
 
   const handleDeleteSong = () => {
+    if (allSongList.current.length === 1) {
+      //if deleting the playing song
+      setCurrentSongIsPlaying(false);
+    }
     //delete the last element in allSongList if it is not empty
-    const newAllSongList = allSongList.slice(0, -1);
-    setAllSongList(newAllSongList);
+    allSongList.current = allSongList.current.slice(0, -1);
+    allAudioList.current = allAudioList.current.slice(0, -1);
+    updateUI();
   };
 
   const handleEcho = (event) => {
@@ -105,38 +147,48 @@ export default function Room() {
   };
 
   const handleAddComment = (commentText) => {
-    const newComment = {
+    commentList.current.push({
       username: username,
       time: Date(),
       text: commentText,
       isSystem: false,
-    };
-    const newCommentList = [...commentList, newComment];
+    });
+
+    // Force rerender on the UI
+    updateUI();
+
     // Send the chat message to other users
     sendMsgAll({
+      userId: userId,
       username: username,
       type: "chat",
       message: commentText,
     });
-    // update own message to UI
-    setCommentList(newCommentList);
   };
 
   function handleMoveSong(prevIndex, currentIndex) {
     //swap the two elements inside a list based on prevIndex and currentIndex
-    if (currentIndex === allSongList.length) return;
+    if (prevIndex === 0 || currentIndex === 0) {
+      if (allSongList.current.length !== 1) {
+        setCurrentSongIsPlaying(false);
+        if (currentSong !== null) currentSong.currentTime = 0; // redial the current time of the song
+      }
+    }
+    if (currentIndex === allSongList.current.length) return;
     else if (currentIndex === -1) return;
-    let newAllSongList = [...allSongList];
-    newAllSongList[prevIndex] = allSongList[currentIndex];
-    newAllSongList[currentIndex] = allSongList[prevIndex];
-    setAllSongList(newAllSongList);
-  }
 
-  // useEffect(() => {
-  //   if (!initialized) {
-  //     //TODO: Update the firebase when the song list is changed
-  //   }
-  // }, [allSongList]);
+    let newAllSongList = [...allSongList.current];
+    newAllSongList[prevIndex] = allSongList.current[currentIndex];
+    newAllSongList[currentIndex] = allSongList.current[prevIndex];
+    allSongList.current = newAllSongList;
+
+    let newAudioList = [...allAudioList.current];
+    newAudioList[prevIndex] = allAudioList.current[currentIndex];
+    newAudioList[currentIndex] = allAudioList.current[prevIndex];
+    allAudioList.current = newAudioList;
+
+    updateUI();
+  }
 
   // Get response of user info and display from local storage
   useEffect(() => {
@@ -171,6 +223,22 @@ export default function Room() {
     };
   });
 
+  // Retrieve the userId of the room creator
+  useEffect(()=> {
+    if (!roomId) return;
+    checkRoomCreator();
+    async function checkRoomCreator() {
+      const db = getFirestore();
+      const roomDoc = doc(db, `rooms/${roomId}`);
+      console.log('roomId: ');
+      console.log(roomId);
+      const roomSnapshot = await getDoc(roomDoc);
+      const data = roomSnapshot.data();
+      const creatorId = data.creatorId;
+      setRoomCreatorId(creatorId);
+    }
+  }, [roomId])
+
   // Initialize audio stream and WebRTC
   // Get peer WebRTC info and connect
   // Only run once after roomId is get
@@ -181,6 +249,14 @@ export default function Room() {
       db,
       `rooms/${roomId}/RTCinfo/${userId}/callees`
     );
+
+    // Check if user is from lobby
+    const storedRoomId = localStorage.getItem("roomId");
+    if (!roomId) return;
+    if (storedRoomId !== roomId) {
+      setFromLobby(false);
+      return;
+    }
 
     if (initialized || !roomId || !userId) return;
     initialize();
@@ -217,19 +293,6 @@ export default function Room() {
 
       // Write Firebase to update offer
       await createNewUserFirestore();
-
-      // Send user info to other users
-      sendMsgAll({
-        username: username,
-        type: "system",
-        message: `${username} has joined the room.`,
-      });
-      sendMsgAll({
-        type: "setUser",
-        username: username,
-        userId: userId,
-        avatar: avatar,
-      });
     }
 
     // Listen for any joined user
@@ -250,7 +313,8 @@ export default function Room() {
           const fromICEcandidate = newUserDoc.data().ICEcandidate;
           const fromRTCoffer = newUserDoc.data().RTCoffer;
           if (fromRTCoffer) {
-            console.log("PROCESS 1.5");
+            // return if the connection is already formed
+            if (hasStableConnection(newUserId)) return;
 
             if (
               peerConnections.current[newUserId].pc.remoteDescription === null
@@ -259,10 +323,10 @@ export default function Room() {
               console.log(
                 peerConnections.current[newUserId].pc.remoteDescription
               );
+              // Case: Joined room as a new comer
               // If created the connection first and got answer back:
               // 1. if pc.currentRemote is null => setRemote
               if (existingUsers.current.includes(newUserId)) {
-                console.log("PROCESS 2");
                 const desc = new RTCSessionDescription(fromRTCoffer);
 
                 await peerConnections.current[
@@ -271,15 +335,27 @@ export default function Room() {
 
                 //console.log(`[system] ${newUserId} joined the room.`);
                 console.log(peerConnections.current);
+
+                await sleep(1000);
+                // Send user info to other users
+                sendMsg(newUserId, {
+                  type: "setUser",
+                  username: username,
+                  userId: userId,
+                  avatar: avatar,
+                });
+                //TODO: Delete your userId in Firebase queue
+
               }
+              // Case: A new comer has joined the room
               // If other created the connection first:
               // 1. setRemote
               // 2. createOffer
               // 3. setLocal
               if (!existingUsers.current.includes(newUserId)) {
-                console.log("PROCESS 3");
                 await connectNewUser(newUserId, fromRTCoffer);
 
+                await sleep(1000);
                 // Send user info to other users
                 sendMsgAll({
                   username: username,
@@ -294,17 +370,9 @@ export default function Room() {
                 });
               }
             }
+
             // Add all pending ICE candidates
             await handleICEqueue(newUserId);
-
-            /*
-            if (!fromICEcandidate || !fromRTCoffer) return;
-            // Connect
-            await connectNewUser(newUserId, fromICEcandidate, fromRTCoffer);
-            */
-
-            // Force rerender on the UI
-            //setValue(value => value + 1);;
           }
 
           if (fromICEcandidate) {
@@ -344,14 +412,14 @@ export default function Room() {
           peerConnections.current[leftUserId].pc.close();
 
           // Update leaving message
-          const newComment = {
+          console.log(`Left: ${leftUserId}`);
+          console.log(peerConnections.current);
+          commentList.current.push({
             username: peerConnections.current[leftUserId].username,
             time: Date(),
             text: `${peerConnections.current[leftUserId].username} has left the room.`,
             isSystem: true,
-          };
-          const newCommentList = [...commentList, newComment];
-          setCommentList(newCommentList);
+          });
 
           // delete user info
           delete peerConnections.current[leftUserId];
@@ -458,7 +526,7 @@ export default function Room() {
             ICEcandidate: event.candidate.toJSON(),
           });
       };
-      peerConnections.current[userId].mute = false;
+      peerConnections.current[userId].isMuted = false;
 
       // Event listener for creating receive channel
       peerConnections.current[userId].pc.ondatachannel = (event) => {
@@ -476,21 +544,11 @@ export default function Room() {
     }
 
     function hasStableConnection(userId) {
-      console.log("Connection Status:");
-      console.log(
-        `has pc         : ${peerConnections.current.hasOwnProperty(userId)}`
-      );
-      if (peerConnections.current.hasOwnProperty(userId)) {
-        console.log(
-          `connectionState: ${peerConnections.current[userId].pc.connectionState}`
-        );
-        console.log(
-          `signalingState : ${peerConnections.current[userId].pc.signalingState}`
-        );
-      }
-
       if (!peerConnections.current.hasOwnProperty(userId)) return false;
-      if (peerConnections.current[userId].pc.signalingState !== "stable")
+      if (
+        peerConnections.current[userId].pc.connectionState !== "connected" ||
+        peerConnections.current[userId].pc.signalingState === "stable"
+      )
         return false;
       return true;
     }
@@ -508,82 +566,61 @@ export default function Room() {
       peerConnections.current[userId].receiveChannel.onmessage =
         handleReceiveMessage;
     }
-  }, [roomId, userId, initialized, username]);
+
+    function handleReceiveMessage(event) {
+      const data = JSON.parse(event.data);
+      const username = data.username;
+      const message = data.message;
+      const userId = data.userId;
+      const type = data.type;
+
+      // console.log(`${user}: ${message}`);
+      // If message is chat, update in comment list
+      if (type === "chat") {
+        commentList.current.push({
+          username: username,
+          time: Date(),
+          text: message,
+          isSystem: false,
+        });
+      } else if (type === "system") {
+        commentList.current.push({
+          username: username,
+          time: Date(),
+          text: message,
+          isSystem: true,
+        });
+      } else if (type === "setUser") {
+        const avatar = data.avatar;
+        peerConnections.current[userId].username = username;
+        peerConnections.current[userId].avatar = avatar;
+
+        commentList.current.push({
+          username: username,
+          time: Date(),
+          text: `${username} has joined the room.`,
+          isSystem: true,
+        });
+      } else if (type === "setMute") {
+        peerConnections.current[userId].isMuted =
+          !peerConnections.current[userId].isMuted;
+      }
+      // Force rerender on the UI
+      updateUI();
+    }
+  }, [roomId, userId, initialized, username, avatar, commentList]);
 
   // Page UI
-  if (!initialized)
-    return (
-      <>
-        <Box
-          className="hide-scrollbar"
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            width: "100%",
-            height: "100vh",
-            background: "#ccc",
-          }}
-        >
-          <Box sx={{ width: "23%" }}>
-            <RoomMangementPanel
-              roomId={roomId}
-              otherUsersList={otherUsersList}
-              roomCreatorId={roomCreatorId}
-              currentRoomType={currentRoomType}
-              isMuted={isMuted}
-              handleMuteUnmute={handleMuteUnmute}
-            />
-          </Box>
-          <Box sx={{ background: "red", width: "54%" }}>
-            <UserUtilityPanel
-              isMuted={isMuted}
-              echo={echo}
-              volume={volume}
-              handleEcho={handleEcho}
-              handleVolume={handleVolume}
-              commentList={commentList}
-              handleAddComment={handleAddComment}
-            />
-          </Box>
-          <Box sx={{ width: "23%" }}>
-            <SongManagementPanel
-              allSongList={allSongList}
-              currentRoomType={currentRoomType}
-              isRoomCreator={isRoomCreator}
-              handleStartSong={handleStartSong}
-              handleStopSong={handleStopSong}
-              handleAddSong={handleAddSong}
-              handleDeleteSong={handleDeleteSong}
-              handleMoveSong={handleMoveSong}
-            />
-          </Box>
-        </Box>
-      </>
-    );
   return (
     <>
-      {/* <div style={{ display: "none" }}>
-        <div className="flex-1 p-10 text-2xl font-bold">Room id: {roomId}</div>
-        {Object.keys(peerConnections).map((userId) => (
-          <span key={userId}>
-            <h3>{userId}</h3>
-            <video id={userId} autoPlay playsInline></video>
-          </span>
-        ))}
-        <div onClick={connectAudio}>
-          <Button text="Connect Audio" />
-        </div>
-        <div onClick={disconnectAudio}>
-          <Button text="Disconnect Audio" />
-        </div>
-        <div onClick={leave}>
-          <Button text="Leave" />
-        </div>
-      </div> */}
-      {/* <div
-        className="flex-1 p-10 text-2xl font-bold"
-        style={{ width: "100%", height: "900px" }}
-      > */}
+      <Dialog open={!fromLobby}>
+        <DialogTitle>Please join the room from Lobby.</DialogTitle>
+        <DialogContent>
+          <div onClick={() => {leave(true)}}>
+            <Button text="Close"></Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <Box
         className="hide-scrollbar"
         style={{
@@ -596,8 +633,10 @@ export default function Room() {
       >
         <Box sx={{ width: "23%" }}>
           <RoomMangementPanel
+            otherUsersList={getUsersList()}
+            peerConnections={peerConnections}
+            leave={leave}
             roomId={roomId}
-            otherUsersList={otherUsersList}
             roomCreatorId={roomCreatorId}
             currentRoomType={currentRoomType}
             isMuted={isMuted}
@@ -611,15 +650,15 @@ export default function Room() {
             volume={volume}
             handleEcho={handleEcho}
             handleVolume={handleVolume}
-            commentList={commentList}
+            commentList={commentList.current}
             handleAddComment={handleAddComment}
           />
         </Box>
         <Box sx={{ width: "23%" }}>
           <SongManagementPanel
-            allSongList={allSongList}
+            allSongList={allSongList.current}
             currentRoomType={currentRoomType}
-            isRoomCreator={isRoomCreator}
+            isRoomCreator={(roomCreatorId == userId)}
             handleStartSong={handleStartSong}
             handleStopSong={handleStopSong}
             handleAddSong={handleAddSong}
@@ -632,36 +671,25 @@ export default function Room() {
     </>
   );
 
-  function connectAudio() {
-    console.log("connecting Audio");
-    Object.keys(peerConnections.current).map((userId) => {
-      const remoteAudio = document.getElementById(userId);
-      remoteAudio.srcObject = peerConnections.audioStream;
-    });
-  }
+  async function leave(redirect = false) {
+    // Remove roomId from localStorage
+    localStorage.removeItem('roomId')
 
-  function disconnectAudio() {
-    console.log("Disconnecting Audio");
-    Object.keys(peerConnections.current).map((userId) => {
-      const remoteAudio = document.getElementById(userId);
-      remoteAudio.srcObject = null;
-    });
-  }
+    // Remove any listeners to Firestore
+    unscribeFirestore();
 
-  async function leave() {
-    await unsubscribe();
     const db = getFirestore();
+
+    // Remove the user record in the room
     await deleteDoc(doc(db, `rooms/${roomId}/RTCinfo/${userId}`));
-    // remove user in Firestore
-    /*
-    const calleesDoc = collection(db, `rooms/${roomId}/RTCinfo/${userId}/callees`);
-    const calleesDocSnapshot = await getDocs(calleesDoc);
-    calleesDocSnapshot.forEach(async (docSnapshot) => {
-      if (docSnapshot === undefined) return;
-      await deleteDoc(docSnapshot.doc);
-    });
-    */
-    // stop audio transfer
+
+    // If the left user is the creator of the room,
+    // Delete the room when the creator left
+    if (roomCreatorId == userId) {
+      await deleteDoc(doc(db, `rooms/${roomId}`));
+    }
+
+    // Stop audio transfer
     if (localStream.current) {
       localStream.current.getTracks().forEach((track) => {
         track.stop();
@@ -680,20 +708,12 @@ export default function Room() {
     existingUsers.current = [];
     localStream.current = null;
     pendingICEcandidates.current = {};
-    setInitialized(false);
 
-    location.href = "/";
-  }
-
-  async function unsubscribe() {
-    const db = getFirestore();
-    const allUserDoc = collection(db, `rooms/${roomId}/RTCinfo`);
-    const calleeDoc = collection(
-      db,
-      `rooms/${roomId}/RTCinfo/${userId}/callees`
-    );
-    onSnapshot(allUserDoc, () => {});
-    onSnapshot(calleeDoc, () => {});
+    if (redirect) {
+      router.push('/')
+    } else {
+      window.close();
+    } 
   }
 
   async function addICEcandidate(newUserId, ICEcandidate) {
@@ -701,46 +721,54 @@ export default function Room() {
     await peerConnections.current[newUserId].pc.addIceCandidate(candidate);
   }
 
-  function sendMsgAll(obj) {
-    Object.keys(peerConnections.current).map((userId) => {
-      console.log(peerConnections.current[userId].sendChannel.readyState);
-      if (peerConnections.current[userId].sendChannel.readyState === "open") {
-        peerConnections.current[userId].sendChannel.send(JSON.stringify(obj));
-      }
-    });
+  // Firestore unscribe onsnapshot
+  function unscribeFirestore() {
+    const db = getFirestore();
+    onSnapshot(collection(db, `rooms/${roomId}/RTCinfo`), () => {});
+    onSnapshot(
+      collection(db, `rooms/${roomId}/RTCinfo/${userId}/callees`),
+      () => {}
+    );
   }
 
-  function handleReceiveMessage(event) {
-    const data = JSON.parse(event.data);
-    const username = data.username;
-    const message = data.message;
-    const type = data.type;
-    // console.log(`${user}: ${message}`);
-    // If message is chat, update in comment list
-    if (type === "chat") {
-      const newComment = {
-        username: username,
-        time: Date(),
-        text: message,
-        isSystem: false,
+  // Transfer peer connection to otherUsersList
+
+  function getUsersList() {
+    let otherUsersList = {};
+    otherUsersList[userId] = {
+      isMuted: isMuted,
+      username: username,
+      avatar: avatar,
+    };
+    Object.keys(peerConnections.current).map((id) => {
+      if (id === userId) return;
+      otherUsersList[id] = {
+        isMuted: peerConnections.current[id].isMuted,
+        username: peerConnections.current[id].username,
+        avatar: peerConnections.current[id].avatar,
       };
-      const newCommentList = [...commentList, newComment];
-      setCommentList(newCommentList);
-    } else if (type === "system") {
-      const newComment = {
-        username: username,
-        time: Date(),
-        text: commentText,
-        isSystem: true,
-      };
-      const newCommentList = [...commentList, newComment];
-      setCommentList(newCommentList);
-    } else if (type === "setUser") {
-      const avatar = data.avatar;
-      peerConnections.current[userId].username = username;
-      peerConnections.current[userId].avatar = avatar;
-      // Force rerender on the UI
-      setValue((value) => value + 1);
+    });
+    return otherUsersList;
+  }
+
+  function sendMsgAll(obj) {
+    console.log("message:", obj);
+    const connectAllUsers = async () => {
+      await Promise.all(
+        Object.keys(peerConnections.current).map(async (userId) => {
+          await sendMsg(userId, obj);
+        })
+      );
+    };
+    connectAllUsers();
+  }
+
+  async function sendMsg(userId, obj) {
+    if (peerConnections.current[userId].sendChannel.readyState === "open") {
+      peerConnections.current[userId].sendChannel.send(JSON.stringify(obj));
+    } else {
+      await sleep(1000);
+      await sendMsg(userId, obj);
     }
   }
 }

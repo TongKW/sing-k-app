@@ -8,7 +8,7 @@ import EllipsisText from "react-ellipsis-text";
 import dynamic from "next/dynamic";
 const Picker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
-export default function UserUtilityPanel(props) {
+export default function UserUtilityPanel(props, ref) {
   return (
     <Box
       sx={{
@@ -118,20 +118,22 @@ function CommentArea(props) {
 }
 
 function MessageArea(props) {
+  const messageBoxRef = useRef(null);
   //auto scroll till bottom
-  const messageArea = useRef();
   useEffect(() => {
-    messageArea.current.scrollTop = messageArea.current.scrollHeight;
-  }, [props.commentList]);
+    messageBoxRef.current?.scrollIntoView();
+  }, [props.commentList.length]);
   return (
     <Box
+      id="chat-message-area"
       className="py-4 px-2 scrollbar"
       sx={{
+        display: "flex",
         height: "85%",
         overflowY: "auto",
         overflowX: "hidden",
+        flexDirection: "column",
       }}
-      ref={messageArea}
     >
       {props.commentList ? props.commentList.map((comment, index) => {
         if (comment.isSystem)
@@ -145,7 +147,8 @@ function MessageArea(props) {
               text={comment.text}
             />
           );
-      }) : <div/>}
+      })}
+      <div ref={messageBoxRef} />
     </Box>
   );
 }
