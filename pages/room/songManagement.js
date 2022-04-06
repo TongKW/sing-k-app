@@ -79,13 +79,23 @@ function SongFunctionKeys(props) {
         onClick={props.handleStopSong}
         style={{ cursor: "pointer" }}
       />
-      <Icon
-        icon="/images/plus.png"
-        alt="plus"
-        length="25"
-        onClick={props.handleAddSong}
-        style={{ cursor: "pointer" }}
-      />
+      <label htmlFor="upload-song">
+        <input
+          id="upload-song"
+          name="upload-song"
+          type="file"
+          onInput={props.handleAddSong}
+          style={{
+            display: "none",
+          }}
+        />
+        <Icon
+          icon="/images/plus.png"
+          alt="plus"
+          length="25"
+          style={{ cursor: "pointer" }}
+        />
+      </label>
       <Icon
         icon="/images/minus.png"
         alt="minus"
