@@ -17,6 +17,7 @@ export default function UserUtilityPanel(props, ref) {
         flexDirection: "column",
         height: "100vh",
       }}
+      style={{ background: "#FFFFFF" }}
     >
       <AudioPane
         isMuted={props.isMuted}
@@ -39,10 +40,14 @@ function AudioPane(props) {
       className="bg-gray-700"
       style={{
         width: "100%",
-        height: "35%",
+        height: "10%",
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
+        background: "#376E6F",
+        borderRadius: "0px 0px 10px 10px",
+        borderLeft: "solid 5px white",
+        borderRight: "solid 5px white"
       }}
     >
       <Box
@@ -63,6 +68,7 @@ function AudioPane(props) {
             justifyContent: "space-around",
             height: "80%",
             width: "10%",
+            fontSize: "20px",
           }}
         >
           <h1>Echo</h1>
@@ -84,7 +90,7 @@ function AudioPane(props) {
             valueLabelDisplay="auto"
             sx={{
               width: "90%",
-              color: "gray",
+              color: "#CCCCCC",
             }}
           />
           <Slider
@@ -93,7 +99,7 @@ function AudioPane(props) {
             value={props.volume}
             sx={{
               width: "90%",
-              color: "gray",
+              color: "#CCCCCC",
             }}
           />
         </Box>
@@ -108,7 +114,8 @@ function CommentArea(props) {
       className="bg-indigo-900"
       style={{
         width: "100%",
-        height: "65%",
+        height: "90%",
+        background: "#FFFFFF",
       }}
     >
       <MessageArea commentList={props.commentList} length={props.commentList ? props.commentList.length : 0}/>
@@ -170,7 +177,7 @@ function SystemMessage(props) {
           background: "rgba(127,127,127,0.5)",
           borderRadius: "50px",
           padding: "2px 5px 2px 5px",
-          color: "rgba(127,127,127)",
+          color: "#000000",
         }}
       >
         {props.text}
@@ -188,6 +195,7 @@ function UserComment(props) {
         display: "flex",
         flexDirection: "row",
         width: "100%",
+        color: "#000000",
       }}
     >
       <Box
@@ -244,10 +252,12 @@ function InputArea(props) {
     <Box
       sx={{
         height: "15%",
-        background: "green",
+        background: "#376E6F",
         display: "flex",
         flexDirection: "row",
         justifyContent: "center",
+        borderRadius: "10px",
+        margin: "0px 5px 0px 5px",
       }}
     >
       <Box
@@ -280,7 +290,7 @@ function InputArea(props) {
           </Box>
         )}
         <Icon
-          icon="/images/right-arrow.png"
+          icon="/images/send-message.png"
           alt="send"
           length="30"
           onClick={submitText}
