@@ -31,6 +31,9 @@ export default function ViewProfile(){
                 const user = data.body;
                 if (user.username == "admin"){
                     setValidated(true);
+                } else {
+                    alert("Unauthorized user. Redirect to user profile...");
+                    router.push("/profile");
                 }
             } else {
                 // Unauthorized user or jwt expired
@@ -42,28 +45,25 @@ export default function ViewProfile(){
     }, []);
 
     function findUserInfo(user){
-        return user.userId === userId;
+        return user._id === userId;
     }
 
     useEffect(() => {
         // retrieve all user info once admin ac is validated
         if (validated) {
-        // Test cases right now
-        const testUserList = [
-            {
-            userId: "1",
-            username: "username1",
-            email: "email1",
-            avatar: "avatar1",
-            },
-            {
-            userId: "2",
-            username: "username2",
-            email: "email2",
-            avatar: "avatar1",
-            },
-        ];
-        setUserList(testUserList);
+            async function getUsersList(){
+                const response = await fetch("/api/users/all", {
+                    method: "GET",
+                    headers: {
+                    "Content-Type": "application/json",
+                    },
+                });
+                const data = await response.json();
+                setUserList(data);
+            }
+            (async () => {
+                getUsersList();
+            })();
         }
     }, [validated]);
 

@@ -40,7 +40,6 @@ export default function Admin() {
         if (data.authorized) {
           const user = data.body;
           setUsername(user.username);
-
           if (user.username == "admin") {
             setValidated(true);
           } else {
@@ -62,25 +61,25 @@ export default function Admin() {
     setFetching(false);
   }, []);
 
+  
+
   useEffect(() => {
     // retrieve all user info once admin ac is validated
     if (validated) {
-      // Test cases right now
-      const testUserList = [
-        {
-          userId: "1",
-          username: "username1",
-          email: "email1",
-          avatar: "avatar1",
-        },
-        {
-          userId: "2",
-          username: "username2",
-          email: "email2",
-          avatar: "avatar1",
-        },
-      ];
-      setUserList(testUserList);
+      async function getUsersList(){
+        const response = await fetch("/api/users/all", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const data = await response.json();
+        setUserList(data);
+        console.log(data);
+      }
+      (async () => {
+        getUsersList();
+      })();
     }
   }, [validated]);
 
@@ -171,7 +170,7 @@ export default function Admin() {
                         key={index}
                         username={userObj.username}
                         email={userObj.email}
-                        userId={userObj.userId}
+                        userId={userObj._id}
                         handleChangePw={handleChangePw}
                         handleViewProfile={handleViewProfile}
                       />
