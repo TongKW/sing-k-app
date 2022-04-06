@@ -175,7 +175,8 @@ export default function Room() {
   useEffect(() => {
     Object.keys(peerConnections.current).map((userId) => {
       if (peerConnections.current[userId].isMuted) {
-        document.getElementById(`audio-${userId}`).srcObject = peerConnections.current[userId].audioStream;
+        document.getElementById(`audio-${userId}`).srcObject =
+          peerConnections.current[userId].audioStream;
       } else {
         document.getElementById(`audio-${userId}`).srcObject = null;
       }
@@ -532,7 +533,6 @@ export default function Room() {
             flexDirection: "row",
             width: "100%",
             height: "100vh",
-            background: "#ccc",
           }}
         >
           <Box sx={{ width: "23%" }}>
@@ -545,7 +545,7 @@ export default function Room() {
               handleMuteUnmute={handleMuteUnmute}
             />
           </Box>
-          <Box sx={{ background: "red", width: "54%" }}>
+          <Box sx={{ width: "54%", background: "#434343" }}>
             <UserUtilityPanel
               isMuted={isMuted}
               echo={echo}
@@ -602,7 +602,7 @@ export default function Room() {
           flexDirection: "row",
           width: "100%",
           height: "100vh",
-          background: "#ccc",
+          background: "#434343",
         }}
       >
         <Box sx={{ width: "23%" }}>
@@ -615,7 +615,7 @@ export default function Room() {
             handleMuteUnmute={handleMuteUnmute}
           />
         </Box>
-        <Box sx={{ background: "red", width: "54%" }}>
+        <Box sx={{ width: "54%" }} style={{ background: "#1C1C1C" }}>
           <UserUtilityPanel
             isMuted={isMuted}
             echo={echo}
@@ -626,7 +626,10 @@ export default function Room() {
             handleAddComment={handleAddComment}
           />
         </Box>
-        <Box sx={{ width: "23%" }}>
+        <Box
+          sx={{ width: "23%" }}
+          style={{backgroundColor: "#1C1C1C" }}
+        >
           <SongManagementPanel
             allSongList={allSongList}
             currentRoomType={currentRoomType}
@@ -757,18 +760,21 @@ export default function Room() {
 
   // Transfer peer connection to otherUsersList
   function getUsersList() {
-    let otherUsersList = {userId: {
-      isMuted: isMuted,
-      username: username,
-      avatar: avatar
-    }};
-    Object.keys(peerConnections.current).map((userId) => (
-      otherUsersList[userId] = {
-        isMuted: peerConnections.current[userId].isMuted,
-        username: peerConnections.current[userId].username,
-        avatar: peerConnections.current[userId].avatar
-      }
-    ));
+    let otherUsersList = {
+      userId: {
+        isMuted: isMuted,
+        username: username,
+        avatar: avatar,
+      },
+    };
+    Object.keys(peerConnections.current).map(
+      (userId) =>
+        (otherUsersList[userId] = {
+          isMuted: peerConnections.current[userId].isMuted,
+          username: peerConnections.current[userId].username,
+          avatar: peerConnections.current[userId].avatar,
+        })
+    );
     return otherUsersList;
   }
 }
