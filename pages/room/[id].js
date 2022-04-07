@@ -616,7 +616,9 @@ export default function Room() {
     function removeConnection(leftUserId) {
       console.log(`Removing connection of ${leftUserId}`);
       peerConnections.current[leftUserId].pc.close();
+      peerConnections.current[leftUserId].pc.onicecandidate = null;
       peerConnections.current[leftUserId].sendChannel.close();
+      peerConnections.current[leftUserId].pc.ondatachannel = null;
       peerConnections.current[leftUserId].receiveChannel.close();
       delete peerConnections.current[leftUserId];
       delete pendingICEcandidates.current[leftUserId];
@@ -731,9 +733,13 @@ export default function Room() {
     let _userId = localStorage.getItem("_userId");
     let _roomCreatorId = localStorage.getItem("_creatorId");
 
-    // Remove any listeners to Firestore
-    unsubscribeCallee.current();
-    unsubscribeLeftUser.current();
+    try {
+      // Remove any listeners to Firestore
+      unsubscribeCallee.current();
+      unsubscribeLeftUser.current();
+    } catch (error) {
+      console.log(error);
+    }
 
     const db = getFirestore();
 
