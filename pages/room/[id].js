@@ -21,6 +21,7 @@ import UserUtilityPanel from "./userUtility";
 import SongManagementPanel from "./songManagement";
 import { processFile, stripFileExtension } from "../../utils/fileUtils";
 import Button from "../../component/elements/button";
+import { WindowSharp } from "@mui/icons-material";
 
 export default function Room() {
   // Routing parameter
@@ -436,7 +437,6 @@ export default function Room() {
             const index = existingUsers.current.indexOf(leftUserId);
             existingUsers.current.splice(index, 1);
           }
-          
 
           // Update leaving message
           console.log(`Left: ${leftUserId}`);
@@ -747,6 +747,7 @@ export default function Room() {
     pendingICEcandidates.current = {};
 
     location.href = "/";
+    location.reload();
   }
 
   async function addICEcandidate(newUserId, ICEcandidate) {
