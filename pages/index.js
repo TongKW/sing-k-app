@@ -24,6 +24,7 @@ import {
   DialogContentText,
   Button,
   DialogActions,
+  IconButton,
 } from "@mui/material";
 import { FormInputBlock } from "../component/elements/form-input";
 import PeopleIcon from "@mui/icons-material/People";
@@ -32,6 +33,7 @@ import LoadingCircle from "../utils/inlineLoading";
 import { TapAndPlayTwoTone } from "@mui/icons-material";
 import { getUserId, setUsernameAvatar } from "../utils/jwt/decrypt";
 import sleep from "../utils/sleep";
+import CloseIcon from '@mui/icons-material/Close';
 
 export default function Home() {
   const [username, setUsername] = useState("");
@@ -481,10 +483,14 @@ function WaitingDialog(props) {
   return (
     <Dialog
       open={props.open}
-      onClose={props.close}
       aria-labelledby="waiting-dialog-title"
       aria-describedby="waiting-dialog-description"
     >
+      <Box sx={{display: "flex", flexDirection: "row-reverse"}}>
+        <IconButton onClick={props.close}>
+          <CloseIcon />
+        </IconButton>
+      </Box>
       <DialogTitle aria-labelledby="check-audio-dialog-title">
         {`Waiting to enter room ${props.roomId}...`}
       </DialogTitle>
