@@ -27,6 +27,8 @@ export default function Room() {
   const router = useRouter();
   const roomId = router.query.id;
 
+  let _userId = null;
+  let _roomCreatorId = null;
   // WebRTC info and Stream parameters for the next newcomer
   let localStream = useRef(null);
   let pendingICEcandidates = useRef({});
@@ -209,6 +211,7 @@ export default function Room() {
         setUsername(user.username);
         setAvatar(user.avatar);
         setUserId(user.id);
+        localStorage.setItem("_userId", user.id);
       } else {
         // Unauthorized user or jwt expired
         // Prompt to login page
@@ -219,16 +222,17 @@ export default function Room() {
 
   const closeHandler = async () => {
     await leave();
-    window.location.reload(false);
     return "";
   };
 
   // Add listener when user is about to close the page or refresh
   useEffect(() => {
-    window.addEventListener("popstate", closeHandler);
+    window.addEventListener("popstate", () => {console.log("called popstate!");closeHandler();});
     window.addEventListener("beforeunload", closeHandler);
     return () => {
-      window.removeEventListener("popstate", closeHandler);
+      console.log("_userId: ",_userId);
+      console.log("_roomCreatorId: ",_roomCreatorId);
+      window.removeEventListener("popstate", () => {console.log("called popstate!");closeHandler();});
       window.removeEventListener("beforeunload", closeHandler);
     };
   }, []);
@@ -248,6 +252,7 @@ export default function Room() {
       const creatorId = data.creatorId;
       console.log(`creatorId == userId: ${creatorId == userId}`);
       setRoomCreatorId(creatorId);
+      localStorage.setItem("_creatorId", creatorId);
     }
   }, [roomId]);
 
@@ -696,18 +701,21 @@ export default function Room() {
   async function leave(redirect = false) {
     // Remove roomId from localStorage
     localStorage.removeItem("roomId");
+    let _userId = localStorage.getItem("_userId");
+    let _roomCreatorId = localStorage.getItem("_creatorId");
 
     // Remove any listeners to Firestore
     unscribeFirestore();
 
     const db = getFirestore();
-
+    
     // Remove the user record in the room
-    await deleteDoc(doc(db, `rooms/${roomId}/RTCinfo/${userId}`));
+    await deleteDoc(doc(db, `rooms/${roomId}/RTCinfo/${_userId}`));
 
-    // If the left user is the creator of the room,
+    // If the left user is the creator of the room,ha
     // Delete the room when the creator left
-    if (roomCreatorId === userId) {
+    if (_roomCreatorId === _userId) {
+      console.log(`roomCreatorId == undefined: ${_roomCreatorId==undefined}`);
       console.log("delete the whole doc!");
       await deleteDoc(doc(db, `rooms/${roomId}`));
     }
@@ -733,6 +741,8 @@ export default function Room() {
     pendingICEcandidates.current = {};
 
     router.push("/");
+    // await sleep(5000);
+    window.location.reload(false);
   }
 
   async function addICEcandidate(newUserId, ICEcandidate) {
