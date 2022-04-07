@@ -33,7 +33,8 @@ import LoadingCircle from "../utils/inlineLoading";
 import { TapAndPlayTwoTone } from "@mui/icons-material";
 import { getUserId, setUsernameAvatar } from "../utils/jwt/decrypt";
 import sleep from "../utils/sleep";
-import CloseIcon from '@mui/icons-material/Close';
+import CloseIcon from "@mui/icons-material/Close";
+import removeUserQueue from "../utils/room/userOffQueue";
 
 export default function Home() {
   const [username, setUsername] = useState("");
@@ -223,8 +224,19 @@ function CreateRoomButton(props) {
 
 function CreateRoomDialog(props) {
   return (
-    <Dialog open={props.open} onClose={props.close}>
-      <DialogTitle>Choose Type: </DialogTitle>
+    <Dialog open={props.open}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
+        }}
+      >
+        <DialogTitle>Choose Type: </DialogTitle>
+        <IconButton onClick={props.close}>
+          <CloseIcon />
+        </IconButton>
+      </Box>
       <DialogContent>
         <Box
           sx={{
@@ -275,6 +287,7 @@ function JoinRoomButton(props) {
   const [waitingOpen, setWaitingOpen] = useState(false);
   const [roomId, setRoomId] = useState();
   const [roomIdError, setRoomIdError] = useState();
+  const [userId, setUserId] = useState();
   const [canEnterRoom, setCanEnterRoom] = useState(false);
   const [userIdError, setUserIdError] = useState(false);
   const [queuePosition, setQueuePosition] = useState(null);
@@ -306,7 +319,7 @@ function JoinRoomButton(props) {
     (async () => {
       if (!roomId) return;
       const userId = await getUserId();
-      const db = getFirestore();
+      setUserId(userId);
       const roomDoc = doc(db, `rooms/${roomId}`);
       onSnapshot(roomDoc, (doc) => {
         if (!doc.data()) return;
@@ -339,6 +352,11 @@ function JoinRoomButton(props) {
   };
 
   const handleWaitingClose = () => setWaitingOpen(false);
+
+  const handleLeaveQueueManually = async () => {
+    await removeUserQueue(db, userId, roomId);
+    handleWaitingClose();
+  };
 
   const handleGetLocalStream = () => {
     handleCheckMicClose();
@@ -405,7 +423,7 @@ function JoinRoomButton(props) {
         roomId={roomId}
         open={waitingOpen}
         position={queuePosition}
-        close={handleWaitingClose}
+        close={handleLeaveQueueManually}
       />
     </>
   );
@@ -414,8 +432,19 @@ function JoinRoomButton(props) {
 function EnterRoomIdDialog(props) {
   const [roomId, setRoomId] = useState();
   return (
-    <Dialog open={props.open} onClose={props.close}>
-      <DialogTitle>Enter Room ID: </DialogTitle>
+    <Dialog open={props.open}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
+        }}
+      >
+        <DialogTitle>Enter Room ID: </DialogTitle>
+        <IconButton onClick={props.close}>
+          <CloseIcon />
+        </IconButton>
+      </Box>
       <DialogContent>
         <FormInputBlock
           category="Room ID"
@@ -443,7 +472,7 @@ function CheckMicDialog(props) {
   useEffect(() => {
     if (props.open) {
       navigator.mediaDevices
-        .getUserMedia({ video: true, audio: true })
+        .getUserMedia({ video: false, audio: true })
         .then((localStream) => {
           props.setLocalStream(localStream);
           props.close();
@@ -454,13 +483,24 @@ function CheckMicDialog(props) {
   return (
     <Dialog
       open={props.open}
-      onClose={props.close}
       aria-labelledby="check-audio-dialog-title"
       aria-describedby="check-audio-dialog-description"
     >
-      <DialogTitle aria-labelledby="check-audio-dialog-title">
-        Checking your audio source...
-      </DialogTitle>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
+        }}
+      >
+        <DialogTitle aria-labelledby="check-audio-dialog-title">
+          Checking your audio source...
+        </DialogTitle>
+        <IconButton onClick={props.close}>
+          <CloseIcon />
+        </IconButton>
+      </Box>
+
       <DialogContent>
         <DialogContentText aria-describedby="check-audio-dialog-description">
           Please permit the use of microphone...
@@ -486,14 +526,20 @@ function WaitingDialog(props) {
       aria-labelledby="waiting-dialog-title"
       aria-describedby="waiting-dialog-description"
     >
-      <Box sx={{display: "flex", flexDirection: "row-reverse"}}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
+        }}
+      >
+        <DialogTitle aria-labelledby="check-audio-dialog-title">
+          {`Waiting to enter room ${props.roomId}...`}
+        </DialogTitle>
         <IconButton onClick={props.close}>
           <CloseIcon />
         </IconButton>
       </Box>
-      <DialogTitle aria-labelledby="check-audio-dialog-title">
-        {`Waiting to enter room ${props.roomId}...`}
-      </DialogTitle>
       <DialogContent>
         <DialogContentText aria-describedby="waiting-dialog-description">
           We are connecting your audio with other users. Please be patient!
@@ -506,7 +552,7 @@ function WaitingDialog(props) {
           }}
         >
           <DialogContentText aria-describedby="waiting-dialog-description">
-            Your current position: {props.position}
+            Your current position: {props.position + 1}
           </DialogContentText>
         </Box>
         <Box

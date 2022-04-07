@@ -22,6 +22,7 @@ import SongManagementPanel from "./songManagement";
 import { processFile, stripFileExtension } from "../../utils/fileUtils";
 import Button from "../../component/elements/button";
 import { WindowSharp } from "@mui/icons-material";
+import removeUserQueue from "../../utils/room/userOffQueue";
 
 export default function Room() {
   // Routing parameter
@@ -281,7 +282,7 @@ export default function Room() {
       setFromLobby(false);
       return;
     }
-
+    console.log(`initialized = ${initialized}`);
     if (initialized || !roomId || !userId) return;
     initialize();
 
@@ -292,7 +293,7 @@ export default function Room() {
 
       // Setup audio
       localStream.current = await navigator.mediaDevices.getUserMedia({
-        video: true,
+        video: false,
         audio: true,
       });
 
@@ -369,12 +370,7 @@ export default function Room() {
                   avatar: avatar,
                 });
                 //TODO: Delete your userId in Firebase queue
-                const roomIdDoc = doc(db, `rooms/${roomId}`);
-                const roomIdSnapshot = await getDoc(roomIdDoc);
-                const roomIdData = roomIdSnapshot.data();
-                const queue = roomIdData.queue;
-                const newQueue = queue.filter((id) => id !== userId);
-                await updateDoc(roomIdDoc, { queue: newQueue });
+                await removeUserQueue(db, userId, roomId);
               }
               // Case: A new comer has joined the room
               // If other created the connection first:
@@ -465,30 +461,39 @@ export default function Room() {
     async function initPeerConnection(userId) {
       console.log(`COUNT: initPeerConnection() is called on ${userId}`);
       // If peer Connection has been created before, return
-      if (peerConnections.current.hasOwnProperty(userId)) return;
+      try {
+        if (peerConnections.current.hasOwnProperty(userId)) {
+          console.log("already formed connection!");
+          return;
+        }
 
-      // Initialize and store new Peer Connection
-      createNewPeerConnection(userId);
+        // Initialize and store new Peer Connection
+        createNewPeerConnection(userId);
 
-      // Create offer descript and set to local
-      const description = await peerConnections.current[
-        userId
-      ].pc.createOffer();
-      const RTCoffer = {
-        sdp: description.sdp,
-        type: description.type,
-      };
-      await peerConnections.current[userId].pc.setLocalDescription(description);
-      console.log("Peer Connection after setLocalDescription");
-      console.log(peerConnections.current);
-      console.log(peerConnections.current[userId].pc);
+        // Create offer descript and set to local
+        const description = await peerConnections.current[
+          userId
+        ].pc.createOffer();
+        const RTCoffer = {
+          sdp: description.sdp,
+          type: description.type,
+        };
+        await peerConnections.current[userId].pc.setLocalDescription(
+          description
+        );
+        console.log("Peer Connection after setLocalDescription");
+        console.log(peerConnections.current);
+        console.log(peerConnections.current[userId].pc);
 
-      await sleep(2000);
-      await updateConnectionData(userId, { RTCoffer: RTCoffer });
-      //const localDesc = peerConnections.current[userId].pc.localDescription;
+        await sleep(2000);
+        await updateConnectionData(userId, { RTCoffer: RTCoffer });
+        //const localDesc = peerConnections.current[userId].pc.localDescription;
 
-      // Create firestore document for new user to connect to you
-      await createNewUserFirestore();
+        // Create firestore document for new user to connect to you
+        await createNewUserFirestore();
+      } catch (error) {
+        console.error(error);
+      }
     }
 
     // Create an user document for any user to write connection data on
@@ -509,8 +514,16 @@ export default function Room() {
     }
 
     async function connectNewUser(newUserId, remoteRTCoffer) {
+      console.log("connect new user!");
       createNewPeerConnection(newUserId);
       const desc = new RTCSessionDescription(remoteRTCoffer);
+      // await peerConnections.current[newUserId].pc.setRemoteDescription(desc);
+      // const localRTCoffer = await peerConnections.current[
+      //   newUserId
+      // ].pc.createAnswer();
+      // await peerConnections.current[newUserId].pc.setLocalDescription(
+      //   localRTCoffer
+      // );
       await peerConnections.current[newUserId].pc.setRemoteDescription(desc);
       const localRTCoffer = await peerConnections.current[
         newUserId
@@ -596,9 +609,11 @@ export default function Room() {
 
     function removeConnection(leftUserId) {
       console.log(`Removing connection of ${leftUserId}`);
-      peerConnections.current[leftUserId].pc.close();
-      peerConnections.current[leftUserId].receiveChannel.close();
+      peerConnections.current[leftUserId]?.pc.close();
+      peerConnections.current[leftUserId]?.sendChannel.close();
+      peerConnections.current[leftUserId]?.receiveChannel.close();
       delete peerConnections.current[leftUserId];
+      delete pendingICEcandidates.current[leftUserId];
     }
 
     function handleReceiveMessage(event) {
@@ -735,9 +750,9 @@ export default function Room() {
 
     // close all peer connections
     Object.keys(peerConnections.current).map((userId) => {
-      peerConnections.current[userId].pc.close();
-      peerConnections.current[userId].sendChannel.close();
-      peerConnections.current[userId].receiveChannel.close();
+      peerConnections.current[userId]?.pc.close();
+      peerConnections.current[userId]?.sendChannel.close();
+      peerConnections.current[userId]?.receiveChannel.close();
     });
 
     // Clear data
@@ -746,8 +761,7 @@ export default function Room() {
     localStream.current = null;
     pendingICEcandidates.current = {};
 
-    router.push("/");
-    window.location.reload(false);
+    location.href = "/";
   }
 
   async function addICEcandidate(newUserId, ICEcandidate) {
