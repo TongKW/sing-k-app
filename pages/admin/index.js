@@ -17,6 +17,7 @@ import logout from "../../utils/logout";
 import pwValidateSetError from "../../utils/validate-password-format";
 import { Loading } from "notiflix/build/notiflix-loading-aio";
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import HomePage from "../../component/wrapper/HomePage";
 
 export default function Admin() {
   const router = useRouter();
@@ -128,7 +129,7 @@ export default function Admin() {
     // Clicking the username will redirect to view-profile and show their user profile.
 
     return (
-      <>
+      <HomePage role={"admin"}>
         <TableContainer
           component={Paper}
           sx={{ width: {xs: "80%", sm:"70%"}, margin: "auto", mt: 5 }}
@@ -156,7 +157,7 @@ export default function Admin() {
             </TableBody>
           </Table>
         </TableContainer>
-      </>
+      </HomePage>
     );
   }
 }
