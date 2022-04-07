@@ -89,6 +89,7 @@ export default function Room() {
   }, [volume, currentSong]);
 
   const handleStartSong = () => {
+    if (!allAudioList.current) return;
     if (currentSong === allAudioList.current[0]) {
       // The user has paused, and now we need to resume
       console.log("Resume song!");
@@ -216,28 +217,39 @@ export default function Room() {
     }
   }, [router]);
 
+  const closeHandler = async () => {
+    await leave();
+    window.location.reload(false);
+    return "";
+  };
+
   // Add listener when user is about to close the page or refresh
   useEffect(() => {
-    window.onbeforeunload = async () => {
-      await leave();
+    window.addEventListener("popstate", closeHandler);
+    window.addEventListener("beforeunload", closeHandler);
+    return () => {
+      window.removeEventListener("popstate", closeHandler);
+      window.removeEventListener("beforeunload", closeHandler);
     };
-  });
+  }, []);
 
   // Retrieve the userId of the room creator
-  useEffect(()=> {
+  useEffect(() => {
     if (!roomId) return;
     checkRoomCreator();
     async function checkRoomCreator() {
       const db = getFirestore();
       const roomDoc = doc(db, `rooms/${roomId}`);
-      console.log('roomId: ');
+      console.log("roomId: ");
       console.log(roomId);
       const roomSnapshot = await getDoc(roomDoc);
       const data = roomSnapshot.data();
+      console.log(data);
       const creatorId = data.creatorId;
+      console.log(`creatorId == userId: ${creatorId == userId}`);
       setRoomCreatorId(creatorId);
     }
-  }, [roomId])
+  }, [roomId]);
 
   // Initialize audio stream and WebRTC
   // Get peer WebRTC info and connect
@@ -268,7 +280,7 @@ export default function Room() {
 
       // Setup audio
       localStream.current = await navigator.mediaDevices.getUserMedia({
-        video: false,
+        video: true,
         audio: true,
       });
 
@@ -345,7 +357,12 @@ export default function Room() {
                   avatar: avatar,
                 });
                 //TODO: Delete your userId in Firebase queue
-
+                const roomIdDoc = doc(db, `rooms/${roomId}`);
+                const roomIdSnapshot = await getDoc(roomIdDoc);
+                const roomIdData = roomIdSnapshot.data();
+                const queue = roomIdData.queue;
+                const newQueue = queue.filter((id) => id !== userId);
+                await updateDoc(roomIdDoc, { queue: newQueue });
               }
               // Case: A new comer has joined the room
               // If other created the connection first:
@@ -616,7 +633,11 @@ export default function Room() {
       <Dialog open={!fromLobby}>
         <DialogTitle>Please join the room from Lobby.</DialogTitle>
         <DialogContent>
-          <div onClick={() => {leave(true)}}>
+          <div
+            onClick={() => {
+              leave(true);
+            }}
+          >
             <Button text="Close"></Button>
           </div>
         </DialogContent>
@@ -635,7 +656,8 @@ export default function Room() {
           <RoomMangementPanel
             otherUsersList={getUsersList()}
             peerConnections={peerConnections}
-            leave={leave}
+            // leave={leave}
+            closeHandler={closeHandler}
             roomId={roomId}
             roomCreatorId={roomCreatorId}
             currentRoomType={currentRoomType}
@@ -654,14 +676,11 @@ export default function Room() {
             handleAddComment={handleAddComment}
           />
         </Box>
-        <Box
-          sx={{ width: "23%" }}
-          style={{backgroundColor: "#1C1C1C" }}
-        >
+        <Box sx={{ width: "23%" }} style={{ backgroundColor: "#1C1C1C" }}>
           <SongManagementPanel
             allSongList={allSongList.current}
             currentRoomType={currentRoomType}
-            isRoomCreator={(roomCreatorId == userId)}
+            isRoomCreator={roomCreatorId == userId}
             handleStartSong={handleStartSong}
             handleStopSong={handleStopSong}
             handleAddSong={handleAddSong}
@@ -676,7 +695,7 @@ export default function Room() {
 
   async function leave(redirect = false) {
     // Remove roomId from localStorage
-    localStorage.removeItem('roomId')
+    localStorage.removeItem("roomId");
 
     // Remove any listeners to Firestore
     unscribeFirestore();
@@ -688,7 +707,8 @@ export default function Room() {
 
     // If the left user is the creator of the room,
     // Delete the room when the creator left
-    if (roomCreatorId == userId) {
+    if (roomCreatorId === userId) {
+      console.log("delete the whole doc!");
       await deleteDoc(doc(db, `rooms/${roomId}`));
     }
 
@@ -712,11 +732,7 @@ export default function Room() {
     localStream.current = null;
     pendingICEcandidates.current = {};
 
-    if (redirect) {
-      router.push('/')
-    } else {
-      window.close();
-    } 
+    router.push("/");
   }
 
   async function addICEcandidate(newUserId, ICEcandidate) {

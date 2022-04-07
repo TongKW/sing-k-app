@@ -31,9 +31,7 @@ import generateRoomId from "../utils/room/generate-id";
 import LoadingCircle from "../utils/inlineLoading";
 import { TapAndPlayTwoTone } from "@mui/icons-material";
 import { getUserId, setUsernameAvatar } from "../utils/jwt/decrypt";
-import sleep from "../utils/sleep"
-
-
+import sleep from "../utils/sleep";
 
 export default function Home() {
   const [username, setUsername] = useState("");
@@ -44,19 +42,23 @@ export default function Home() {
   useEffect(() => {
     setUsername(localStorage.getItem("username"));
     const unsub = onSnapshot(collection(db, "rooms"), async (snapshot) => {
-      const roomInfos = await Promise.all(snapshot.docs.map(async (doc) => {
-        const userDoc = collection(db, `rooms/${doc.id}/RTCinfo`);
-        const userSnapshot = await getDocs(userDoc);
+      const roomInfos = await Promise.all(
+        snapshot.docs.map(async (doc) => {
+          const userDoc = collection(db, `rooms/${doc.id}/RTCinfo`);
+          const userSnapshot = await getDocs(userDoc);
 
-        return {
-          username: doc.data().creator,
-          type: doc.data().type,
-          userAvatar: doc.data().creatorAvatar,
-          roomId: doc.id,
-          numberOfParticipants: userSnapshot.size,
-        };
-      }));
-      const publicRoomInfos = roomInfos.filter(roomInfo => roomInfo.type === "streaming");
+          return {
+            username: doc.data().creator,
+            type: doc.data().type,
+            userAvatar: doc.data().creatorAvatar,
+            roomId: doc.id,
+            numberOfParticipants: userSnapshot.size,
+          };
+        })
+      );
+      const publicRoomInfos = roomInfos.filter(
+        (roomInfo) => roomInfo.type === "streaming"
+      );
       setRoomInfos(publicRoomInfos);
     });
     return () => unsub();
@@ -123,6 +125,7 @@ function CreateRoomButton(props) {
   const [userIdError, setUserIdError] = useState(false);
   const [roomType, setRoomType] = useState();
   const [roomId, setRoomId] = useState();
+  const [localStream, setLocalStream] = useState();
   const db = getFirestore();
   const router = useRouter();
 
@@ -138,12 +141,14 @@ function CreateRoomButton(props) {
       handleCreateRoomClose();
       handleCheckMicClose();
       if (canEnterRoom) {
-        localStorage.setItem('roomId', roomId);
-        window.open(`/room/${roomId}`);
+        localStorage.setItem("roomId", roomId);
+        // window.open(`/room/${roomId}`);
+        router.push(`/room/${roomId}`);
       } else {
         router.push("/login");
       }
     }
+    // return () => localStream.removeTrack();
   }, [canEnterRoom, roomId, router, userIdError]);
 
   const handleEnterCreatedRoom = async () => {
@@ -205,7 +210,11 @@ function CreateRoomButton(props) {
         clickStreaming={createStreamingRoom}
         clickPrivate={createPrivateRoom}
       />
-      <CheckMicDialog open={checkMicOpen} close={handleEnterCreatedRoom} />
+      <CheckMicDialog
+        open={checkMicOpen}
+        close={handleEnterCreatedRoom}
+        setLocalStream={setLocalStream}
+      />
     </>
   );
 }
@@ -276,8 +285,9 @@ function JoinRoomButton(props) {
       handleCheckMicClose();
       if (canEnterRoom) {
         unsubscribeFirestore();
-        localStorage.setItem('roomId', roomId);
-        window.open(`/room/${roomId}`);
+        localStorage.setItem("roomId", roomId);
+        // window.open(`/room/${roomId}`);
+        router.push(`/room/${roomId}`);
       } else {
         router.push("/login");
       }
@@ -298,9 +308,9 @@ function JoinRoomButton(props) {
       const roomDoc = doc(db, `rooms/${roomId}`);
       onSnapshot(roomDoc, (doc) => {
         if (!doc.data()) return;
-        console.log('snapshot changed:')
+        console.log("snapshot changed:");
         console.log(doc.data());
-        const newPosition = doc.data().queue.indexOf(userId)
+        const newPosition = doc.data().queue.indexOf(userId);
         if (newPosition == 0) {
           setCanEnterRoom(true);
         } else {
@@ -308,7 +318,7 @@ function JoinRoomButton(props) {
         }
       });
     })();
-  }, [roomId])
+  }, [roomId]);
 
   const handleEnterRoomIdOpen = () => setEnterRoomIdOpen(true);
 
@@ -354,8 +364,8 @@ function JoinRoomButton(props) {
 
   const appendUserIdToQueue = async () => {
     const userId = await getUserId();
-    console.log(userId)
-    console.log(roomId)
+    console.log(userId);
+    console.log(roomId);
     if (userId !== null) {
       const roomDoc = doc(db, "rooms", roomId);
       const roomSnapshot = await getDoc(roomDoc);
@@ -431,8 +441,11 @@ function CheckMicDialog(props) {
   useEffect(() => {
     if (props.open) {
       navigator.mediaDevices
-        .getUserMedia({ audio: true })
-        .then(props.close)
+        .getUserMedia({ video: true, audio: true })
+        .then((localStream) => {
+          props.setLocalStream(localStream);
+          props.close();
+        })
         .catch(props.close);
     }
   }, [props.open]);
