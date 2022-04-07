@@ -227,12 +227,18 @@ export default function Room() {
 
   // Add listener when user is about to close the page or refresh
   useEffect(() => {
-    window.addEventListener("popstate", () => {console.log("called popstate!");closeHandler();});
+    window.addEventListener("popstate", () => {
+      console.log("called popstate!");
+      closeHandler();
+    });
     window.addEventListener("beforeunload", closeHandler);
     return () => {
-      console.log("_userId: ",_userId);
-      console.log("_roomCreatorId: ",_roomCreatorId);
-      window.removeEventListener("popstate", () => {console.log("called popstate!");closeHandler();});
+      console.log("_userId: ", _userId);
+      console.log("_roomCreatorId: ", _roomCreatorId);
+      window.removeEventListener("popstate", () => {
+        console.log("called popstate!");
+        closeHandler();
+      });
       window.removeEventListener("beforeunload", closeHandler);
     };
   }, []);
@@ -249,7 +255,7 @@ export default function Room() {
       const roomSnapshot = await getDoc(roomDoc);
       const data = roomSnapshot.data();
       console.log(data);
-      const creatorId = data.creatorId;
+      const creatorId = data?.creatorId;
       console.log(`creatorId == userId: ${creatorId == userId}`);
       setRoomCreatorId(creatorId);
       localStorage.setItem("_creatorId", creatorId);
@@ -638,13 +644,7 @@ export default function Room() {
       <Dialog open={!fromLobby}>
         <DialogTitle>Please join the room from Lobby.</DialogTitle>
         <DialogContent>
-          <div
-            onClick={() => {
-              leave(true);
-            }}
-          >
-            <Button text="Close"></Button>
-          </div>
+          <Button text="Close" onClick={closeHandler} />
         </DialogContent>
       </Dialog>
       <Box
@@ -708,14 +708,14 @@ export default function Room() {
     unscribeFirestore();
 
     const db = getFirestore();
-    
+
     // Remove the user record in the room
     await deleteDoc(doc(db, `rooms/${roomId}/RTCinfo/${_userId}`));
 
     // If the left user is the creator of the room,ha
     // Delete the room when the creator left
     if (_roomCreatorId === _userId) {
-      console.log(`roomCreatorId == undefined: ${_roomCreatorId==undefined}`);
+      console.log(`roomCreatorId == undefined: ${_roomCreatorId == undefined}`);
       console.log("delete the whole doc!");
       await deleteDoc(doc(db, `rooms/${roomId}`));
     }
@@ -740,9 +740,7 @@ export default function Room() {
     localStream.current = null;
     pendingICEcandidates.current = {};
 
-    router.push("/");
-    // await sleep(5000);
-    window.location.reload(false);
+    location.href = "/";
   }
 
   async function addICEcandidate(newUserId, ICEcandidate) {
