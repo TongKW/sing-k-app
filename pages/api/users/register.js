@@ -37,6 +37,7 @@ export default async function handler(req, res) {
     // hash: hashed user pw by bcrypt.hashSync with salt
     // expireTime: int, milliseconds since Epoch till now + 24 hours
     const user = { username: username, hash: hash, email: email, expireTime: Date.now()+86400000 }
+    
     await validate.insertOne(user).then(result => {
       validate_id = result.insertedId;
     }).catch(err => {
