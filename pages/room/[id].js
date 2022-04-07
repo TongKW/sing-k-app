@@ -41,6 +41,8 @@ export default function Room() {
   let commentList = useRef([]);
   let allSongList = useRef([]);
   let allAudioList = useRef([]);
+  let unsubscribeCallee = useRef();
+  let unsubscribeLeftUser = useRef();
 
   // Check if user enters from Lobby
   const [fromLobby, setFromLobby] = useState(true);
@@ -321,7 +323,7 @@ export default function Room() {
     }
 
     // Listen for any joined user
-    onSnapshot(calleeDoc, (snapshot) => {
+    unsubscribeCallee.current = onSnapshot(calleeDoc, (snapshot) => {
       snapshot.docChanges().forEach(async (change) => {
         // Get new user info
         const newUserDoc = change.doc;
@@ -329,8 +331,11 @@ export default function Room() {
         if (newUserId === userId) return;
         // If a new user joined, connect with WebRTC
         if (change.type === "added" || change.type === "modified") {
+          console.log("new user joined!");
           // Create new connection
           createNewPeerConnection(newUserId);
+
+          console.log("Finished create new peer connection");
           // Initializing an empty ICE candidate queue for the new comer
           if (!pendingICEcandidates.current.hasOwnProperty(newUserId)) {
             pendingICEcandidates.current[newUserId] = [];
@@ -418,7 +423,7 @@ export default function Room() {
     });
 
     // Listen for any left user
-    onSnapshot(allUserDoc, (snapshot) => {
+    unsubscribeLeftUser.current = onSnapshot(allUserDoc, (snapshot) => {
       snapshot.docChanges().forEach(async (change) => {
         // If an user left, delete info and close the WebRTC connection
         if (change.type === "removed") {
@@ -546,14 +551,14 @@ export default function Room() {
       peerConnections.current[userId].pc = new RTCPeerConnection(servers);
       // Push tracks from local stream to peer connection
       localStream.current.getTracks().forEach((track) => {
-        console.log(`Pushing track ... ${new Date().getTime()}`);
+        console.log(`Pushing track to ${userId} ... ${new Date().getTime()}`);
         console.log(track);
         peerConnections.current[userId].pc.addTrack(track, localStream.current);
       });
 
       peerConnections.current[userId].audioStream = new MediaStream();
       peerConnections.current[userId].pc.ontrack = (event) => {
-        console.log(`Getting track ... ${new Date().getTime()}`);
+        console.log(`Getting track from ${userId}... ${new Date().getTime()}`);
         event.streams[0].getTracks().forEach((track) => {
           peerConnections.current[userId].audioStream.addTrack(track);
         });
@@ -590,6 +595,7 @@ export default function Room() {
         peerConnections.current[userId].pc.signalingState === "stable"
       )
         return false;
+      console.log("Have good and stable connection!");
       return true;
     }
 
@@ -609,9 +615,9 @@ export default function Room() {
 
     function removeConnection(leftUserId) {
       console.log(`Removing connection of ${leftUserId}`);
-      peerConnections.current[leftUserId]?.pc.close();
-      peerConnections.current[leftUserId]?.sendChannel.close();
-      peerConnections.current[leftUserId]?.receiveChannel.close();
+      peerConnections.current[leftUserId].pc.close();
+      peerConnections.current[leftUserId].sendChannel.close();
+      peerConnections.current[leftUserId].receiveChannel.close();
       delete peerConnections.current[leftUserId];
       delete pendingICEcandidates.current[leftUserId];
     }
@@ -726,7 +732,8 @@ export default function Room() {
     let _roomCreatorId = localStorage.getItem("_creatorId");
 
     // Remove any listeners to Firestore
-    unscribeFirestore();
+    unsubscribeCallee.current();
+    unsubscribeLeftUser.current();
 
     const db = getFirestore();
 
@@ -750,9 +757,9 @@ export default function Room() {
 
     // close all peer connections
     Object.keys(peerConnections.current).map((userId) => {
-      peerConnections.current[userId]?.pc.close();
-      peerConnections.current[userId]?.sendChannel.close();
-      peerConnections.current[userId]?.receiveChannel.close();
+      peerConnections.current[userId].pc.close();
+      peerConnections.current[userId].sendChannel.close();
+      peerConnections.current[userId].receiveChannel.close();
     });
 
     // Clear data
@@ -762,21 +769,12 @@ export default function Room() {
     pendingICEcandidates.current = {};
 
     location.href = "/";
+    // router.push("/");
   }
 
   async function addICEcandidate(newUserId, ICEcandidate) {
     const candidate = new RTCIceCandidate(ICEcandidate);
     await peerConnections.current[newUserId].pc.addIceCandidate(candidate);
-  }
-
-  // Firestore unscribe onsnapshot
-  function unscribeFirestore() {
-    const db = getFirestore();
-    onSnapshot(collection(db, `rooms/${roomId}/RTCinfo`), () => {});
-    onSnapshot(
-      collection(db, `rooms/${roomId}/RTCinfo/${userId}/callees`),
-      () => {}
-    );
   }
 
   // Transfer peer connection to otherUsersList
