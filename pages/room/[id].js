@@ -436,8 +436,7 @@ export default function Room() {
             const index = existingUsers.current.indexOf(leftUserId);
             existingUsers.current.splice(index, 1);
           }
-          // Close WebRTC connection
-          peerConnections.current[leftUserId].pc.close();
+          
 
           // Update leaving message
           console.log(`Left: ${leftUserId}`);
@@ -449,8 +448,8 @@ export default function Room() {
             isSystem: true,
           });
 
-          // delete user info
-          delete peerConnections.current[leftUserId];
+          // clear connection of the left user
+          removeConnection(leftUserId);
 
           // Force rerender on the UI
           setValue((value) => value + 1);
@@ -593,6 +592,13 @@ export default function Room() {
       peerConnections.current[userId].receiveChannel = event.channel;
       peerConnections.current[userId].receiveChannel.onmessage =
         handleReceiveMessage;
+    }
+
+    function removeConnection(leftUserId) {
+      console.log(`Removing connection of ${leftUserId}`);
+      peerConnections.current[leftUserId].pc.close();
+      peerConnections.current[leftUserId].receiveChannel.close();
+      delete peerConnections.current[leftUserId];
     }
 
     function handleReceiveMessage(event) {
