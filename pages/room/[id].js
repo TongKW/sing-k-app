@@ -746,8 +746,8 @@ export default function Room() {
     localStream.current = null;
     pendingICEcandidates.current = {};
 
-    location.href = "/";
-    location.reload();
+    router.push("/");
+    window.location.reload(false);
   }
 
   async function addICEcandidate(newUserId, ICEcandidate) {
