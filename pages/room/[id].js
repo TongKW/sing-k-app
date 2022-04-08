@@ -52,6 +52,7 @@ export default function Room() {
 
   // Initialization indicates
   const [initialized, setInitialized] = useState(false);
+  const [initConn, setInitConn] = useState(false);
 
   // User info
   const [username, setUsername] = useState();
@@ -270,6 +271,7 @@ export default function Room() {
   // Get peer WebRTC info and connect
   // Only run once after roomId is get
   useEffect(() => {
+    console.log(`initConn: ${initConn}`);
     const db = getFirestore();
     const allUserDoc = collection(db, `rooms/${roomId}/RTCinfo`);
     const calleeDoc = collection(
@@ -322,6 +324,8 @@ export default function Room() {
       await createNewUserFirestore();
     }
 
+    // Listen to any changes only after own first connection is initialized
+    
     // Listen for any joined user
     unsubscribeCallee.current = onSnapshot(calleeDoc, (snapshot) => {
       snapshot.docChanges().forEach(async (change) => {
@@ -356,7 +360,7 @@ export default function Room() {
               // Case: Joined room as a new comer
               // If created the connection first and got answer back:
               // 1. if pc.currentRemote is null => setRemote
-              if (existingUsers.current.includes(newUserId)) {
+              if (existingUsers.current.includes(newUserId) && !(initConn)) {
                 const desc = new RTCSessionDescription(fromRTCoffer);
 
                 await peerConnections.current[
@@ -376,6 +380,7 @@ export default function Room() {
                 });
                 //TODO: Delete your userId in Firebase queue
                 await removeUserQueue(db, userId, roomId);
+                setInitConn(true);
               }
               // Case: A new comer has joined the room
               // If other created the connection first:
@@ -450,13 +455,14 @@ export default function Room() {
           });
 
           // clear connection of the left user
-          removeConnection(leftUserId);
+          removePeerConnection(leftUserId);
 
           // Force rerender on the UI
           setValue((value) => value + 1);
         }
       });
     });
+    
 
     //return () => {}
 
@@ -468,8 +474,9 @@ export default function Room() {
       // If peer Connection has been created before, return
       try {
         if (peerConnections.current.hasOwnProperty(userId)) {
-          console.log("already formed connection!");
-          return;
+          console.log("already formed connection, deleting previous connection.");
+          removePeerConnection(userId);
+          console.log("Deleted previous connection.");
         }
 
         // Initialize and store new Peer Connection
@@ -496,6 +503,7 @@ export default function Room() {
 
         // Create firestore document for new user to connect to you
         await createNewUserFirestore();
+
       } catch (error) {
         console.error(error);
       }
@@ -613,13 +621,19 @@ export default function Room() {
         handleReceiveMessage;
     }
 
-    function removeConnection(leftUserId) {
+    function removePeerConnection(leftUserId) {
       console.log(`Removing connection of ${leftUserId}`);
+      if (!peerConnections.current.hasOwnProperty(leftUserId)) return;
+      if (!peerConnections.current[leftUserId].hasOwnProperty('pc')) return;
       peerConnections.current[leftUserId].pc.close();
       peerConnections.current[leftUserId].pc.onicecandidate = null;
-      peerConnections.current[leftUserId].sendChannel.close();
       peerConnections.current[leftUserId].pc.ondatachannel = null;
-      peerConnections.current[leftUserId].receiveChannel.close();
+      if (peerConnections.current[leftUserId].hasOwnProperty('receiveChannel')) {
+        peerConnections.current[leftUserId].receiveChannel.close();
+      }
+      if (peerConnections.current[leftUserId].hasOwnProperty('sendChannel')) {
+        peerConnections.current[leftUserId].sendChannel.close();
+      }
       delete peerConnections.current[leftUserId];
       delete pendingICEcandidates.current[leftUserId];
     }
@@ -665,7 +679,7 @@ export default function Room() {
       // Force rerender on the UI
       updateUI();
     }
-  }, [roomId, userId, initialized, username, avatar, commentList]);
+  }, [roomId, userId, initialized, username, avatar, commentList, initConn]);
 
   // Page UI
   return (
@@ -729,6 +743,7 @@ export default function Room() {
 
   async function leave(redirect = false) {
     // Remove roomId from localStorage
+    if (!(localStorage.getItem('roomId'))) return;
     localStorage.removeItem("roomId");
     let _userId = localStorage.getItem("_userId");
     let _roomCreatorId = localStorage.getItem("_creatorId");
@@ -766,6 +781,7 @@ export default function Room() {
       peerConnections.current[userId].pc.close();
       peerConnections.current[userId].sendChannel.close();
       peerConnections.current[userId].receiveChannel.close();
+      delete peerConnections.current[userId];
     });
 
     // Clear data
