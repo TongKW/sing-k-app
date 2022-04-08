@@ -43,6 +43,7 @@ export default function Room() {
   let allAudioList = useRef([]);
   let unsubscribeCallee = useRef();
   let unsubscribeLeftUser = useRef();
+  let receiveSongBuffer = useRef({});
 
   // Check if user enters from Lobby
   const [fromLobby, setFromLobby] = useState(true);
@@ -130,6 +131,7 @@ export default function Room() {
     const audio = new Audio(data.content);
     audio.onended = handleFinishedSong;
     const cleantFileName = stripFileExtension(file.name);
+    sendSongAll({ songName: cleantFileName, songBuffer: data.content });
     const newAllSongList = [...allSongList.current, cleantFileName];
     const newAudioList = [...allAudioList.current, audio];
     allSongList.current = newAllSongList;
@@ -460,7 +462,7 @@ export default function Room() {
           removePeerConnection(leftUserId);
 
           // Force rerender on the UI
-          setValue((value) => value + 1);
+          updateUI();
         }
       });
     });
@@ -563,7 +565,6 @@ export default function Room() {
       localStream.current.getTracks().forEach((track) => {
         console.log(`Pushing track to ${userId} ... ${new Date().getTime()}`);
         console.log(track);
-        localStream.current.getAudioTracks()[0].enabled = false;
         peerConnections.current[userId].pc.addTrack(track, localStream.current);
       });
 
@@ -613,15 +614,31 @@ export default function Room() {
     // Channel is for chat text transmission
     function createChannel(userId) {
       console.log("create data Channel");
-      if (peerConnections.current[userId].hasOwnProperty("sendChannel")) return;
-      peerConnections.current[userId].sendChannel =
-        peerConnections.current[userId].pc.createDataChannel("chat");
+      if (
+        peerConnections.current[userId].hasOwnProperty("messageChannel") &&
+        peerConnections.current[userId].hasOwnProperty("songChannel")
+      )
+        return;
+      if (!peerConnections.current[userId].hasOwnProperty("messageChannel"))
+        peerConnections.current[userId].messageChannel =
+          peerConnections.current[userId].pc.createDataChannel("message");
+      if (!peerConnections.current[userId].hasOwnProperty("songChannel"))
+        peerConnections.current[userId].songChannel =
+          peerConnections.current[userId].pc.createDataChannel("song");
     }
 
     function receiveChannelCallback(event, userId) {
-      peerConnections.current[userId].receiveChannel = event.channel;
-      peerConnections.current[userId].receiveChannel.onmessage =
-        handleReceiveMessage;
+      if (event.channel.label === "message") {
+        console.log(event.channel);
+        peerConnections.current[userId].receiveMessageChannel = event.channel;
+        peerConnections.current[userId].receiveMessageChannel.onmessage =
+          handleReceiveMessage;
+      }
+      if (event.channel.label === "song") {
+        peerConnections.current[userId].receiveSongChannel = event.channel;
+        peerConnections.current[userId].receiveSongChannel.onmessage =
+          handleReceiveSong;
+      }
     }
 
     function removePeerConnection(leftUserId) {
@@ -632,12 +649,24 @@ export default function Room() {
       peerConnections.current[leftUserId].pc.onicecandidate = null;
       peerConnections.current[leftUserId].pc.ondatachannel = null;
       if (
-        peerConnections.current[leftUserId].hasOwnProperty("receiveChannel")
+        peerConnections.current[leftUserId].hasOwnProperty(
+          "receiveMessageChannel"
+        )
       ) {
-        peerConnections.current[leftUserId].receiveChannel.close();
+        peerConnections.current[leftUserId].receiveMessageChannel.close();
       }
-      if (peerConnections.current[leftUserId].hasOwnProperty("sendChannel")) {
-        peerConnections.current[leftUserId].sendChannel.close();
+      if (
+        peerConnections.current[leftUserId].hasOwnProperty("receiveSongChannel")
+      ) {
+        peerConnections.current[leftUserId].receiveSongChannel.close();
+      }
+      if (
+        peerConnections.current[leftUserId].hasOwnProperty("messageChannel")
+      ) {
+        peerConnections.current[leftUserId].messageChannel.close();
+      }
+      if (peerConnections.current[leftUserId].hasOwnProperty("songChannel")) {
+        peerConnections.current[leftUserId].songChannel.close();
       }
       delete peerConnections.current[leftUserId];
       delete pendingICEcandidates.current[leftUserId];
@@ -683,6 +712,46 @@ export default function Room() {
       }
       // Force rerender on the UI
       updateUI();
+    }
+
+    function handleReceiveSong(event) {
+      const data = JSON.parse(event.data);
+      const sender = data.sender;
+      if (!receiveSongBuffer.current.hasOwnProperty(sender)) {
+        receiveSongBuffer.current[sender] = {
+          songName: data.songName,
+          sender: sender,
+          songBufferLength: data.songBufferLength,
+          totalChunkNo: data.totalChunkNo,
+          songBufferChunk: new Array(data.totalChunkNo).fill(null),
+        };
+      }
+      receiveSongBuffer.current[sender].songBufferChunk[data.chunkNo - 1] =
+        data.songBufferChunk;
+      if (
+        !receiveSongBuffer.current[sender].songBufferChunk.some(
+          (chunk) => chunk === null
+        )
+      ) {
+        const songBuffer =
+          receiveSongBuffer.current[sender].songBufferChunk.join("");
+        console.log("current length: ", songBuffer.length);
+        console.log(
+          "theoretical length: ",
+          receiveSongBuffer.current[sender].songBufferLength
+        );
+        const audio = new Audio(songBuffer);
+        const songName = receiveSongBuffer.current[sender].songName;
+        audio.onended = handleFinishedSong;
+        const newAllSongList = [...allSongList.current, songName];
+        const newAudioList = [...allAudioList.current, audio];
+        allSongList.current = newAllSongList;
+        allAudioList.current = newAudioList;
+        delete receiveSongBuffer.current[sender];
+        updateUI();
+      } else {
+        console.log(`Passing data!`);
+      }
     }
   }, [roomId, userId, initialized, username, avatar, commentList, initConn]);
 
@@ -784,8 +853,10 @@ export default function Room() {
     // close all peer connections
     Object.keys(peerConnections.current).map((userId) => {
       peerConnections.current[userId].pc.close();
-      peerConnections.current[userId].sendChannel.close();
-      peerConnections.current[userId].receiveChannel.close();
+      peerConnections.current[userId].messageChannel.close();
+      peerConnections.current[userId].receiveMessageChannel.close();
+      peerConnections.current[userId].songChannel.close();
+      peerConnections.current[userId].receiveSongChannel.close();
       delete peerConnections.current[userId];
     });
 
@@ -837,11 +908,50 @@ export default function Room() {
   }
 
   async function sendMsg(userId, obj) {
-    if (peerConnections.current[userId].sendChannel.readyState === "open") {
-      peerConnections.current[userId].sendChannel.send(JSON.stringify(obj));
+    console.log("pc data: ", peerConnections.current[userId]);
+    if (peerConnections.current[userId].messageChannel.readyState === "open") {
+      peerConnections.current[userId].messageChannel.send(JSON.stringify(obj));
     } else {
       await sleep(1000);
       await sendMsg(userId, obj);
+    }
+  }
+
+  async function sendSongAll(obj) {
+    console.log("song:", obj);
+    const connectAllUsers = async () => {
+      await Promise.all(
+        Object.keys(peerConnections.current).map(async (userId) => {
+          await sendSong(userId, obj);
+        })
+      );
+    };
+    connectAllUsers();
+  }
+
+  async function sendSong(userId, obj) {
+    const songChannel = peerConnections.current[userId].songChannel;
+    if (songChannel.readyState === "open") {
+      const songBuffer = obj.songBuffer;
+      console.log(songBuffer);
+      const CHUNK_LEN = 64000;
+      const songLength = songBuffer.length;
+      const chunkSize = songLength / CHUNK_LEN;
+
+      for (const i = 0; i < chunkSize; i++) {
+        const start = i * CHUNK_LEN;
+        const end = (i + 1) * CHUNK_LEN;
+        const songBufferInfo = {
+          songName: obj.songName,
+          sender: userId,
+          chunkNo: i + 1,
+          songBufferLength: songLength,
+          totalChunkNo: Math.ceil(chunkSize),
+          songBufferChunk: songBuffer.slice(start, end),
+          type: "songBuffer",
+        };
+        songChannel.send(JSON.stringify(songBufferInfo));
+      }
     }
   }
 }
