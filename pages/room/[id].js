@@ -72,7 +72,9 @@ export default function Room() {
   const app = firebase.initializeApp(firebaseConfig);
 
   const handleMuteUnmute = () => {
-    setIsMuted(!isMuted);
+    const newMuted = !isMuted;
+    localStream.current.getAudioTracks()[0].enabled = newMuted === false;
+    setIsMuted(newMuted);
     sendMsgAll({
       userId: userId,
       username: username,
@@ -325,7 +327,7 @@ export default function Room() {
     }
 
     // Listen to any changes only after own first connection is initialized
-    
+
     // Listen for any joined user
     unsubscribeCallee.current = onSnapshot(calleeDoc, (snapshot) => {
       snapshot.docChanges().forEach(async (change) => {
@@ -360,7 +362,7 @@ export default function Room() {
               // Case: Joined room as a new comer
               // If created the connection first and got answer back:
               // 1. if pc.currentRemote is null => setRemote
-              if (existingUsers.current.includes(newUserId) && !(initConn)) {
+              if (existingUsers.current.includes(newUserId) && !initConn) {
                 const desc = new RTCSessionDescription(fromRTCoffer);
 
                 await peerConnections.current[
@@ -462,7 +464,6 @@ export default function Room() {
         }
       });
     });
-    
 
     //return () => {}
 
@@ -474,7 +475,9 @@ export default function Room() {
       // If peer Connection has been created before, return
       try {
         if (peerConnections.current.hasOwnProperty(userId)) {
-          console.log("already formed connection, deleting previous connection.");
+          console.log(
+            "already formed connection, deleting previous connection."
+          );
           removePeerConnection(userId);
           console.log("Deleted previous connection.");
         }
@@ -503,7 +506,6 @@ export default function Room() {
 
         // Create firestore document for new user to connect to you
         await createNewUserFirestore();
-
       } catch (error) {
         console.error(error);
       }
@@ -561,6 +563,7 @@ export default function Room() {
       localStream.current.getTracks().forEach((track) => {
         console.log(`Pushing track to ${userId} ... ${new Date().getTime()}`);
         console.log(track);
+        localStream.current.getAudioTracks()[0].enabled = false;
         peerConnections.current[userId].pc.addTrack(track, localStream.current);
       });
 
@@ -624,14 +627,16 @@ export default function Room() {
     function removePeerConnection(leftUserId) {
       console.log(`Removing connection of ${leftUserId}`);
       if (!peerConnections.current.hasOwnProperty(leftUserId)) return;
-      if (!peerConnections.current[leftUserId].hasOwnProperty('pc')) return;
+      if (!peerConnections.current[leftUserId].hasOwnProperty("pc")) return;
       peerConnections.current[leftUserId].pc.close();
       peerConnections.current[leftUserId].pc.onicecandidate = null;
       peerConnections.current[leftUserId].pc.ondatachannel = null;
-      if (peerConnections.current[leftUserId].hasOwnProperty('receiveChannel')) {
+      if (
+        peerConnections.current[leftUserId].hasOwnProperty("receiveChannel")
+      ) {
         peerConnections.current[leftUserId].receiveChannel.close();
       }
-      if (peerConnections.current[leftUserId].hasOwnProperty('sendChannel')) {
+      if (peerConnections.current[leftUserId].hasOwnProperty("sendChannel")) {
         peerConnections.current[leftUserId].sendChannel.close();
       }
       delete peerConnections.current[leftUserId];
@@ -743,7 +748,7 @@ export default function Room() {
 
   async function leave(redirect = false) {
     // Remove roomId from localStorage
-    if (!(localStorage.getItem('roomId'))) return;
+    if (!localStorage.getItem("roomId")) return;
     localStorage.removeItem("roomId");
     let _userId = localStorage.getItem("_userId");
     let _roomCreatorId = localStorage.getItem("_creatorId");
