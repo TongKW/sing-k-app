@@ -74,7 +74,9 @@ export default function Room() {
   const [userId, setUserId] = useState();
   const [roomCreatorId, setRoomCreatorId] = useState();
 
-  const [currentRoomType, setCurrentRoomType] = useState("private");
+  const [currentRoomType, setCurrentRoomType] = useState(
+    localStorage.getItem("_roomType")
+  );
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(50);
 
@@ -116,7 +118,7 @@ export default function Room() {
     if (!fromOther) {
       sendMsgAll({
         type: "songAction",
-        action: "start"
+        action: "start",
       });
     }
     if (!allAudioList.current) return;
@@ -134,7 +136,7 @@ export default function Room() {
     if (!fromOther) {
       sendMsgAll({
         type: "songAction",
-        action: "stop"
+        action: "stop",
       });
     }
     setCurrentSongIsPlaying(false);
@@ -167,7 +169,7 @@ export default function Room() {
         sendMsgAll({
           userId: userId,
           type: "songAction",
-          action: "upload"
+          action: "upload",
         });
         sendMsgAll({
           username: username,
@@ -187,7 +189,7 @@ export default function Room() {
     if (!fromOther) {
       sendMsgAll({
         type: "songAction",
-        action: "delete"
+        action: "delete",
       });
     }
     if (allSongList.current.length === 1) {
@@ -237,7 +239,7 @@ export default function Room() {
         type: "songAction",
         action: "move",
         prevIndex: prevIndex,
-        currentIndex: currentIndex
+        currentIndex: currentIndex,
       });
     }
     //swap the two elements inside a list based on prevIndex and currentIndex
@@ -266,6 +268,7 @@ export default function Room() {
   // Get response of user info and display from local storage
   useEffect(() => {
     const token = localStorage.getItem("token");
+
     const user = decrypt_jwt(token).body;
     async function decrypt_jwt(token) {
       const response = await fetch("/api/jwt/decrypt", {
@@ -366,11 +369,13 @@ export default function Room() {
         audio: true,
       });
 
-      // Get Firebase
-      const roomDoc = doc(db, "rooms", roomId);
-      const roomSnapshot = await getDoc(roomDoc);
-      const roomType = roomSnapshot.data().type;
-      setCurrentRoomType(roomType);
+      if (
+        localStorage.getItem("_roomType") === "streaming" &&
+        localStorage.getItem("_userId") !== localStorage.getItem("_creatorId")
+      ) {
+        console.log("mute myself!");
+        handleMuteUnmute();
+      }
 
       const allUserSnapshot = await getDocs(allUserDoc);
 
@@ -595,13 +600,6 @@ export default function Room() {
       console.log("connect new user!");
       createNewPeerConnection(newUserId);
       const desc = new RTCSessionDescription(remoteRTCoffer);
-      // await peerConnections.current[newUserId].pc.setRemoteDescription(desc);
-      // const localRTCoffer = await peerConnections.current[
-      //   newUserId
-      // ].pc.createAnswer();
-      // await peerConnections.current[newUserId].pc.setLocalDescription(
-      //   localRTCoffer
-      // );
       await peerConnections.current[newUserId].pc.setRemoteDescription(desc);
       const localRTCoffer = await peerConnections.current[
         newUserId
@@ -626,6 +624,10 @@ export default function Room() {
       localStream.current.getTracks().forEach((track) => {
         console.log(`Pushing track to ${userId} ... ${new Date().getTime()}`);
         console.log(track);
+        // if (isMuted) {
+        //   console.log("I am muted!");
+        //   localStream.current.getAudioTracks()[0].enabled = false;
+        // }
         peerConnections.current[userId].pc.addTrack(track, localStream.current);
       });
 
@@ -644,7 +646,21 @@ export default function Room() {
             ICEcandidate: event.candidate.toJSON(),
           });
       };
-      peerConnections.current[userId].isMuted = false;
+      console.log(`currentRoomType: ${currentRoomType}`);
+      console.log(`userId: ${userId}`);
+      console.log(`roomCreatorId: ${localStorage.getItem("_creatorId")}`);
+      if (
+        currentRoomType === "streaming" &&
+        userId !== localStorage.getItem("_creatorId")
+      )
+        peerConnections.current[userId].isMuted = true;
+      else {
+        peerConnections.current[userId].isMuted = false;
+      }
+
+      console.log(
+        `userId ${userId} is muted ${peerConnections.current[userId].isMuted}`
+      );
 
       // Event listener for creating receive channel
       peerConnections.current[userId].pc.ondatachannel = (event) => {
@@ -773,13 +789,13 @@ export default function Room() {
       } else if (type === "songAction") {
         const action = data.action;
         if (action === "start") {
-          handleStartSong(true)
+          handleStartSong(true);
         } else if (action === "stop") {
-          handleStopSong(true)
+          handleStopSong(true);
         } else if (action === "delete") {
-          handleDeleteSong(true)
+          handleDeleteSong(true);
         } else if (action === "move") {
-          handleMoveSong(data.prevIndex, data.currentIndex, true)
+          handleMoveSong(data.prevIndex, data.currentIndex, true);
         } else if (action == "upload") {
           Object.keys(peerConnections.current).map((userId) => {
             downloadSongStatus.current[userId] = false;
@@ -836,12 +852,12 @@ export default function Room() {
         sendMsgAll({
           type: "songAction",
           action: "receive",
-          userId: userId
+          userId: userId,
         });
         // Check if is the last one to receive the song
         let isLast = true;
         for (const userId in downloadSongStatus.current) {
-          if (downloadSongStatus.current[userId] = false) {
+          if ((downloadSongStatus.current[userId] = false)) {
             isLast = false;
             break;
           }

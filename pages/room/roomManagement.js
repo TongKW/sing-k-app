@@ -69,6 +69,7 @@ function OtherUserList(props) {
         const otherIsMuted = props.otherUsersList[userId].isMuted;
         const isRoomCreator = userId === props.roomCreatorId;
         const currentRoomType = props.currentRoomType;
+        console.log(username, otherIsMuted);
 
         return (
           <User
@@ -198,28 +199,15 @@ function Mute(props) {
   const usableUser =
     props.currentRoomType === "private" ||
     (props.currentRoomType === "streaming" && props.isRoomCreator);
-  if (usableUser) {
-    return (
-      <Icon
-        icon={
-          props.isMuted
-            ? "/images/mute-microphone.png"
-            : "/images/microphone.png"
-        }
-        alt={props.isMuted ? "mute_microphone" : "microphone"}
-        length="30"
-        onClick={props.handleMuteUnmute}
-        style={{ cursor: "pointer" }}
-      />
-    );
-  } else {
-    return (
-      <Icon
-        icon="/images/mute-microphone.png"
-        alt="mute_microphone"
-        length="30"
-        style={{ cursor: "not-allowed" }}
-      />
-    );
-  }
+  return (
+    <Icon
+      icon={
+        props.isMuted ? "/images/mute-microphone.png" : "/images/microphone.png"
+      }
+      alt={props.isMuted ? "mute_microphone" : "microphone"}
+      length="30"
+      onClick={usableUser ? props.handleMuteUnmute : () => {}}
+      style={{ cursor: usableUser ? "pointer" : "not-allowed" }}
+    />
+  );
 }

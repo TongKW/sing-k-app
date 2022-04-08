@@ -145,6 +145,7 @@ function CreateRoomButton(props) {
       handleCheckMicClose();
       if (canEnterRoom) {
         localStorage.setItem("roomId", roomId);
+        localStorage.setItem("_roomType", roomType);
         // window.open(`/room/${roomId}`);
         router.push(`/room/${roomId}`);
       } else {
@@ -462,6 +463,7 @@ function JoinRoomButton(props) {
   const [waitingOpen, setWaitingOpen] = useState(false);
   const [roomId, setRoomId] = useState();
   const [roomIdError, setRoomIdError] = useState();
+  const [roomType, setRoomType] = useState();
   const [userId, setUserId] = useState();
   const [canEnterRoom, setCanEnterRoom] = useState(false);
   const [userIdError, setUserIdError] = useState(false);
@@ -476,6 +478,7 @@ function JoinRoomButton(props) {
       if (canEnterRoom) {
         unsubscribeFirestore();
         localStorage.setItem("roomId", roomId);
+        localStorage.setItem("_roomType", roomType);
         // window.open(`/room/${roomId}`);
         router.push(`/room/${roomId}`);
       } else {
@@ -564,6 +567,7 @@ function JoinRoomButton(props) {
     if (userId !== null) {
       const roomDoc = doc(db, "rooms", roomId);
       const roomSnapshot = await getDoc(roomDoc);
+      setRoomType(roomSnapshot.data().type);
       const newQueue = [...roomSnapshot.data().queue, userId];
       await updateDoc(roomDoc, { queue: newQueue });
       return newQueue.indexOf(userId);
