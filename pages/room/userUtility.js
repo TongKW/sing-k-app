@@ -305,7 +305,7 @@ function InputArea(props) {
           }}
         />
         <Box
-          ref={emojiRef}
+          ref={props.emojiRef}
           sx={{
             position: "absolute",
             bottom: "16%",
