@@ -16,11 +16,7 @@ const UserAvatar = styled(Avatar, {
 export default function RoomMangementPanel(props) {
   return (
     <Box sx={{ height: "100%" }} style={{ borderRadius: "25px" }}>
-      <RoomId
-        roomId={props.roomId}
-        // leave={props.leave}
-        closeHandler={props.closeHandler}
-      />
+      <RoomId roomId={props.roomId} />
       <OtherUserList
         peerConnections={props.peerConnections}
         otherUsersList={props.otherUsersList}
@@ -32,6 +28,7 @@ export default function RoomMangementPanel(props) {
         isRoomCreator={props.isRoomCreator}
         currentRoomType={props.currentRoomType}
         handleMuteUnmute={props.handleMuteUnmute}
+        closeHandler={props.closeHandler}
       />
     </Box>
   );
@@ -46,10 +43,9 @@ function RoomId(props) {
         fontSize: "3vmin",
         color: "#FFFFFB",
       }}
-      style={{ backgroundColor: "#376E6F", justifyContent: "center" }}
+      style={{ backgroundColor: "#376E6F" }}
     >
       <h1>Room ID: {props.roomId}</h1>
-      <Button onClick={props.closeHandler}> Close </Button>
     </Box>
   );
 }
@@ -184,7 +180,7 @@ function RoomFunctionKeys(props) {
         background: "#323846",
         display: "flex",
         flexDirection: "row",
-        justifyContent: "center",
+        justifyContent: "space-around",
         height: "5%",
       }}
     >
@@ -194,6 +190,17 @@ function RoomFunctionKeys(props) {
         currentRoomType={props.currentRoomType}
         handleMuteUnmute={props.handleMuteUnmute}
       />
+      <Box sx={{ display: "flex" }}>
+        <Icon
+          onClick={props.closeHandler}
+          length="30"
+          icon="/images/leave_icon.png"
+          style={{ cursor: "pointer" }}
+        >
+          {" "}
+          Close{" "}
+        </Icon>
+      </Box>
     </Box>
   );
 }

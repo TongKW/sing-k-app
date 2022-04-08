@@ -238,6 +238,10 @@ function UserComment(props) {
 function InputArea(props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [text, setText] = useState("");
+  useEffect(() => {
+    if (modalOpen) {
+    }
+  });
   const handleUpdateText = (event) => {
     setText(event.target.value);
   };
@@ -265,14 +269,13 @@ function InputArea(props) {
         event.clientY <= emojiBottomRightY;
       console.log(inBoundCondition);
       if (!inBoundCondition) {
-        console.log("modal close!");
         setModalOpen(false);
       }
     }
   }
   useEffect(() => {
-    window.addEventListener("click", handleRemoveModal);
-    return () => window.removeEventListener("click", handleRemoveModal);
+    window.addEventListener("mouseup", handleRemoveModal);
+    return () => window.removeEventListener("mouseup", handleRemoveModal);
   });
   return (
     <Box
