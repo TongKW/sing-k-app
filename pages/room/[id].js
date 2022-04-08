@@ -56,6 +56,7 @@ export default function Room() {
   let receiveSongBuffer = useRef({});
   let lastSend = useRef(null);
   let emojiRef = useRef();
+  let downloadSongStatus = useRef({});
 
   // Check if user enters from Lobby
   const [fromLobby, setFromLobby] = useState(true);
@@ -111,7 +112,13 @@ export default function Room() {
     }
   }, [volume, currentSong]);
 
-  const handleStartSong = () => {
+  const handleStartSong = (fromOther = false) => {
+    if (!fromOther) {
+      sendMsgAll({
+        type: "songAction",
+        action: "start"
+      });
+    }
     if (!allAudioList.current) return;
     if (currentSong === allAudioList.current[0]) {
       // The user has paused, and now we need to resume
@@ -123,7 +130,13 @@ export default function Room() {
     setCurrentSongIsPlaying(true);
   };
 
-  const handleStopSong = () => {
+  const handleStopSong = (fromOther = false) => {
+    if (!fromOther) {
+      sendMsgAll({
+        type: "songAction",
+        action: "stop"
+      });
+    }
     setCurrentSongIsPlaying(false);
     console.log("Stopped song!");
   };
@@ -150,6 +163,17 @@ export default function Room() {
         lastSend.current === null ||
         currentTime - lastSend.current >= 20000
       ) {
+        // Notify other users that a song is going to be uploaded
+        sendMsgAll({
+          userId: userId,
+          type: "songAction",
+          action: "upload"
+        });
+        sendMsgAll({
+          username: username,
+          type: "system",
+          message: `${username} is uploading song -- ${songName}.`,
+        });
         lastSend.current = currentTime;
         sendSongAll({ songName: cleantFileName, songBuffer: data.content });
         appendSongInfo(cleantFileName, data.content);
@@ -159,7 +183,13 @@ export default function Room() {
     }
   };
 
-  const handleDeleteSong = () => {
+  const handleDeleteSong = (fromOther = false) => {
+    if (!fromOther) {
+      sendMsgAll({
+        type: "songAction",
+        action: "delete"
+      });
+    }
     if (allSongList.current.length === 1) {
       //if deleting the playing song
       setCurrentSongIsPlaying(false);
@@ -201,7 +231,15 @@ export default function Room() {
     });
   };
 
-  function handleMoveSong(prevIndex, currentIndex) {
+  function handleMoveSong(prevIndex, currentIndex, fromOther = false) {
+    if (!fromOther) {
+      sendMsgAll({
+        type: "songAction",
+        action: "move",
+        prevIndex: prevIndex,
+        currentIndex: currentIndex
+      });
+    }
     //swap the two elements inside a list based on prevIndex and currentIndex
     if (prevIndex === 0 || currentIndex === 0) {
       if (allSongList.current.length !== 1) {
@@ -732,6 +770,27 @@ export default function Room() {
       } else if (type === "setMute") {
         peerConnections.current[userId].isMuted =
           !peerConnections.current[userId].isMuted;
+      } else if (type === "songAction") {
+        const action = data.action;
+        if (action === "start") {
+          handleStartSong(true)
+        } else if (action === "stop") {
+          handleStopSong(true)
+        } else if (action === "delete") {
+          handleDeleteSong(true)
+        } else if (action === "move") {
+          handleMoveSong(data.prevIndex, data.currentIndex, true)
+        } else if (action == "upload") {
+          Object.keys(peerConnections.current).map((userId) => {
+            downloadSongStatus.current[userId] = false;
+          });
+        } else if (action == "receive") {
+          downloadSongStatus.current[data.userId] = true;
+        } else if (action == "finish") {
+          for (const userId in downloadSongStatus.current) {
+            delete downloadSongStatus.current[userId];
+          }
+        }
       }
       // Force rerender on the UI
       updateUI();
@@ -756,6 +815,7 @@ export default function Room() {
           (chunk) => chunk === null
         )
       ) {
+        // Entire song is received
         const songBuffer =
           receiveSongBuffer.current[sender].songBufferChunk.join("");
         console.log("current length: ", songBuffer.length);
@@ -766,6 +826,36 @@ export default function Room() {
         const songName = receiveSongBuffer.current[sender].songName;
         appendSongInfo(songName, songBuffer);
         delete receiveSongBuffer.current[sender];
+
+        // Notify other that song is received here
+        sendMsgAll({
+          username: username,
+          type: "system",
+          message: `${username} has received song ${songName}.`,
+        });
+        sendMsgAll({
+          type: "songAction",
+          action: "receive",
+          userId: userId
+        });
+        // Check if is the last one to receive the song
+        let isLast = true;
+        for (const userId in downloadSongStatus.current) {
+          if (downloadSongStatus.current[userId] = false) {
+            isLast = false;
+            break;
+          }
+        }
+        if (isLast) {
+          sendMsgAll({
+            type: "songAction",
+            action: "finish",
+          });
+          for (const userId in downloadSongStatus.current) {
+            delete downloadSongStatus.current[userId];
+          }
+          handleStartSong();
+        }
       } else {
         console.log(`Passing data!`);
       }
