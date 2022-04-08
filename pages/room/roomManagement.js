@@ -43,7 +43,7 @@ function RoomId(props) {
       sx={{
         display: "flex",
         height: "5%",
-        fontSize: "30px",
+        fontSize: "3vmin",
         color: "#FFFFFB",
       }}
       style={{ backgroundColor: "#376E6F", justifyContent: "center" }}
@@ -130,7 +130,7 @@ function User(props) {
           display: "flex",
           flexDirection: "row",
           alignItems: "center",
-          fontSize: "25px",
+          fontSize: "3vmin",
           width: "60%",
         }}
       >

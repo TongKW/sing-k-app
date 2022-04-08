@@ -47,7 +47,7 @@ function AudioPane(props) {
         background: "#376E6F",
         borderRadius: "0px 0px 10px 10px",
         borderLeft: "solid 5px white",
-        borderRight: "solid 5px white"
+        borderRight: "solid 5px white",
       }}
     >
       <Box
@@ -68,7 +68,7 @@ function AudioPane(props) {
             justifyContent: "space-around",
             height: "80%",
             width: "10%",
-            fontSize: "20px",
+            fontSize: "2vmin",
           }}
         >
           <h1>Echo</h1>
@@ -118,7 +118,10 @@ function CommentArea(props) {
         background: "#FFFFFF",
       }}
     >
-      <MessageArea commentList={props.commentList} length={props.commentList ? props.commentList.length : 0}/>
+      <MessageArea
+        commentList={props.commentList}
+        length={props.commentList ? props.commentList.length : 0}
+      />
       <InputArea handleAddComment={props.handleAddComment} />
     </Box>
   );
@@ -142,19 +145,23 @@ function MessageArea(props) {
         flexDirection: "column",
       }}
     >
-      {props.commentList.map((comment, index) => {
-        if (comment.isSystem)
-          return <SystemMessage key={index} text={comment.text} />;
-        else
-          return (
-            <UserComment
-              key={index}
-              username={comment.username}
-              time={comment.time}
-              text={comment.text}
-            />
-          );
-      })}
+      {props.commentList ? (
+        props.commentList.map((comment, index) => {
+          if (comment.isSystem)
+            return <SystemMessage key={index} text={comment.text} />;
+          else
+            return (
+              <UserComment
+                key={index}
+                username={comment.username}
+                time={comment.time}
+                text={comment.text}
+              />
+            );
+        })
+      ) : (
+        <div />
+      )}
       <div ref={messageBoxRef} />
     </Box>
   );
@@ -283,7 +290,7 @@ function InputArea(props) {
             sx={{
               position: "absolute",
               bottom: "10%",
-              right: { xs: "10%", md: "15%" },
+              right: { xs: "10%", md: "15%", xl: "18%" },
             }}
           >
             <Picker onEmojiClick={onEmojiClick} />

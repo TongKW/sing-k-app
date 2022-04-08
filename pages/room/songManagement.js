@@ -11,7 +11,7 @@ export default function SongManagementPanel(props) {
         sx={{
           display: "flex",
           height: "5%",
-          fontSize: "30px",
+          fontSize: "3vmin",
         }}
         style={{
           backgroundColor: "#376E6F",
