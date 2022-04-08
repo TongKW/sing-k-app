@@ -807,7 +807,7 @@ export default function Room() {
           <RoomMangementPanel
             otherUsersList={getUsersList()}
             peerConnections={peerConnections}
-            // leave={leave}
+            isRoomCreator={roomCreatorId == userId}
             closeHandler={closeHandler}
             roomId={roomId}
             roomCreatorId={roomCreatorId}

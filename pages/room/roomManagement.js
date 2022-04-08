@@ -141,11 +141,7 @@ function User(props) {
           width: "10%",
         }}
       >
-        <OtherMutedIcon
-          otherIsMuted={props.otherIsMuted}
-          isRoomCreator={props.isRoomCreator}
-          currentRoomType={props.currentRoomType}
-        />
+        <OtherMutedIcon isMuted={props.otherIsMuted} />
       </Box>
       <audio autoPlay={true} className="hidden" id={`audio-${props.userId}`}>
         <source type="audio/ogg" />
@@ -155,22 +151,15 @@ function User(props) {
 }
 
 function OtherMutedIcon(props) {
-  if (props.currentRoomType === "streaming" && props.otherIsRoomCreator) {
-    if (props.otherIsMuted)
-      return (
-        <Icon icon="/images/mute-microphone.png" alt="mute_icon" length="50" />
-      );
-    else
-      return (
-        <Icon icon="/images/others-microphone.png" alt="mic_icon" length="75" />
-      );
-  } else if (props.currentRoomType === "streaming" && !props.otherIsRoomCreator)
-    return <div>Nothing</div>;
-  else if (props.currentRoomType === "private" && props.otherIsMuted)
-    return (
-      <Icon icon="/images/mute-microphone.png" alt="mute_icon" length="25" />
-    );
-  else return <Icon icon="/images/microphone.png" alt="mic_icon" length="25" />;
+  return (
+    <>
+      {props.isMuted ? (
+        <Icon icon="/images/mute-microphone.png" alt="mute_icon" length="25" />
+      ) : (
+        <Icon icon="/images/microphone.png" alt="mic_icon" length="25" />
+      )}
+    </>
+  );
 }
 
 function RoomFunctionKeys(props) {
@@ -206,21 +195,10 @@ function RoomFunctionKeys(props) {
 }
 
 function Mute(props) {
-  if (props.currentRoomType === "streaming" && props.isRoomCreator) {
-    return (
-      <Icon
-        icon={
-          props.isMuted
-            ? "/images/mute-microphone.png"
-            : "/images/microphone.png"
-        }
-        alt={props.isMuted ? "mute_microphone" : "microphone"}
-        length="30"
-        onClick={props.handleMuteUnmute}
-        style={{ cursor: "pointer" }}
-      />
-    );
-  } else if (props.currentRoomType === "private") {
+  const usableUser =
+    props.currentRoomType === "private" ||
+    (props.currentRoomType === "streaming" && props.isRoomCreator);
+  if (usableUser) {
     return (
       <Icon
         icon={
@@ -235,6 +213,13 @@ function Mute(props) {
       />
     );
   } else {
-    return <div className="flex">Nothing</div>;
+    return (
+      <Icon
+        icon="/images/mute-microphone.png"
+        alt="mute_microphone"
+        length="30"
+        style={{ cursor: "not-allowed" }}
+      />
+    );
   }
 }

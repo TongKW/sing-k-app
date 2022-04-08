@@ -60,8 +60,10 @@ function SongListPanel(props) {
 }
 
 function SongFunctionKeys(props) {
+  const usableUser = (props.currentRoomType === "private") || ((props.currentRoomType === "streaming") && (props.isRoomCreator))
   // const [fileInputRef, setFileInputRef] = useState({});
-  return (
+  if (usableUser){
+    return (
     <Box
       sx={{
         display: "flex",
@@ -75,7 +77,7 @@ function SongFunctionKeys(props) {
         alt="play"
         length="25"
         onClick={props.handleStartSong}
-        style={{ cursor: "pointer" }}
+        style={{ cursor: "pointer"}}
       />
       <Icon
         icon="/images/pause.png"
@@ -109,7 +111,43 @@ function SongFunctionKeys(props) {
         style={{ cursor: "pointer" }}
       />
     </Box>
-  );
+    )}
+    else if (!usableUser){
+      return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-around",
+          padding: "20px 0px 0px 0px",
+          height: "10%",
+        }}
+      >
+        <Icon
+          icon="/images/play.png"
+          alt="play"
+          length="25"
+          style={{ cursor: "not-allowed"}}
+        />
+        <Icon
+          icon="/images/pause.png"
+          alt="pause"
+          length="25"
+          style={{ cursor: "not-allowed" }}
+        />
+          <Icon
+            icon="/images/plus.png"
+            alt="plus"
+            length="25"
+            style={{ cursor: "not-allowed" }}
+          />
+        <Icon
+          icon="/images/minus.png"
+          alt="minus"
+          length="25"
+          style={{ cursor: "not-allowed" }}
+        />
+      </Box>
+      )};
 }
 
 function Song(props) {
