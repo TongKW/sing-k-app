@@ -40,7 +40,11 @@ export default function SongManagementPanel(props) {
 
 function SongListPanel(props) {
   return (
-    <Box sx={{ height: "90%" }} style={{ testAlign: "flex-start" }}>
+    <Box
+      className="px-2 scrollbar"
+      sx={{ height: "85%", overflowY: "auto" }}
+      style={{ testAlign: "flex-start" }}
+    >
       {props.allSongList.map((song, index) => (
         <Song
           key={index}
@@ -62,7 +66,8 @@ function SongFunctionKeys(props) {
       sx={{
         display: "flex",
         justifyContent: "space-around",
-        height: "5%",
+        padding: "20px 0px 0px 0px",
+        height: "10%",
       }}
     >
       <Icon
@@ -114,7 +119,7 @@ function Song(props) {
         display: "flex",
         flexDirection: "row",
         justifyContent: "space-between",
-        fontSize: "20px",
+        fontSize: "2.5vmin",
         padding: "10px",
       }}
     >

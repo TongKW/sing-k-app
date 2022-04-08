@@ -13,7 +13,15 @@ import {
   onSnapshot,
   deleteDoc,
 } from "firebase/firestore";
-import { Box, Dialog, DialogTitle, DialogContent } from "@mui/material";
+import {
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  IconButton,
+  DialogActions,
+} from "@mui/material";
 import { firebaseConfig } from "../../firebase/config";
 import sleep from "../../utils/sleep";
 import RoomMangementPanel from "./roomManagement";
@@ -23,11 +31,13 @@ import { processFile, stripFileExtension } from "../../utils/fileUtils";
 import Button from "../../component/elements/button";
 import { WindowSharp } from "@mui/icons-material";
 import removeUserQueue from "../../utils/room/userOffQueue";
+import CloseIcon from "@mui/icons-material/Close";
 
 export default function Room() {
   // Routing parameter
   const router = useRouter();
   const roomId = router.query.id;
+  const FILE_LIMIT = 10000000;
 
   let _userId = null;
   let _roomCreatorId = null;
@@ -44,6 +54,8 @@ export default function Room() {
   let unsubscribeCallee = useRef();
   let unsubscribeLeftUser = useRef();
   let receiveSongBuffer = useRef({});
+  let lastSend = useRef(null);
+  let emojiRef = useRef();
 
   // Check if user enters from Lobby
   const [fromLobby, setFromLobby] = useState(true);
@@ -63,11 +75,12 @@ export default function Room() {
 
   const [currentRoomType, setCurrentRoomType] = useState("private");
   const [isMuted, setIsMuted] = useState(false);
-  const [echo, setEcho] = useState(50);
   const [volume, setVolume] = useState(50);
 
   const [currentSong, setCurrentSong] = useState(null);
   const [currentSongIsPlaying, setCurrentSongIsPlaying] = useState(false);
+  const [dataChannelFullOpen, setDataChannelFullOpen] = useState(false);
+  const [fileTooLargeOpen, setFileTooLargeOpen] = useState(false);
 
   // Initialize Firebase
   const app = firebase.initializeApp(firebaseConfig);
@@ -128,15 +141,22 @@ export default function Room() {
     const [file] = event.target.files;
     event.target.value = null;
     const data = await processFile(file);
-    const audio = new Audio(data.content);
-    audio.onended = handleFinishedSong;
-    const cleantFileName = stripFileExtension(file.name);
-    sendSongAll({ songName: cleantFileName, songBuffer: data.content });
-    const newAllSongList = [...allSongList.current, cleantFileName];
-    const newAudioList = [...allAudioList.current, audio];
-    allSongList.current = newAllSongList;
-    allAudioList.current = newAudioList;
-    updateUI();
+    if (data.content.length > FILE_LIMIT) {
+      setFileTooLargeOpen(true);
+    } else {
+      const cleantFileName = stripFileExtension(file.name);
+      const currentTime = Date.now();
+      if (
+        lastSend.current === null ||
+        currentTime - lastSend.current >= 20000
+      ) {
+        lastSend.current = currentTime;
+        sendSongAll({ songName: cleantFileName, songBuffer: data.content });
+        appendSongInfo(cleantFileName, data.content);
+      } else if (currentTime - lastSend.current < 20000) {
+        setDataChannelFullOpen(true);
+      }
+    }
   };
 
   const handleDeleteSong = () => {
@@ -149,6 +169,9 @@ export default function Room() {
     allAudioList.current = allAudioList.current.slice(0, -1);
     updateUI();
   };
+  const handleFileTooLargeClose = () => setFileTooLargeOpen(false);
+
+  const handleDataFullClose = () => setDataChannelFullOpen(false);
 
   const handleEcho = (event) => {
     setEcho(event.target.value);
@@ -740,15 +763,9 @@ export default function Room() {
           "theoretical length: ",
           receiveSongBuffer.current[sender].songBufferLength
         );
-        const audio = new Audio(songBuffer);
         const songName = receiveSongBuffer.current[sender].songName;
-        audio.onended = handleFinishedSong;
-        const newAllSongList = [...allSongList.current, songName];
-        const newAudioList = [...allAudioList.current, audio];
-        allSongList.current = newAllSongList;
-        allAudioList.current = newAudioList;
+        appendSongInfo(songName, songBuffer);
         delete receiveSongBuffer.current[sender];
-        updateUI();
       } else {
         console.log(`Passing data!`);
       }
@@ -758,6 +775,18 @@ export default function Room() {
   // Page UI
   return (
     <>
+      {fileTooLargeOpen && (
+        <FileTooLargeDialog
+          open={fileTooLargeOpen}
+          close={handleFileTooLargeClose}
+        />
+      )}
+      {dataChannelFullOpen && (
+        <DataChannelFullDialog
+          open={dataChannelFullOpen}
+          close={handleDataFullClose}
+        />
+      )}
       <Dialog open={!fromLobby}>
         <DialogTitle>Please join the room from Lobby.</DialogTitle>
         <DialogContent>
@@ -790,8 +819,8 @@ export default function Room() {
         <Box sx={{ width: "54%" }} style={{ background: "#1C1C1C" }}>
           <UserUtilityPanel
             isMuted={isMuted}
-            echo={echo}
             volume={volume}
+            emojiRef={emojiRef}
             handleEcho={handleEcho}
             handleVolume={handleVolume}
             commentList={commentList.current}
@@ -933,7 +962,6 @@ export default function Room() {
     const songChannel = peerConnections.current[userId].songChannel;
     if (songChannel.readyState === "open") {
       const songBuffer = obj.songBuffer;
-      console.log(songBuffer);
       const CHUNK_LEN = 64000;
       const songLength = songBuffer.length;
       const chunkSize = songLength / CHUNK_LEN;
@@ -950,10 +978,108 @@ export default function Room() {
           songBufferChunk: songBuffer.slice(start, end),
           type: "songBuffer",
         };
+        // try {
+        //   songChannel.send(JSON.stringify(songBufferInfo));
+        // } catch (error) {
+        //   setDataChannelFullOpen(true);
+        // }
         songChannel.send(JSON.stringify(songBufferInfo));
       }
     }
   }
+
+  function appendSongInfo(songName, songBuffer) {
+    const audio = new Audio(songBuffer);
+    audio.onended = handleFinishedSong;
+    const newAllSongList = [...allSongList.current, songName];
+    const newAudioList = [...allAudioList.current, audio];
+    allSongList.current = newAllSongList;
+    allAudioList.current = newAudioList;
+    updateUI();
+  }
+}
+
+function FileTooLargeDialog(props) {
+  return (
+    <Dialog
+      open={props.open}
+      aria-labelledby="file-too-large-title"
+      aria-describedby="file-too-large-description"
+    >
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
+        }}
+      >
+        <DialogTitle aria-labelledby="file-too-large-title">
+          File Too Large
+        </DialogTitle>
+        <IconButton onClick={props.close}>
+          <CloseIcon />
+        </IconButton>
+      </Box>
+      <DialogContent>
+        <DialogContentText aria-describedby="file-too-large-description">
+          Please upload a song within 10MB!
+        </DialogContentText>
+        <DialogActions>
+          <Box sx={{ display: "flex", flexDirection: "row-reverse" }}>
+            <button
+              className="bg-indigo-700 hover:bg-indigo-800 text-white py-2 px-4 text-xs rounded focus:outline-none focus:shadow-outline"
+              type="button"
+              onClick={props.close}
+            >
+              Ok
+            </button>
+          </Box>
+        </DialogActions>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DataChannelFullDialog(props) {
+  return (
+    <Dialog
+      open={props.open}
+      aria-labelledby="data-channel-full-title"
+      aria-describedby="data-channel-full-description"
+    >
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
+        }}
+      >
+        <DialogTitle aria-labelledby="data-channel-full-title">
+          Data Channel Full
+        </DialogTitle>
+        <IconButton onClick={props.close}>
+          <CloseIcon />
+        </IconButton>
+      </Box>
+      <DialogContent>
+        <DialogContentText aria-describedby="data-channel-full-description">
+          Adding song too fast! Please wait for a moment before adding a new
+          song.
+        </DialogContentText>
+        <DialogActions>
+          <Box sx={{ display: "flex", flexDirection: "row-reverse" }}>
+            <button
+              className="bg-indigo-700 hover:bg-indigo-800 text-white py-2 px-4 text-xs rounded focus:outline-none focus:shadow-outline"
+              type="button"
+              onClick={props.close}
+            >
+              Ok
+            </button>
+          </Box>
+        </DialogActions>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 const servers = {

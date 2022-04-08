@@ -8,7 +8,7 @@ import EllipsisText from "react-ellipsis-text";
 import dynamic from "next/dynamic";
 const Picker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
-export default function UserUtilityPanel(props, ref) {
+export default function UserUtilityPanel(props) {
   return (
     <Box
       sx={{
@@ -21,12 +21,12 @@ export default function UserUtilityPanel(props, ref) {
     >
       <AudioPane
         isMuted={props.isMuted}
-        echo={props.echo}
         volume={props.volume}
         handleEcho={props.handleEcho}
         handleVolume={props.handleVolume}
       />
       <CommentArea
+        emojiRef={props.emojiRef}
         commentList={props.commentList}
         handleAddComment={props.handleAddComment}
       />
@@ -71,7 +71,6 @@ function AudioPane(props) {
             fontSize: "2vmin",
           }}
         >
-          <h1>Echo</h1>
           <h1>Volume</h1>
         </Box>
         <Box
@@ -84,15 +83,6 @@ function AudioPane(props) {
             width: "80%",
           }}
         >
-          <Slider
-            onChange={props.handleEcho}
-            value={props.echo}
-            valueLabelDisplay="auto"
-            sx={{
-              width: "90%",
-              color: "#CCCCCC",
-            }}
-          />
           <Slider
             valueLabelDisplay="auto"
             onChange={props.handleVolume}
@@ -122,7 +112,10 @@ function CommentArea(props) {
         commentList={props.commentList}
         length={props.commentList ? props.commentList.length : 0}
       />
-      <InputArea handleAddComment={props.handleAddComment} />
+      <InputArea
+        emojiRef={props.emojiRef}
+        handleAddComment={props.handleAddComment}
+      />
     </Box>
   );
 }
@@ -255,6 +248,32 @@ function InputArea(props) {
   function onEmojiClick(event, emoji) {
     setText(text + emoji.emoji);
   }
+  function handleRemoveModal(event) {
+    if (modalOpen) {
+      console.log(event.clientX, event.clientY);
+      const element = emojiRef.current.getBoundingClientRect();
+      const emojiTopLeftX = element.x;
+      const emojiTopLeftY = element.y;
+      const emojiWidth = element.width;
+      const emojiHeight = element.height;
+      const emojiBottomRightX = emojiTopLeftX + emojiWidth;
+      const emojiBottomRightY = emojiTopLeftY + emojiHeight;
+      const inBoundCondition =
+        emojiTopLeftX <= event.clientX &&
+        event.clientX <= emojiBottomRightX &&
+        emojiTopLeftY <= event.clientY &&
+        event.clientY <= emojiBottomRightY;
+      console.log(inBoundCondition);
+      if (!inBoundCondition) {
+        console.log("modal close!");
+        setModalOpen(false);
+      }
+    }
+  }
+  useEffect(() => {
+    window.addEventListener("click", handleRemoveModal);
+    return () => window.removeEventListener("click", handleRemoveModal);
+  });
   return (
     <Box
       sx={{
@@ -285,17 +304,17 @@ function InputArea(props) {
             setModalOpen(!modalOpen);
           }}
         />
-        {modalOpen && (
-          <Box
-            sx={{
-              position: "absolute",
-              bottom: "10%",
-              right: { xs: "10%", md: "15%", xl: "18%" },
-            }}
-          >
-            <Picker onEmojiClick={onEmojiClick} />
-          </Box>
-        )}
+        <Box
+          ref={emojiRef}
+          sx={{
+            position: "absolute",
+            bottom: "16%",
+            right: { xs: "18%", md: "20%", xl: "24%" },
+            display: modalOpen ? "block" : "none",
+          }}
+        >
+          <Picker onEmojiClick={onEmojiClick} />
+        </Box>
         <Icon
           icon="/images/send-message.png"
           alt="send"

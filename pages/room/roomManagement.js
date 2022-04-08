@@ -58,7 +58,7 @@ function OtherUserList(props) {
   return (
     <div
       id="userlist"
-      className="scrollbar"
+      className="px-2 scrollbar"
       style={{
         background: "#323846",
         height: "90%",
