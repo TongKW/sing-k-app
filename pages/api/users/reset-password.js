@@ -46,9 +46,7 @@ export default async function handler(req, res) {
     await client.close();
 
     // Send reset password link to user email
-    const url = (process.env.NODE_ENV === 'development' ? 
-          `localhost:3000/login/reset-password?reset_id=${reset_id}` : 
-          `https://sing-k-app.vercel.app/login/reset-password?reset_id=${reset_id}`);
+    const url = `https://sing-k-app.vercel.app/login/reset-password?reset_id=${reset_id}`
     var message = {
       from: "enjoy.singing.karaoke@gmail.com",
       to: email,

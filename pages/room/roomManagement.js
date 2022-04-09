@@ -61,8 +61,7 @@ function OtherUserList(props) {
         overflowY: "auto",
       }}
     >
-      {Object.keys(props.otherUsersList).map((userId, index) => {
-        //TODO: get user data from userId
+      {props.otherUsersList ? Object.keys(props.otherUsersList).map((userId, index) => {
 
         const username = props.otherUsersList[userId].username;
         const userAvatar = props.otherUsersList[userId].avatar;
@@ -83,7 +82,7 @@ function OtherUserList(props) {
             currentRoomType={currentRoomType}
           />
         );
-      })}
+      }) : <div/>}
     </div>
   );
 }

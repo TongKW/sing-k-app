@@ -4,9 +4,7 @@ export default async function handler(req, res) {
   if (req.method === "POST") {
     const { email, username, validate_id } = req.body;
 
-    const url = (process.env.NODE_ENV === 'development' ? 
-          `localhost:3000/login/activate-account?validate_id=${validate_id}` : 
-          `https://sing-k-app.vercel.app/login/activate-account?validate_id=${validate_id}`);
+    const url = `https://sing-k-app.vercel.app/login/activate-account?validate_id=${validate_id}`
   
     var message = {
       from: "enjoy.singing.karaoke@gmail.com",

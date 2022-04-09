@@ -54,7 +54,7 @@ function SongListPanel(props) {
           isRoomCreator={props.isRoomCreator}
           handleMoveSong={props.handleMoveSong}
         />
-      ))}
+      )) : <div/>}
     </Box>
   );
 }
