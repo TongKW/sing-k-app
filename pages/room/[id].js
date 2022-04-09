@@ -172,7 +172,7 @@ export default function Room() {
         sendMsgAll({
           username: username,
           type: "system",
-          message: `${username} is uploading song -- ${songName}.`,
+          message: `${username} is uploading song -- ${cleantFileName}.`,
         });
         lastSend.current = currentTime;
         sendSongAll({ songName: cleantFileName, songBuffer: data.content });
