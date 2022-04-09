@@ -16,7 +16,8 @@ import { FormInputBlock } from "../../component/elements/form-input";
 import logout from "../../utils/logout";
 import pwValidateSetError from "../../utils/validate-password-format";
 import { Loading } from "notiflix/build/notiflix-loading-aio";
-import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import HomePage from "../../component/wrapper/HomePage";
 
 export default function Admin() {
   const router = useRouter();
@@ -139,40 +140,40 @@ export default function Admin() {
 
     return (
       <>
-        {fetching ? (
+      {fetching ? (
           <div>Validating...</div>
         ) : (
-          <>
-            <TableContainer
-              component={Paper}
-              sx={{ width: { xs: "80%", sm: "70%" }, margin: "auto", mt: 5 }}
-            >
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Username</TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell>New password</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {userList &&
-                    userList.map((userObj, index) => (
-                      <ListUser
-                        key={index}
-                        username={userObj.username}
-                        email={userObj.email}
-                        userId={userObj._id}
-                        handleChangePw={handleChangePw}
-                        handleViewProfile={handleViewProfile}
-                      />
-                    ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </>
-        )}
-      </>
+      <HomePage role={"admin"}>
+        <TableContainer
+          component={Paper}
+          sx={{ width: {xs: "80%", sm:"70%"}, margin: "auto", mt: 5 }}
+        >
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Username</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>New password</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {userList &&
+                userList.map((userObj, index) => (
+                  <ListUser
+                    key={index}
+                    username={userObj.username}
+                    email={userObj.email}
+                    userId={userObj.userId}
+                    handleChangePw={handleChangePw}
+                    handleViewProfile={handleViewProfile}
+                  />
+                ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </HomePage>
+) }
+</>
     );
   }
 }

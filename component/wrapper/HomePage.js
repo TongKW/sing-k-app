@@ -24,6 +24,8 @@ export default function HomePage(props) {
                 <Icon length="50"></Icon>
               </a>
             </Link>
+            {props.role !== "admin" &&
+            <>
             <Link href="/profile">
               <a
                 className={
@@ -43,6 +45,9 @@ export default function HomePage(props) {
             >
               Change Password
             </a>
+            </>
+
+            }
             <div className={navElemClass + "flex-col grow"} onClick={logout}>
               Logout
             </div>
