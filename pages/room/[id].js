@@ -74,9 +74,7 @@ export default function Room() {
   const [userId, setUserId] = useState();
   const [roomCreatorId, setRoomCreatorId] = useState();
 
-  const [currentRoomType, setCurrentRoomType] = useState(
-    localStorage.getItem("_roomType")
-  );
+  const [currentRoomType, setCurrentRoomType] = useState();
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(50);
 
@@ -317,6 +315,7 @@ export default function Room() {
   }, []);
 
   // Retrieve the userId of the room creator
+  // Retrieve current room type
   useEffect(() => {
     if (!roomId) return;
     checkRoomCreator();
@@ -333,6 +332,7 @@ export default function Room() {
       setRoomCreatorId(creatorId);
       localStorage.setItem("_creatorId", creatorId);
     }
+    setCurrentRoomType(localStorage.getItem("_roomType"));
   }, [roomId]);
 
   // Initialize audio stream and WebRTC
@@ -650,11 +650,10 @@ export default function Room() {
             ICEcandidate: event.candidate.toJSON(),
           });
       };
-      console.log(`currentRoomType: ${currentRoomType}`);
       console.log(`userId: ${userId}`);
       console.log(`roomCreatorId: ${localStorage.getItem("_creatorId")}`);
       if (
-        currentRoomType === "streaming" &&
+        localStorage.getItem("_roomType") === "streaming" &&
         userId !== localStorage.getItem("_creatorId")
       )
         peerConnections.current[userId].isMuted = true;
