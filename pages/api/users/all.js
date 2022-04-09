@@ -1,5 +1,6 @@
 import {MongoClient} from 'mongodb';
 
+
 const uri = process.env.MONGODB_SERVER;
 
 export default async function handler(req, res) {

@@ -13,7 +13,15 @@ import {
   onSnapshot,
   deleteDoc,
 } from "firebase/firestore";
-import { Box, Dialog, DialogTitle, DialogContent } from "@mui/material";
+import {
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  IconButton,
+  DialogActions,
+} from "@mui/material";
 import { firebaseConfig } from "../../firebase/config";
 import sleep from "../../utils/sleep";
 import RoomMangementPanel from "./roomManagement";
@@ -21,11 +29,15 @@ import UserUtilityPanel from "./userUtility";
 import SongManagementPanel from "./songManagement";
 import { processFile, stripFileExtension } from "../../utils/fileUtils";
 import Button from "../../component/elements/button";
+import { WindowSharp } from "@mui/icons-material";
+import removeUserQueue from "../../utils/room/userOffQueue";
+import CloseIcon from "@mui/icons-material/Close";
 
 export default function Room() {
   // Routing parameter
   const router = useRouter();
   const roomId = router.query.id;
+  const FILE_LIMIT = 10000000;
 
   let _userId = null;
   let _roomCreatorId = null;
@@ -39,6 +51,12 @@ export default function Room() {
   let commentList = useRef([]);
   let allSongList = useRef([]);
   let allAudioList = useRef([]);
+  let unsubscribeCallee = useRef();
+  let unsubscribeLeftUser = useRef();
+  let receiveSongBuffer = useRef({});
+  let lastSend = useRef(null);
+  let emojiRef = useRef();
+  let downloadSongStatus = useRef({});
 
   // Check if user enters from Lobby
   const [fromLobby, setFromLobby] = useState(true);
@@ -48,6 +66,7 @@ export default function Room() {
 
   // Initialization indicates
   const [initialized, setInitialized] = useState(false);
+  const [initConn, setInitConn] = useState(false);
 
   // User info
   const [username, setUsername] = useState();
@@ -55,19 +74,24 @@ export default function Room() {
   const [userId, setUserId] = useState();
   const [roomCreatorId, setRoomCreatorId] = useState();
 
-  const [currentRoomType, setCurrentRoomType] = useState("private");
+  const [currentRoomType, setCurrentRoomType] = useState(
+    localStorage.getItem("_roomType")
+  );
   const [isMuted, setIsMuted] = useState(false);
-  const [echo, setEcho] = useState(50);
   const [volume, setVolume] = useState(50);
 
   const [currentSong, setCurrentSong] = useState(null);
   const [currentSongIsPlaying, setCurrentSongIsPlaying] = useState(false);
+  const [dataChannelFullOpen, setDataChannelFullOpen] = useState(false);
+  const [fileTooLargeOpen, setFileTooLargeOpen] = useState(false);
 
   // Initialize Firebase
   const app = firebase.initializeApp(firebaseConfig);
 
   const handleMuteUnmute = () => {
-    setIsMuted(!isMuted);
+    const newMuted = !isMuted;
+    localStream.current.getAudioTracks()[0].enabled = newMuted === false;
+    setIsMuted(newMuted);
     sendMsgAll({
       userId: userId,
       username: username,
@@ -90,7 +114,13 @@ export default function Room() {
     }
   }, [volume, currentSong]);
 
-  const handleStartSong = () => {
+  const handleStartSong = (fromOther = false) => {
+    if (!fromOther) {
+      sendMsgAll({
+        type: "songAction",
+        action: "start",
+      });
+    }
     if (!allAudioList.current) return;
     if (currentSong === allAudioList.current[0]) {
       // The user has paused, and now we need to resume
@@ -102,7 +132,13 @@ export default function Room() {
     setCurrentSongIsPlaying(true);
   };
 
-  const handleStopSong = () => {
+  const handleStopSong = (fromOther = false) => {
+    if (!fromOther) {
+      sendMsgAll({
+        type: "songAction",
+        action: "stop",
+      });
+    }
     setCurrentSongIsPlaying(false);
     console.log("Stopped song!");
   };
@@ -120,17 +156,42 @@ export default function Room() {
     const [file] = event.target.files;
     event.target.value = null;
     const data = await processFile(file);
-    const audio = new Audio(data.content);
-    audio.onended = handleFinishedSong;
-    const cleantFileName = stripFileExtension(file.name);
-    const newAllSongList = [...allSongList.current, cleantFileName];
-    const newAudioList = [...allAudioList.current, audio];
-    allSongList.current = newAllSongList;
-    allAudioList.current = newAudioList;
-    updateUI();
+    if (data.content.length > FILE_LIMIT) {
+      setFileTooLargeOpen(true);
+    } else {
+      const cleantFileName = stripFileExtension(file.name);
+      const currentTime = Date.now();
+      if (
+        lastSend.current === null ||
+        currentTime - lastSend.current >= 20000
+      ) {
+        // Notify other users that a song is going to be uploaded
+        sendMsgAll({
+          userId: userId,
+          type: "songAction",
+          action: "upload",
+        });
+        sendMsgAll({
+          username: username,
+          type: "system",
+          message: `${username} is uploading song -- ${songName}.`,
+        });
+        lastSend.current = currentTime;
+        sendSongAll({ songName: cleantFileName, songBuffer: data.content });
+        appendSongInfo(cleantFileName, data.content);
+      } else if (currentTime - lastSend.current < 20000) {
+        setDataChannelFullOpen(true);
+      }
+    }
   };
 
-  const handleDeleteSong = () => {
+  const handleDeleteSong = (fromOther = false) => {
+    if (!fromOther) {
+      sendMsgAll({
+        type: "songAction",
+        action: "delete",
+      });
+    }
     if (allSongList.current.length === 1) {
       //if deleting the playing song
       setCurrentSongIsPlaying(false);
@@ -140,6 +201,9 @@ export default function Room() {
     allAudioList.current = allAudioList.current.slice(0, -1);
     updateUI();
   };
+  const handleFileTooLargeClose = () => setFileTooLargeOpen(false);
+
+  const handleDataFullClose = () => setDataChannelFullOpen(false);
 
   const handleEcho = (event) => {
     setEcho(event.target.value);
@@ -169,7 +233,15 @@ export default function Room() {
     });
   };
 
-  function handleMoveSong(prevIndex, currentIndex) {
+  function handleMoveSong(prevIndex, currentIndex, fromOther = false) {
+    if (!fromOther) {
+      sendMsgAll({
+        type: "songAction",
+        action: "move",
+        prevIndex: prevIndex,
+        currentIndex: currentIndex,
+      });
+    }
     //swap the two elements inside a list based on prevIndex and currentIndex
     if (prevIndex === 0 || currentIndex === 0) {
       if (allSongList.current.length !== 1) {
@@ -196,6 +268,7 @@ export default function Room() {
   // Get response of user info and display from local storage
   useEffect(() => {
     const token = localStorage.getItem("token");
+
     const user = decrypt_jwt(token).body;
     async function decrypt_jwt(token) {
       const response = await fetch("/api/jwt/decrypt", {
@@ -227,12 +300,18 @@ export default function Room() {
 
   // Add listener when user is about to close the page or refresh
   useEffect(() => {
-    window.addEventListener("popstate", () => {console.log("called popstate!");closeHandler();});
+    window.addEventListener("popstate", () => {
+      console.log("called popstate!");
+      closeHandler();
+    });
     window.addEventListener("beforeunload", closeHandler);
     return () => {
-      console.log("_userId: ",_userId);
-      console.log("_roomCreatorId: ",_roomCreatorId);
-      window.removeEventListener("popstate", () => {console.log("called popstate!");closeHandler();});
+      console.log("_userId: ", _userId);
+      console.log("_roomCreatorId: ", _roomCreatorId);
+      window.removeEventListener("popstate", () => {
+        console.log("called popstate!");
+        closeHandler();
+      });
       window.removeEventListener("beforeunload", closeHandler);
     };
   }, []);
@@ -249,7 +328,7 @@ export default function Room() {
       const roomSnapshot = await getDoc(roomDoc);
       const data = roomSnapshot.data();
       console.log(data);
-      const creatorId = data.creatorId;
+      const creatorId = data?.creatorId;
       console.log(`creatorId == userId: ${creatorId == userId}`);
       setRoomCreatorId(creatorId);
       localStorage.setItem("_creatorId", creatorId);
@@ -260,6 +339,7 @@ export default function Room() {
   // Get peer WebRTC info and connect
   // Only run once after roomId is get
   useEffect(() => {
+    console.log(`initConn: ${initConn}`);
     const db = getFirestore();
     const allUserDoc = collection(db, `rooms/${roomId}/RTCinfo`);
     const calleeDoc = collection(
@@ -274,7 +354,7 @@ export default function Room() {
       setFromLobby(false);
       return;
     }
-
+    console.log(`initialized = ${initialized}`);
     if (initialized || !roomId || !userId) return;
     initialize();
 
@@ -285,15 +365,17 @@ export default function Room() {
 
       // Setup audio
       localStream.current = await navigator.mediaDevices.getUserMedia({
-        video: true,
+        video: false,
         audio: true,
       });
 
-      // Get Firebase
-      const roomDoc = doc(db, "rooms", roomId);
-      const roomSnapshot = await getDoc(roomDoc);
-      const roomType = roomSnapshot.data().type;
-      setCurrentRoomType(roomType);
+      if (
+        localStorage.getItem("_roomType") === "streaming" &&
+        localStorage.getItem("_userId") !== localStorage.getItem("_creatorId")
+      ) {
+        console.log("mute myself!");
+        handleMuteUnmute();
+      }
 
       const allUserSnapshot = await getDocs(allUserDoc);
 
@@ -312,8 +394,10 @@ export default function Room() {
       await createNewUserFirestore();
     }
 
+    // Listen to any changes only after own first connection is initialized
+
     // Listen for any joined user
-    onSnapshot(calleeDoc, (snapshot) => {
+    unsubscribeCallee.current = onSnapshot(calleeDoc, (snapshot) => {
       snapshot.docChanges().forEach(async (change) => {
         // Get new user info
         const newUserDoc = change.doc;
@@ -321,8 +405,11 @@ export default function Room() {
         if (newUserId === userId) return;
         // If a new user joined, connect with WebRTC
         if (change.type === "added" || change.type === "modified") {
+          console.log("new user joined!");
           // Create new connection
           createNewPeerConnection(newUserId);
+
+          console.log("Finished create new peer connection");
           // Initializing an empty ICE candidate queue for the new comer
           if (!pendingICEcandidates.current.hasOwnProperty(newUserId)) {
             pendingICEcandidates.current[newUserId] = [];
@@ -343,7 +430,7 @@ export default function Room() {
               // Case: Joined room as a new comer
               // If created the connection first and got answer back:
               // 1. if pc.currentRemote is null => setRemote
-              if (existingUsers.current.includes(newUserId)) {
+              if (existingUsers.current.includes(newUserId) && !initConn) {
                 const desc = new RTCSessionDescription(fromRTCoffer);
 
                 await peerConnections.current[
@@ -362,12 +449,8 @@ export default function Room() {
                   avatar: avatar,
                 });
                 //TODO: Delete your userId in Firebase queue
-                const roomIdDoc = doc(db, `rooms/${roomId}`);
-                const roomIdSnapshot = await getDoc(roomIdDoc);
-                const roomIdData = roomIdSnapshot.data();
-                const queue = roomIdData.queue;
-                const newQueue = queue.filter((id) => id !== userId);
-                await updateDoc(roomIdDoc, { queue: newQueue });
+                await removeUserQueue(db, userId, roomId);
+                setInitConn(true);
               }
               // Case: A new comer has joined the room
               // If other created the connection first:
@@ -415,7 +498,7 @@ export default function Room() {
     });
 
     // Listen for any left user
-    onSnapshot(allUserDoc, (snapshot) => {
+    unsubscribeLeftUser.current = onSnapshot(allUserDoc, (snapshot) => {
       snapshot.docChanges().forEach(async (change) => {
         // If an user left, delete info and close the WebRTC connection
         if (change.type === "removed") {
@@ -430,8 +513,6 @@ export default function Room() {
             const index = existingUsers.current.indexOf(leftUserId);
             existingUsers.current.splice(index, 1);
           }
-          // Close WebRTC connection
-          peerConnections.current[leftUserId].pc.close();
 
           // Update leaving message
           console.log(`Left: ${leftUserId}`);
@@ -443,11 +524,11 @@ export default function Room() {
             isSystem: true,
           });
 
-          // delete user info
-          delete peerConnections.current[leftUserId];
+          // clear connection of the left user
+          removePeerConnection(leftUserId);
 
           // Force rerender on the UI
-          setValue((value) => value + 1);
+          updateUI();
         }
       });
     });
@@ -460,30 +541,42 @@ export default function Room() {
     async function initPeerConnection(userId) {
       console.log(`COUNT: initPeerConnection() is called on ${userId}`);
       // If peer Connection has been created before, return
-      if (peerConnections.current.hasOwnProperty(userId)) return;
+      try {
+        if (peerConnections.current.hasOwnProperty(userId)) {
+          console.log(
+            "already formed connection, deleting previous connection."
+          );
+          removePeerConnection(userId);
+          console.log("Deleted previous connection.");
+        }
 
-      // Initialize and store new Peer Connection
-      createNewPeerConnection(userId);
+        // Initialize and store new Peer Connection
+        createNewPeerConnection(userId);
 
-      // Create offer descript and set to local
-      const description = await peerConnections.current[
-        userId
-      ].pc.createOffer();
-      const RTCoffer = {
-        sdp: description.sdp,
-        type: description.type,
-      };
-      await peerConnections.current[userId].pc.setLocalDescription(description);
-      console.log("Peer Connection after setLocalDescription");
-      console.log(peerConnections.current);
-      console.log(peerConnections.current[userId].pc);
+        // Create offer descript and set to local
+        const description = await peerConnections.current[
+          userId
+        ].pc.createOffer();
+        const RTCoffer = {
+          sdp: description.sdp,
+          type: description.type,
+        };
+        await peerConnections.current[userId].pc.setLocalDescription(
+          description
+        );
+        console.log("Peer Connection after setLocalDescription");
+        console.log(peerConnections.current);
+        console.log(peerConnections.current[userId].pc);
 
-      await sleep(2000);
-      await updateConnectionData(userId, { RTCoffer: RTCoffer });
-      //const localDesc = peerConnections.current[userId].pc.localDescription;
+        await sleep(2000);
+        await updateConnectionData(userId, { RTCoffer: RTCoffer });
+        //const localDesc = peerConnections.current[userId].pc.localDescription;
 
-      // Create firestore document for new user to connect to you
-      await createNewUserFirestore();
+        // Create firestore document for new user to connect to you
+        await createNewUserFirestore();
+      } catch (error) {
+        console.error(error);
+      }
     }
 
     // Create an user document for any user to write connection data on
@@ -504,6 +597,7 @@ export default function Room() {
     }
 
     async function connectNewUser(newUserId, remoteRTCoffer) {
+      console.log("connect new user!");
       createNewPeerConnection(newUserId);
       const desc = new RTCSessionDescription(remoteRTCoffer);
       await peerConnections.current[newUserId].pc.setRemoteDescription(desc);
@@ -528,14 +622,18 @@ export default function Room() {
       peerConnections.current[userId].pc = new RTCPeerConnection(servers);
       // Push tracks from local stream to peer connection
       localStream.current.getTracks().forEach((track) => {
-        console.log(`Pushing track ... ${new Date().getTime()}`);
+        console.log(`Pushing track to ${userId} ... ${new Date().getTime()}`);
         console.log(track);
+        // if (isMuted) {
+        //   console.log("I am muted!");
+        //   localStream.current.getAudioTracks()[0].enabled = false;
+        // }
         peerConnections.current[userId].pc.addTrack(track, localStream.current);
       });
 
       peerConnections.current[userId].audioStream = new MediaStream();
       peerConnections.current[userId].pc.ontrack = (event) => {
-        console.log(`Getting track ... ${new Date().getTime()}`);
+        console.log(`Getting track from ${userId}... ${new Date().getTime()}`);
         event.streams[0].getTracks().forEach((track) => {
           peerConnections.current[userId].audioStream.addTrack(track);
         });
@@ -548,7 +646,21 @@ export default function Room() {
             ICEcandidate: event.candidate.toJSON(),
           });
       };
-      peerConnections.current[userId].isMuted = false;
+      console.log(`currentRoomType: ${currentRoomType}`);
+      console.log(`userId: ${userId}`);
+      console.log(`roomCreatorId: ${localStorage.getItem("_creatorId")}`);
+      if (
+        currentRoomType === "streaming" &&
+        userId !== localStorage.getItem("_creatorId")
+      )
+        peerConnections.current[userId].isMuted = true;
+      else {
+        peerConnections.current[userId].isMuted = false;
+      }
+
+      console.log(
+        `userId ${userId} is muted ${peerConnections.current[userId].isMuted}`
+      );
 
       // Event listener for creating receive channel
       peerConnections.current[userId].pc.ondatachannel = (event) => {
@@ -572,21 +684,69 @@ export default function Room() {
         peerConnections.current[userId].pc.signalingState === "stable"
       )
         return false;
+      console.log("Have good and stable connection!");
       return true;
     }
 
     // Channel is for chat text transmission
     function createChannel(userId) {
       console.log("create data Channel");
-      if (peerConnections.current[userId].hasOwnProperty("sendChannel")) return;
-      peerConnections.current[userId].sendChannel =
-        peerConnections.current[userId].pc.createDataChannel("chat");
+      if (
+        peerConnections.current[userId].hasOwnProperty("messageChannel") &&
+        peerConnections.current[userId].hasOwnProperty("songChannel")
+      )
+        return;
+      if (!peerConnections.current[userId].hasOwnProperty("messageChannel"))
+        peerConnections.current[userId].messageChannel =
+          peerConnections.current[userId].pc.createDataChannel("message");
+      if (!peerConnections.current[userId].hasOwnProperty("songChannel"))
+        peerConnections.current[userId].songChannel =
+          peerConnections.current[userId].pc.createDataChannel("song");
     }
 
     function receiveChannelCallback(event, userId) {
-      peerConnections.current[userId].receiveChannel = event.channel;
-      peerConnections.current[userId].receiveChannel.onmessage =
-        handleReceiveMessage;
+      if (event.channel.label === "message") {
+        console.log(event.channel);
+        peerConnections.current[userId].receiveMessageChannel = event.channel;
+        peerConnections.current[userId].receiveMessageChannel.onmessage =
+          handleReceiveMessage;
+      }
+      if (event.channel.label === "song") {
+        peerConnections.current[userId].receiveSongChannel = event.channel;
+        peerConnections.current[userId].receiveSongChannel.onmessage =
+          handleReceiveSong;
+      }
+    }
+
+    function removePeerConnection(leftUserId) {
+      console.log(`Removing connection of ${leftUserId}`);
+      if (!peerConnections.current.hasOwnProperty(leftUserId)) return;
+      if (!peerConnections.current[leftUserId].hasOwnProperty("pc")) return;
+      peerConnections.current[leftUserId].pc.close();
+      peerConnections.current[leftUserId].pc.onicecandidate = null;
+      peerConnections.current[leftUserId].pc.ondatachannel = null;
+      if (
+        peerConnections.current[leftUserId].hasOwnProperty(
+          "receiveMessageChannel"
+        )
+      ) {
+        peerConnections.current[leftUserId].receiveMessageChannel.close();
+      }
+      if (
+        peerConnections.current[leftUserId].hasOwnProperty("receiveSongChannel")
+      ) {
+        peerConnections.current[leftUserId].receiveSongChannel.close();
+      }
+      if (
+        peerConnections.current[leftUserId].hasOwnProperty("messageChannel")
+      ) {
+        peerConnections.current[leftUserId].messageChannel.close();
+      }
+      if (peerConnections.current[leftUserId].hasOwnProperty("songChannel")) {
+        peerConnections.current[leftUserId].songChannel.close();
+      }
+      delete peerConnections.current[leftUserId];
+      delete pendingICEcandidates.current[leftUserId];
     }
 
     function handleReceiveMessage(event) {
@@ -626,25 +786,117 @@ export default function Room() {
       } else if (type === "setMute") {
         peerConnections.current[userId].isMuted =
           !peerConnections.current[userId].isMuted;
+      } else if (type === "songAction") {
+        const action = data.action;
+        if (action === "start") {
+          handleStartSong(true);
+        } else if (action === "stop") {
+          handleStopSong(true);
+        } else if (action === "delete") {
+          handleDeleteSong(true);
+        } else if (action === "move") {
+          handleMoveSong(data.prevIndex, data.currentIndex, true);
+        } else if (action == "upload") {
+          Object.keys(peerConnections.current).map((userId) => {
+            downloadSongStatus.current[userId] = false;
+          });
+        } else if (action == "receive") {
+          downloadSongStatus.current[data.userId] = true;
+        } else if (action == "finish") {
+          for (const userId in downloadSongStatus.current) {
+            delete downloadSongStatus.current[userId];
+          }
+        }
       }
       // Force rerender on the UI
       updateUI();
     }
-  }, [roomId, userId, initialized, username, avatar, commentList]);
+
+    function handleReceiveSong(event) {
+      const data = JSON.parse(event.data);
+      const sender = data.sender;
+      if (!receiveSongBuffer.current.hasOwnProperty(sender)) {
+        receiveSongBuffer.current[sender] = {
+          songName: data.songName,
+          sender: sender,
+          songBufferLength: data.songBufferLength,
+          totalChunkNo: data.totalChunkNo,
+          songBufferChunk: new Array(data.totalChunkNo).fill(null),
+        };
+      }
+      receiveSongBuffer.current[sender].songBufferChunk[data.chunkNo - 1] =
+        data.songBufferChunk;
+      if (
+        !receiveSongBuffer.current[sender].songBufferChunk.some(
+          (chunk) => chunk === null
+        )
+      ) {
+        // Entire song is received
+        const songBuffer =
+          receiveSongBuffer.current[sender].songBufferChunk.join("");
+        console.log("current length: ", songBuffer.length);
+        console.log(
+          "theoretical length: ",
+          receiveSongBuffer.current[sender].songBufferLength
+        );
+        const songName = receiveSongBuffer.current[sender].songName;
+        appendSongInfo(songName, songBuffer);
+        delete receiveSongBuffer.current[sender];
+
+        // Notify other that song is received here
+        sendMsgAll({
+          username: username,
+          type: "system",
+          message: `${username} has received song ${songName}.`,
+        });
+        sendMsgAll({
+          type: "songAction",
+          action: "receive",
+          userId: userId,
+        });
+        // Check if is the last one to receive the song
+        let isLast = true;
+        for (const userId in downloadSongStatus.current) {
+          if ((downloadSongStatus.current[userId] = false)) {
+            isLast = false;
+            break;
+          }
+        }
+        if (isLast) {
+          sendMsgAll({
+            type: "songAction",
+            action: "finish",
+          });
+          for (const userId in downloadSongStatus.current) {
+            delete downloadSongStatus.current[userId];
+          }
+          handleStartSong();
+        }
+      } else {
+        console.log(`Passing data!`);
+      }
+    }
+  }, [roomId, userId, initialized, username, avatar, commentList, initConn]);
 
   // Page UI
   return (
     <>
+      {fileTooLargeOpen && (
+        <FileTooLargeDialog
+          open={fileTooLargeOpen}
+          close={handleFileTooLargeClose}
+        />
+      )}
+      {dataChannelFullOpen && (
+        <DataChannelFullDialog
+          open={dataChannelFullOpen}
+          close={handleDataFullClose}
+        />
+      )}
       <Dialog open={!fromLobby}>
         <DialogTitle>Please join the room from Lobby.</DialogTitle>
         <DialogContent>
-          <div
-            onClick={() => {
-              leave(true);
-            }}
-          >
-            <Button text="Close"></Button>
-          </div>
+          <Button text="Close" onClick={closeHandler} />
         </DialogContent>
       </Dialog>
       <Box
@@ -661,7 +913,7 @@ export default function Room() {
           <RoomMangementPanel
             otherUsersList={getUsersList()}
             peerConnections={peerConnections}
-            // leave={leave}
+            isRoomCreator={roomCreatorId == userId}
             closeHandler={closeHandler}
             roomId={roomId}
             roomCreatorId={roomCreatorId}
@@ -673,8 +925,8 @@ export default function Room() {
         <Box sx={{ width: "54%" }} style={{ background: "#1C1C1C" }}>
           <UserUtilityPanel
             isMuted={isMuted}
-            echo={echo}
             volume={volume}
+            emojiRef={emojiRef}
             handleEcho={handleEcho}
             handleVolume={handleVolume}
             commentList={commentList.current}
@@ -700,22 +952,28 @@ export default function Room() {
 
   async function leave(redirect = false) {
     // Remove roomId from localStorage
+    if (!localStorage.getItem("roomId")) return;
     localStorage.removeItem("roomId");
     let _userId = localStorage.getItem("_userId");
     let _roomCreatorId = localStorage.getItem("_creatorId");
 
-    // Remove any listeners to Firestore
-    unscribeFirestore();
+    try {
+      // Remove any listeners to Firestore
+      unsubscribeCallee.current();
+      unsubscribeLeftUser.current();
+    } catch (error) {
+      console.log(error);
+    }
 
     const db = getFirestore();
-    
+
     // Remove the user record in the room
     await deleteDoc(doc(db, `rooms/${roomId}/RTCinfo/${_userId}`));
 
     // If the left user is the creator of the room,ha
     // Delete the room when the creator left
     if (_roomCreatorId === _userId) {
-      console.log(`roomCreatorId == undefined: ${_roomCreatorId==undefined}`);
+      console.log(`roomCreatorId == undefined: ${_roomCreatorId == undefined}`);
       console.log("delete the whole doc!");
       await deleteDoc(doc(db, `rooms/${roomId}`));
     }
@@ -730,8 +988,11 @@ export default function Room() {
     // close all peer connections
     Object.keys(peerConnections.current).map((userId) => {
       peerConnections.current[userId].pc.close();
-      peerConnections.current[userId].sendChannel.close();
-      peerConnections.current[userId].receiveChannel.close();
+      peerConnections.current[userId].messageChannel.close();
+      peerConnections.current[userId].receiveMessageChannel.close();
+      peerConnections.current[userId].songChannel.close();
+      peerConnections.current[userId].receiveSongChannel.close();
+      delete peerConnections.current[userId];
     });
 
     // Clear data
@@ -740,24 +1001,13 @@ export default function Room() {
     localStream.current = null;
     pendingICEcandidates.current = {};
 
-    router.push("/");
-    // await sleep(5000);
-    window.location.reload(false);
+    location.href = "/";
+    // router.push("/");
   }
 
   async function addICEcandidate(newUserId, ICEcandidate) {
     const candidate = new RTCIceCandidate(ICEcandidate);
     await peerConnections.current[newUserId].pc.addIceCandidate(candidate);
-  }
-
-  // Firestore unscribe onsnapshot
-  function unscribeFirestore() {
-    const db = getFirestore();
-    onSnapshot(collection(db, `rooms/${roomId}/RTCinfo`), () => {});
-    onSnapshot(
-      collection(db, `rooms/${roomId}/RTCinfo/${userId}/callees`),
-      () => {}
-    );
   }
 
   // Transfer peer connection to otherUsersList
@@ -793,13 +1043,149 @@ export default function Room() {
   }
 
   async function sendMsg(userId, obj) {
-    if (peerConnections.current[userId].sendChannel.readyState === "open") {
-      peerConnections.current[userId].sendChannel.send(JSON.stringify(obj));
+    console.log("pc data: ", peerConnections.current[userId]);
+    if (peerConnections.current[userId].messageChannel.readyState === "open") {
+      peerConnections.current[userId].messageChannel.send(JSON.stringify(obj));
     } else {
       await sleep(1000);
       await sendMsg(userId, obj);
     }
   }
+
+  async function sendSongAll(obj) {
+    console.log("song:", obj);
+    const connectAllUsers = async () => {
+      await Promise.all(
+        Object.keys(peerConnections.current).map(async (userId) => {
+          await sendSong(userId, obj);
+        })
+      );
+    };
+    connectAllUsers();
+  }
+
+  async function sendSong(userId, obj) {
+    const songChannel = peerConnections.current[userId].songChannel;
+    if (songChannel.readyState === "open") {
+      const songBuffer = obj.songBuffer;
+      const CHUNK_LEN = 64000;
+      const songLength = songBuffer.length;
+      const chunkSize = songLength / CHUNK_LEN;
+
+      for (const i = 0; i < chunkSize; i++) {
+        const start = i * CHUNK_LEN;
+        const end = (i + 1) * CHUNK_LEN;
+        const songBufferInfo = {
+          songName: obj.songName,
+          sender: userId,
+          chunkNo: i + 1,
+          songBufferLength: songLength,
+          totalChunkNo: Math.ceil(chunkSize),
+          songBufferChunk: songBuffer.slice(start, end),
+          type: "songBuffer",
+        };
+        // try {
+        //   songChannel.send(JSON.stringify(songBufferInfo));
+        // } catch (error) {
+        //   setDataChannelFullOpen(true);
+        // }
+        songChannel.send(JSON.stringify(songBufferInfo));
+      }
+    }
+  }
+
+  function appendSongInfo(songName, songBuffer) {
+    const audio = new Audio(songBuffer);
+    audio.onended = handleFinishedSong;
+    const newAllSongList = [...allSongList.current, songName];
+    const newAudioList = [...allAudioList.current, audio];
+    allSongList.current = newAllSongList;
+    allAudioList.current = newAudioList;
+    updateUI();
+  }
+}
+
+function FileTooLargeDialog(props) {
+  return (
+    <Dialog
+      open={props.open}
+      aria-labelledby="file-too-large-title"
+      aria-describedby="file-too-large-description"
+    >
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
+        }}
+      >
+        <DialogTitle aria-labelledby="file-too-large-title">
+          File Too Large
+        </DialogTitle>
+        <IconButton onClick={props.close}>
+          <CloseIcon />
+        </IconButton>
+      </Box>
+      <DialogContent>
+        <DialogContentText aria-describedby="file-too-large-description">
+          Please upload a song within 10MB!
+        </DialogContentText>
+        <DialogActions>
+          <Box sx={{ display: "flex", flexDirection: "row-reverse" }}>
+            <button
+              className="bg-indigo-700 hover:bg-indigo-800 text-white py-2 px-4 text-xs rounded focus:outline-none focus:shadow-outline"
+              type="button"
+              onClick={props.close}
+            >
+              Ok
+            </button>
+          </Box>
+        </DialogActions>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DataChannelFullDialog(props) {
+  return (
+    <Dialog
+      open={props.open}
+      aria-labelledby="data-channel-full-title"
+      aria-describedby="data-channel-full-description"
+    >
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
+        }}
+      >
+        <DialogTitle aria-labelledby="data-channel-full-title">
+          Data Channel Full
+        </DialogTitle>
+        <IconButton onClick={props.close}>
+          <CloseIcon />
+        </IconButton>
+      </Box>
+      <DialogContent>
+        <DialogContentText aria-describedby="data-channel-full-description">
+          Adding song too fast! Please wait for a moment before adding a new
+          song.
+        </DialogContentText>
+        <DialogActions>
+          <Box sx={{ display: "flex", flexDirection: "row-reverse" }}>
+            <button
+              className="bg-indigo-700 hover:bg-indigo-800 text-white py-2 px-4 text-xs rounded focus:outline-none focus:shadow-outline"
+              type="button"
+              onClick={props.close}
+            >
+              Ok
+            </button>
+          </Box>
+        </DialogActions>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 const servers = {
