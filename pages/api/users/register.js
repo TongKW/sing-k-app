@@ -1,6 +1,6 @@
 import { MongoClient } from 'mongodb';
 
-const uri = "mongodb://admin:admin@alexauwork.com:30000/";
+const uri = process.env.MONGODB_SERVER;
 const bcrypt = require('bcryptjs');
 
 export default async function handler(req, res) {

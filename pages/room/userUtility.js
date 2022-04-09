@@ -17,15 +17,16 @@ export default function UserUtilityPanel(props) {
         flexDirection: "column",
         height: "100vh",
       }}
+      style={{ background: "#FFFFFF" }}
     >
       <AudioPane
         isMuted={props.isMuted}
-        echo={props.echo}
         volume={props.volume}
         handleEcho={props.handleEcho}
         handleVolume={props.handleVolume}
       />
       <CommentArea
+        emojiRef={props.emojiRef}
         commentList={props.commentList}
         handleAddComment={props.handleAddComment}
       />
@@ -39,10 +40,14 @@ function AudioPane(props) {
       className="bg-gray-700"
       style={{
         width: "100%",
-        height: "35%",
+        height: "10%",
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
+        background: "#376E6F",
+        borderRadius: "0px 0px 10px 10px",
+        borderLeft: "solid 5px white",
+        borderRight: "solid 5px white",
       }}
     >
       <Box
@@ -63,9 +68,9 @@ function AudioPane(props) {
             justifyContent: "space-around",
             height: "80%",
             width: "10%",
+            fontSize: "2vmin",
           }}
         >
-          <h1>Echo</h1>
           <h1>Volume</h1>
         </Box>
         <Box
@@ -79,21 +84,12 @@ function AudioPane(props) {
           }}
         >
           <Slider
-            onChange={props.handleEcho}
-            value={props.echo}
-            valueLabelDisplay="auto"
-            sx={{
-              width: "90%",
-              color: "gray",
-            }}
-          />
-          <Slider
             valueLabelDisplay="auto"
             onChange={props.handleVolume}
             value={props.volume}
             sx={{
               width: "90%",
-              color: "gray",
+              color: "#CCCCCC",
             }}
           />
         </Box>
@@ -108,44 +104,58 @@ function CommentArea(props) {
       className="bg-indigo-900"
       style={{
         width: "100%",
-        height: "65%",
+        height: "90%",
+        background: "#FFFFFF",
       }}
     >
-      <MessageArea commentList={props.commentList} />
-      <InputArea handleAddComment={props.handleAddComment} />
+      <MessageArea
+        commentList={props.commentList}
+        length={props.commentList ? props.commentList.length : 0}
+      />
+      <InputArea
+        emojiRef={props.emojiRef}
+        handleAddComment={props.handleAddComment}
+      />
     </Box>
   );
 }
 
 function MessageArea(props) {
+  const messageBoxRef = useRef(null);
   //auto scroll till bottom
-  const messageArea = useRef();
   useEffect(() => {
-    messageArea.current.scrollTop = messageArea.current.scrollHeight;
-  }, [props.commentList]);
+    messageBoxRef.current?.scrollIntoView();
+  }, [props.length]);
   return (
     <Box
+      id="chat-message-area"
       className="py-4 px-2 scrollbar"
       sx={{
+        display: "flex",
         height: "85%",
         overflowY: "auto",
         overflowX: "hidden",
+        flexDirection: "column",
       }}
-      ref={messageArea}
     >
-      {props.commentList.map((comment, index) => {
-        if (comment.isSystem)
-          return <SystemMessage key={index} text={comment.text} />;
-        else
-          return (
-            <UserComment
-              key={index}
-              username={comment.username}
-              time={comment.time}
-              text={comment.text}
-            />
-          );
-      })}
+      {props.commentList ? (
+        props.commentList.map((comment, index) => {
+          if (comment.isSystem)
+            return <SystemMessage key={index} text={comment.text} />;
+          else
+            return (
+              <UserComment
+                key={index}
+                username={comment.username}
+                time={comment.time}
+                text={comment.text}
+              />
+            );
+        })
+      ) : (
+        <div />
+      )}
+      <div ref={messageBoxRef} />
     </Box>
   );
 }
@@ -167,7 +177,7 @@ function SystemMessage(props) {
           background: "rgba(127,127,127,0.5)",
           borderRadius: "50px",
           padding: "2px 5px 2px 5px",
-          color: "rgba(127,127,127)",
+          color: "#000000",
         }}
       >
         {props.text}
@@ -185,6 +195,7 @@ function UserComment(props) {
         display: "flex",
         flexDirection: "row",
         width: "100%",
+        color: "#000000",
       }}
     >
       <Box
@@ -227,6 +238,10 @@ function UserComment(props) {
 function InputArea(props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [text, setText] = useState("");
+  useEffect(() => {
+    if (modalOpen) {
+    }
+  });
   const handleUpdateText = (event) => {
     setText(event.target.value);
   };
@@ -237,14 +252,41 @@ function InputArea(props) {
   function onEmojiClick(event, emoji) {
     setText(text + emoji.emoji);
   }
+  function handleRemoveModal(event) {
+    if (modalOpen) {
+      console.log(event.clientX, event.clientY);
+      const element = props.emojiRef.current.getBoundingClientRect();
+      const emojiTopLeftX = element.x;
+      const emojiTopLeftY = element.y;
+      const emojiWidth = element.width;
+      const emojiHeight = element.height;
+      const emojiBottomRightX = emojiTopLeftX + emojiWidth;
+      const emojiBottomRightY = emojiTopLeftY + emojiHeight;
+      const inBoundCondition =
+        emojiTopLeftX <= event.clientX &&
+        event.clientX <= emojiBottomRightX &&
+        emojiTopLeftY <= event.clientY &&
+        event.clientY <= emojiBottomRightY;
+      console.log(inBoundCondition);
+      if (!inBoundCondition) {
+        setModalOpen(false);
+      }
+    }
+  }
+  useEffect(() => {
+    window.addEventListener("mouseup", handleRemoveModal);
+    return () => window.removeEventListener("mouseup", handleRemoveModal);
+  });
   return (
     <Box
       sx={{
         height: "15%",
-        background: "green",
+        background: "#376E6F",
         display: "flex",
         flexDirection: "row",
         justifyContent: "center",
+        borderRadius: "10px",
+        margin: "0px 5px 0px 5px",
       }}
     >
       <Box
@@ -265,19 +307,19 @@ function InputArea(props) {
             setModalOpen(!modalOpen);
           }}
         />
-        {modalOpen && (
-          <Box
-            sx={{
-              position: "absolute",
-              bottom: "10%",
-              right: { xs: "10%", md: "15%" },
-            }}
-          >
-            <Picker onEmojiClick={onEmojiClick} />
-          </Box>
-        )}
+        <Box
+          ref={props.emojiRef}
+          sx={{
+            position: "absolute",
+            bottom: "16%",
+            right: { xs: "18%", md: "20%", xl: "24%" },
+            display: modalOpen ? "block" : "none",
+          }}
+        >
+          <Picker onEmojiClick={onEmojiClick} />
+        </Box>
         <Icon
-          icon="/images/right-arrow.png"
+          icon="/images/send-message.png"
           alt="send"
           length="30"
           onClick={submitText}

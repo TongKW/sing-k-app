@@ -22,9 +22,20 @@ export function middleware(req) {
     return NextResponse.rewrite(url);
   } else {
     if (req.cookies.username === 'admin') {
+      // If admin user, redirect to admin home page
+      if (req.url.includes('/admin/view-profile')) {
+        return NextResponse.rewrite(url);;
+      }
       url.pathname = '/admin';
       return NextResponse.rewrite(url);
+    } else {
+      // If not admin user and try to access admin pages, redirect to normal home page
+      if (req.url.includes('/admin')) {
+        url.pathname = '/';
+        return NextResponse.rewrite(url);
+      }
     }
+    // If logged in users access login page, redirect to normal home page
     if (req.url.includes('/login')) {
       url.pathname = '/';
       return NextResponse.rewrite(url);
