@@ -11,7 +11,7 @@ export default function SongManagementPanel(props) {
         sx={{
           display: "flex",
           height: "5%",
-          fontSize: "30px",
+          fontSize: "3vmin",
         }}
         style={{
           backgroundColor: "#376E6F",
@@ -40,7 +40,11 @@ export default function SongManagementPanel(props) {
 
 function SongListPanel(props) {
   return (
-    <Box sx={{ height: "90%" }} style={{ testAlign: "flex-start" }}>
+    <Box
+      className="px-2 scrollbar"
+      sx={{ height: "85%", overflowY: "auto" }}
+      style={{ testAlign: "flex-start" }}
+    >
       {props.allSongList.map((song, index) => (
         <Song
           key={index}
@@ -56,13 +60,16 @@ function SongListPanel(props) {
 }
 
 function SongFunctionKeys(props) {
+  const usableUser = (props.currentRoomType === "private") || ((props.currentRoomType === "streaming") && (props.isRoomCreator))
   // const [fileInputRef, setFileInputRef] = useState({});
-  return (
+  if (usableUser){
+    return (
     <Box
       sx={{
         display: "flex",
         justifyContent: "space-around",
-        height: "5%",
+        padding: "20px 0px 0px 0px",
+        height: "10%",
       }}
     >
       <Icon
@@ -70,7 +77,7 @@ function SongFunctionKeys(props) {
         alt="play"
         length="25"
         onClick={props.handleStartSong}
-        style={{ cursor: "pointer" }}
+        style={{ cursor: "pointer"}}
       />
       <Icon
         icon="/images/pause.png"
@@ -104,7 +111,43 @@ function SongFunctionKeys(props) {
         style={{ cursor: "pointer" }}
       />
     </Box>
-  );
+    )}
+    else if (!usableUser){
+      return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-around",
+          padding: "20px 0px 0px 0px",
+          height: "10%",
+        }}
+      >
+        <Icon
+          icon="/images/play.png"
+          alt="play"
+          length="25"
+          style={{ cursor: "not-allowed"}}
+        />
+        <Icon
+          icon="/images/pause.png"
+          alt="pause"
+          length="25"
+          style={{ cursor: "not-allowed" }}
+        />
+          <Icon
+            icon="/images/plus.png"
+            alt="plus"
+            length="25"
+            style={{ cursor: "not-allowed" }}
+          />
+        <Icon
+          icon="/images/minus.png"
+          alt="minus"
+          length="25"
+          style={{ cursor: "not-allowed" }}
+        />
+      </Box>
+      )};
 }
 
 function Song(props) {
@@ -114,7 +157,7 @@ function Song(props) {
         display: "flex",
         flexDirection: "row",
         justifyContent: "space-between",
-        fontSize: "20px",
+        fontSize: "2.5vmin",
         padding: "10px",
       }}
     >
