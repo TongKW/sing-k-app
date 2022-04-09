@@ -61,12 +61,10 @@ export default function Admin() {
     setFetching(false);
   }, []);
 
-  
-
   useEffect(() => {
     // retrieve all user info once admin ac is validated
     if (validated) {
-      async function getUsersList(){
+      async function getUsersList() {
         const response = await fetch("/api/users/all", {
           method: "GET",
           headers: {
@@ -128,7 +126,7 @@ export default function Admin() {
     router.push(`/admin/view-profile/${userId}`);
   }
 
-  function handleLogout(){
+  function handleLogout() {
     logout();
   }
 
@@ -145,12 +143,6 @@ export default function Admin() {
           <div>Validating...</div>
         ) : (
           <>
-            <Box sx={{display: "flex", flexDirection: "row-reverse", mt: 2, pr: 2}}>
-              <Button 
-                text="Logout" 
-                onClick={() => handleLogout()}
-              />
-            </Box>
             <TableContainer
               component={Paper}
               sx={{ width: { xs: "80%", sm: "70%" }, margin: "auto", mt: 5 }}
