@@ -112,13 +112,7 @@ export default function Room() {
     }
   }, [volume, currentSong]);
 
-  const handleStartSong = (fromOther = false) => {
-    if (!fromOther) {
-      sendMsgAll({
-        type: "songAction",
-        action: "start",
-      });
-    }
+  const handleStartSong = () => {
     if (!allAudioList.current) return;
     if (currentSong === allAudioList.current[0]) {
       // The user has paused, and now we need to resume
@@ -130,13 +124,7 @@ export default function Room() {
     setCurrentSongIsPlaying(true);
   };
 
-  const handleStopSong = (fromOther = false) => {
-    if (!fromOther) {
-      sendMsgAll({
-        type: "songAction",
-        action: "stop",
-      });
-    }
+  const handleStopSong = () => {
     setCurrentSongIsPlaying(false);
     console.log("Stopped song!");
   };
@@ -183,13 +171,7 @@ export default function Room() {
     }
   };
 
-  const handleDeleteSong = (fromOther = false) => {
-    if (!fromOther) {
-      sendMsgAll({
-        type: "songAction",
-        action: "delete",
-      });
-    }
+  const handleDeleteSong = () => {
     if (allSongList.current.length === 1) {
       //if deleting the playing song
       setCurrentSongIsPlaying(false);
@@ -792,13 +774,13 @@ export default function Room() {
       } else if (type === "songAction") {
         const action = data.action;
         if (action === "start") {
-          handleStartSong(true);
+          handleStartSong();
         } else if (action === "stop") {
-          handleStopSong(true);
+          handleStopSong();
         } else if (action === "delete") {
-          handleDeleteSong(true);
+          handleDeleteSong();
         } else if (action === "move") {
-          handleMoveSong(data.prevIndex, data.currentIndex, true);
+          handleMoveSong(data.prevIndex, data.currentIndex);
         } else if (action == "upload") {
           Object.keys(peerConnections.current).map((userId) => {
             downloadSongStatus.current[userId] = false;
@@ -946,6 +928,7 @@ export default function Room() {
             handleAddSong={handleAddSong}
             handleDeleteSong={handleDeleteSong}
             handleMoveSong={handleMoveSong}
+            sendMsgAll={sendMsgAll}
           />
         </Box>
       </Box>
