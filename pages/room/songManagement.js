@@ -45,7 +45,7 @@ function SongListPanel(props) {
       sx={{ height: "85%", overflowY: "auto" }}
       style={{ testAlign: "flex-start" }}
     >
-      {props.allSongList.map((song, index) => (
+      {props.allSongList ? props.allSongList.map((song, index) => (
         <Song
           key={index}
           index={index}
