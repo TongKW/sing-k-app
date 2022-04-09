@@ -16,10 +16,7 @@ const UserAvatar = styled(Avatar, {
 export default function RoomMangementPanel(props) {
   return (
     <Box sx={{ height: "100%" }} style={{ borderRadius: "25px" }}>
-      <RoomId 
-        roomId={props.roomId}
-        leave={props.leave} 
-      />
+      <RoomId roomId={props.roomId} />
       <OtherUserList
         peerConnections={props.peerConnections}
         otherUsersList={props.otherUsersList}
@@ -31,6 +28,7 @@ export default function RoomMangementPanel(props) {
         isRoomCreator={props.isRoomCreator}
         currentRoomType={props.currentRoomType}
         handleMuteUnmute={props.handleMuteUnmute}
+        closeHandler={props.closeHandler}
       />
     </Box>
   );
@@ -42,23 +40,21 @@ function RoomId(props) {
       sx={{
         display: "flex",
         height: "5%",
-        fontSize: "30px",
+        fontSize: "3vmin",
         color: "#FFFFFB",
       }}
-      style={{ backgroundColor: "#376E6F", justifyContent: "center",}}
+      style={{ backgroundColor: "#376E6F" }}
     >
       <h1>Room ID: {props.roomId}</h1>
     </Box>
   );
 }
 
-
-
 function OtherUserList(props) {
   return (
     <div
       id="userlist"
-      className="scrollbar"
+      className="px-2 scrollbar"
       style={{
         background: "#323846",
         height: "90%",
@@ -72,36 +68,38 @@ function OtherUserList(props) {
         const otherIsMuted = props.otherUsersList[userId].isMuted;
         const isRoomCreator = userId === props.roomCreatorId;
         const currentRoomType = props.currentRoomType;
+        console.log(username, otherIsMuted);
 
         return (
-            <User
-              key={index}
-              peerConnections={props.peerConnections}
-              userId={userId}
-              username={username}
-              userAvatar={userAvatar}
-              otherIsMuted={otherIsMuted}
-              isRoomCreator={isRoomCreator}
-              currentRoomType={currentRoomType}
-            />
+          <User
+            key={index}
+            peerConnections={props.peerConnections}
+            userId={userId}
+            username={username}
+            userAvatar={userAvatar}
+            otherIsMuted={otherIsMuted}
+            isRoomCreator={isRoomCreator}
+            currentRoomType={currentRoomType}
+          />
         );
       }) : <div/>}
     </div>
   );
 }
 
-function User(props) {  
+function User(props) {
   useEffect(() => {
     Object.keys(props.peerConnections.current).map((userId) => {
-      if (!(props.peerConnections.current.hasOwnProperty(userId))) return;
-      if (!(props.peerConnections.current[userId].hasOwnProperty('audioStream'))) return;
+      if (!props.peerConnections.current.hasOwnProperty(userId)) return;
+      if (!props.peerConnections.current[userId].hasOwnProperty("audioStream"))
+        return;
       const audioElem = document.getElementById(`audio-${userId}`);
       if (props.peerConnections.current[userId].isMuted) {
         audioElem.srcObject = null;
       } else {
         audioElem.srcObject = props.peerConnections.current[userId].audioStream;
       }
-    })
+    });
   }, [props.peerConnections]);
   return (
     <Box
@@ -109,7 +107,7 @@ function User(props) {
         display: "flex",
         flexDirection: "row",
         justifyContent: "flex start",
-        padding: "5px"
+        padding: "5px",
       }}
     >
       <Box
@@ -118,7 +116,7 @@ function User(props) {
           flexDirection: "row",
           justifyContent: "flex-start",
           alignItems: "center",
-          width: "30%"
+          width: "30%",
         }}
       >
         <UserAvatar src={props.userAvatar} mx="auto" />
@@ -128,8 +126,8 @@ function User(props) {
           display: "flex",
           flexDirection: "row",
           alignItems: "center",
-          fontSize: "25px",
-          width: "60%"
+          fontSize: "3vmin",
+          width: "60%",
         }}
       >
         <h1>{props.username}</h1>
@@ -140,14 +138,10 @@ function User(props) {
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          width: "10%"
+          width: "10%",
         }}
       >
-        <OtherMutedIcon
-          otherIsMuted={props.otherIsMuted}
-          isRoomCreator={props.isRoomCreator}
-          currentRoomType={props.currentRoomType}
-        />
+        <OtherMutedIcon isMuted={props.otherIsMuted} />
       </Box>
       <audio autoPlay={true} className="hidden" id={`audio-${props.userId}`}>
         <source type="audio/ogg" />
@@ -157,35 +151,15 @@ function User(props) {
 }
 
 function OtherMutedIcon(props) {
-  if (props.currentRoomType === "streaming" && props.otherIsRoomCreator) {
-    if (props.otherIsMuted) {
-      return (
-        <Icon
-          icon="/images/mute-microphone.png"
-          alt="mute_icon"
-          length="50"
-        />
-      )
-    } else {
-      return (
-        <Icon icon="/images/others-microphone.png" alt="mic_icon" length="75" />
-      );
-    }
-  } else if (props.currentRoomType === "streaming" && !props.otherIsRoomCreator) {
-    return (<div>Nothing</div>);
-  } else if (props.currentRoomType === "private" && props.otherIsMuted) {
-    return (
-      <Icon
-        icon="/images/mute-microphone.png"
-        alt="mute_icon"
-        length="25"
-      />
-    );
-  } else {
-    return (
-      <Icon icon="/images/microphone.png" alt="mic_icon" length="25" />
-    );
-  }
+  return (
+    <>
+      {props.isMuted ? (
+        <Icon icon="/images/mute-microphone.png" alt="mute_icon" length="25" />
+      ) : (
+        <Icon icon="/images/microphone.png" alt="mic_icon" length="25" />
+      )}
+    </>
+  );
 }
 
 function RoomFunctionKeys(props) {
@@ -195,7 +169,7 @@ function RoomFunctionKeys(props) {
         background: "#323846",
         display: "flex",
         flexDirection: "row",
-        justifyContent: "center",
+        justifyContent: "space-around",
         height: "5%",
       }}
     >
@@ -205,41 +179,34 @@ function RoomFunctionKeys(props) {
         currentRoomType={props.currentRoomType}
         handleMuteUnmute={props.handleMuteUnmute}
       />
+      <Box sx={{ display: "flex" }}>
+        <Icon
+          onClick={props.closeHandler}
+          length="30"
+          icon="/images/leave_icon.png"
+          style={{ cursor: "pointer" }}
+        >
+          {" "}
+          Close{" "}
+        </Icon>
+      </Box>
     </Box>
   );
 }
 
 function Mute(props) {
-  if (props.currentRoomType === "streaming" && props.isRoomCreator) {
-    return (
-      <Icon
-        icon={props.isMuted ? "/images/mute-microphone.png" : "/images/microphone.png"}
-        alt={props.isMuted ? "mute_microphone" : "microphone"}
-        length="30"
-        onClick={props.handleMuteUnmute}
-        style={{ cursor: "pointer"}}
-      />
-    );
-  } else if (props.currentRoomType === "private") {
-    return (
-      <Icon
-        icon={props.isMuted ? "/images/mute-microphone.png" : "/images/microphone.png"}
-        alt={props.isMuted ? "mute_microphone" : "microphone"}
-        length="30"
-        onClick={props.handleMuteUnmute}
-        style={{ cursor: "pointer"}}
-      />
-    );
-  } else {
-    return <div className="flex">Nothing</div>;
-  }
+  const usableUser =
+    props.currentRoomType === "private" ||
+    (props.currentRoomType === "streaming" && props.isRoomCreator);
   return (
     <Icon
-      icon="/images/microphone.png"
-      alt="mute_icon"
-      length="25"
-      onClick={props.handleMuteUnmute}
-      style={{ cursor: "pointer" }}
+      icon={
+        props.isMuted ? "/images/mute-microphone.png" : "/images/microphone.png"
+      }
+      alt={props.isMuted ? "mute_microphone" : "microphone"}
+      length="30"
+      onClick={usableUser ? props.handleMuteUnmute : () => {}}
+      style={{ cursor: usableUser ? "pointer" : "not-allowed" }}
     />
   );
 }
