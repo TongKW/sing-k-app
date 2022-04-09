@@ -458,7 +458,11 @@ export default function Room() {
               // 2. createOffer
               // 3. setLocal
               if (!existingUsers.current.includes(newUserId)) {
-                await connectNewUser(newUserId, fromRTCoffer);
+                try {
+                  await connectNewUser(newUserId, fromRTCoffer);
+                } catch (error) {
+                  console.log("Error in connecting new user!");
+                }
 
                 await sleep(1000);
                 // Send user info to other users
