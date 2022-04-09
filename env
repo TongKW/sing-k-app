@@ -1,0 +1,4 @@
+MONGODB_SERVER=mongodb://admin:admin@alexauwork.com:30000
+FIREBASE_API_KEY=1dc17521-afcd-4ed8-acf2-c65b2f7425a6
+EMAIL_PW=odpwxhubllsjaqte
+NEXT_PUBLIC_HOST=https://sing-k-app.vercel.app
