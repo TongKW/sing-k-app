@@ -22,6 +22,7 @@ export default function SongManagementPanel(props) {
         isRoomCreator={props.isRoomCreator}
         handleMoveSong={props.handleMoveSong}
         sendMsgAll={props.sendMsgAll}
+        username={props.username}
       />
       <SongFunctionKeys
         handleStartSong={props.handleStartSong}
@@ -31,6 +32,7 @@ export default function SongManagementPanel(props) {
         isRoomCreator={props.isRoomCreator}
         currentRoomType={props.currentRoomType}
         sendMsgAll={props.sendMsgAll}
+        username={props.username}
       />
     </Box>
   );
@@ -81,6 +83,11 @@ function SongFunctionKeys(props) {
             type: "songAction",
             action: "start",
           });
+          props.sendMsgAll({
+            username: props.username,
+            type: "system",
+            message: `${props.username} has started the song.`,
+          });
         }}
         style={{ cursor: "pointer"}}
       />
@@ -93,6 +100,11 @@ function SongFunctionKeys(props) {
           props.sendMsgAll({
             type: "songAction",
             action: "stop",
+          });
+          props.sendMsgAll({
+            username: props.username,
+            type: "system",
+            message: `${props.username} has stopped the song.`,
           });
         }}
         style={{ cursor: "pointer" }}
@@ -123,6 +135,11 @@ function SongFunctionKeys(props) {
           props.sendMsgAll({
             type: "songAction",
             action: "delete",
+          });
+          props.sendMsgAll({
+            username: props.username,
+            type: "system",
+            message: `${props.username} has deleted the song.`,
           });
         }}
         style={{ cursor: "pointer" }}
@@ -199,7 +216,11 @@ function Song(props) {
                   prevIndex: props.index,
                   currentIndex: props.index - 1
                 });
-
+                props.sendMsgAll({
+                  username: props.username,
+                  type: "system",
+                  message: `${props.username} has moved the song.`,
+                });
               }}
               style={{ cursor: "pointer" }}
             />
