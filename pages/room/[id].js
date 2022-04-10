@@ -852,6 +852,10 @@ export default function Room() {
             type: "songAction",
             action: "finish",
           });
+          sendMsgAll({
+            type: "songAction",
+            action: "start",
+          });
           for (const userId in downloadSongStatus.current) {
             delete downloadSongStatus.current[userId];
           }
@@ -929,6 +933,7 @@ export default function Room() {
             handleDeleteSong={handleDeleteSong}
             handleMoveSong={handleMoveSong}
             sendMsgAll={sendMsgAll}
+            username={username}
           />
         </Box>
       </Box>
