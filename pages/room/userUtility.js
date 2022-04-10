@@ -35,6 +35,7 @@ export default function UserUtilityPanel(props) {
 }
 
 function AudioPane(props) {
+  const volumeScale = (value) => 2 * value;
   return (
     <Box
       className="bg-gray-700"
@@ -84,9 +85,12 @@ function AudioPane(props) {
           }}
         >
           <Slider
+            scale={volumeScale}
             valueLabelDisplay="auto"
             onChange={props.handleVolume}
             value={props.volume}
+            min={0}
+            max={50}
             sx={{
               width: "90%",
               color: "#CCCCCC",
@@ -138,7 +142,6 @@ function MessageArea(props) {
         flexDirection: "column",
       }}
     >
-
       {props.commentList ? (
         props.commentList.map((comment, index) => {
           if (comment.isSystem)
