@@ -118,7 +118,7 @@ const UserAvatar = styled(Avatar, {
   src: src,
 }));
 
-function CreateRoomButton(props) {
+function CreateRoomButton() {
   const [createRoomOpen, setCreateRoomOpen] = useState(false);
   const [checkMicOpen, setCheckMicOpen] = useState(false);
   const [creatorName, setCreatorName] = useState();
@@ -282,182 +282,7 @@ function PrivateRoomButton(props) {
   );
 }
 
-// function JoinRoomButton() {
-//   const [enterRoomIdOpen, setEnterRoomIdOpen] = useState(false);
-//   const [roomId, setRoomId] = useState();
-//   const [roomIdError, setRoomIdError] = useState();
-//   const [joinRoomUtilityOpen, setJoinRoomUtilityOpen] = useState(false);
-
-//   const db = getFirestore();
-
-//   const handleEnterRoomIdOpen = () => setEnterRoomIdOpen(true);
-
-//   const handleEnterRoomIdClose = () => setEnterRoomIdOpen(false);
-
-//   const handleJoinRoomUtilityOpen = () => setJoinRoomUtilityOpen(true);
-
-//   const handleJoinRoomUtilityClose = () => setJoinRoomUtilityOpen(false);
-
-//   const validateRoomId = (roomId) => {
-//     const findRoomIdInFirebase = async () => await queryFireBase(roomId);
-//     findRoomIdInFirebase().then((result) => {
-//       if (result) {
-//         setRoomId(roomId);
-//         handleEnterRoomIdClose();
-//         handleJoinRoomUtilityOpen();
-//       } else setRoomIdError("Room ID not found");
-//     });
-//   };
-
-//   const queryFireBase = async (roomId) => {
-//     const roomsSnapshot = await getDocs(collection(db, "rooms"));
-//     const roomIdExists = roomsSnapshot.docs
-//       .map((doc) => doc.id)
-//       .some((roomsSnapshotId) => roomsSnapshotId === roomId);
-//     return roomIdExists;
-//   };
-
-//   return (
-//     <>
-//       <button
-//         className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 mx-10 text-xs rounded focus:outline-none focus:shadow-outline"
-//         type="button"
-//         onClick={handleEnterRoomIdOpen}
-//       >
-//         <font size="3">Join room</font>
-//       </button>
-//       <EnterRoomIdDialog
-//         open={enterRoomIdOpen}
-//         close={handleEnterRoomIdClose}
-//         warning={roomIdError}
-//         validate={validateRoomId}
-//       />
-//       {joinRoomUtilityOpen && (
-//         <JoinRoomUtilityDialogs
-//           roomId={roomId}
-//           close={handleJoinRoomUtilityClose}
-//         />
-//       )}
-//     </>
-//   );
-// }
-
-// function JoinRoomUtilityDialogs(props) {
-//   const [checkMicOpen, setCheckMicOpen] = useState(false);
-//   const [waitingOpen, setWaitingOpen] = useState(false);
-//   const [canEnterRoom, setCanEnterRoom] = useState(false);
-//   const [queuePosition, setQueuePosition] = useState(null);
-//   const [userId, setUserId] = useState();
-//   const [userIdError, setUserIdError] = useState(false);
-//   const [localStream, setLocalStream] = useState(false);
-
-//   const db = getFirestore();
-//   const router = useRouter();
-
-//   useEffect(() => {
-//     console.log("open check mic!");
-//     handleCheckMicOpen();
-//   }, []);
-
-//   const handleCheckMicOpen = () => setCheckMicOpen(true);
-
-//   const handleCheckMicClose = () => setCheckMicOpen(false);
-
-//   const handleWaitingOpen = async () => {
-//     const queuePositionResult = await appendUserIdToQueue();
-//     if (queuePositionResult !== null) {
-//       setQueuePosition(queuePositionResult);
-//       setWaitingOpen(true);
-//     }
-//   };
-
-//   const handleWaitingClose = () => setWaitingOpen(false);
-
-//   const handleLeaveQueueManually = async () => {
-//     await removeUserQueue(db, userId, props.roomId);
-//     handleWaitingClose();
-//     props.close();
-//   };
-
-//   const handleGetLocalStream = () => {
-//     console.log("checkMic close!");
-//     handleCheckMicClose();
-//     handleWaitingOpen();
-//   };
-
-//   useEffect(() => {
-//     if (canEnterRoom || userIdError) {
-//       handleCheckMicClose();
-//       props.close();
-//       if (canEnterRoom) {
-//         unsubscribeFirestore();
-//         localStorage.setItem("roomId", props.roomId);
-//         // window.open(`/room/${props.roomId}`);
-//         router.push(`/room/${props.roomId}`);
-//       } else {
-//         router.push("/login");
-//       }
-//     }
-//     function unsubscribeFirestore() {
-//       const db = getFirestore();
-//       const roomDoc = doc(db, `rooms/${props.roomId}`);
-//       onSnapshot(roomDoc, (doc) => {});
-//     }
-//   }, [canEnterRoom, router, userIdError]);
-
-//   // Firestore listener for queue change
-//   useEffect(() => {
-//     (async () => {
-//       if (!props.roomId) return;
-//       const userId = await getUserId();
-//       setUserId(userId);
-//       const roomDoc = doc(db, `rooms/${props.roomId}`);
-//       onSnapshot(roomDoc, (doc) => {
-//         if (!doc.data()) return;
-//         console.log("snapshot changed:");
-//         console.log(doc.data());
-//         const newPosition = doc.data().queue.indexOf(userId);
-//         if (newPosition == 0) {
-//           setCanEnterRoom(true);
-//         } else {
-//           setQueuePosition(newPosition);
-//         }
-//       });
-//     })();
-//   }, []);
-
-//   const appendUserIdToQueue = async () => {
-//     const userId = await getUserId();
-//     if (userId !== null) {
-//       const roomDoc = doc(db, "rooms", props.roomId);
-//       const roomSnapshot = await getDoc(roomDoc);
-//       const newQueue = [...roomSnapshot.data().queue, userId];
-//       await updateDoc(roomDoc, { queue: newQueue });
-//       return newQueue.indexOf(userId);
-//     } else {
-//       setUserIdError(true);
-//       return null;
-//     }
-//   };
-
-//   return (
-//     <>
-//       <CheckMicDialog
-//         open={checkMicOpen}
-//         close={handleGetLocalStream}
-//         setLocalStream={setLocalStream}
-//       />
-//       <WaitingDialog
-//         roomId={props.roomId}
-//         open={waitingOpen}
-//         position={queuePosition}
-//         close={handleLeaveQueueManually}
-//       />
-//     </>
-//   );
-// }
-
-function JoinRoomButton(props) {
+function JoinRoomButton() {
   const [enterRoomIdOpen, setEnterRoomIdOpen] = useState(false);
   const [roomId, setRoomId] = useState();
   const [roomIdError, setRoomIdError] = useState();
@@ -634,6 +459,24 @@ function JoinRoomUtilityDialog(props) {
 
 function EnterRoomIdDialog(props) {
   const [roomId, setRoomId] = useState();
+
+  const handleClick = async () => {
+    props.validate(roomId.trim());
+  };
+
+  const handleKeyPress = async (event) => {
+    if (event.key == "Enter") {
+      await handleClick();
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener("keyup", handleKeyPress);
+    return () => {
+      document.removeEventListener("keyup", handleKeyPress);
+    };
+  }, []);
+
   return (
     <Dialog open={props.open}>
       <Box
@@ -660,7 +503,7 @@ function EnterRoomIdDialog(props) {
             <button
               className="bg-indigo-700 hover:bg-indigo-800 text-white py-2 px-4 text-xs rounded focus:outline-none focus:shadow-outline"
               type="button"
-              onClick={() => props.validate(roomId.trim())}
+              onClick={handleClick}
             >
               Confirm
             </button>

@@ -5,6 +5,14 @@ import { FormInputBlock } from "../component/elements/form-input";
 import Button from "../component/elements/button";
 import { Loading } from "notiflix/build/notiflix-loading-aio";
 import pwValidateSetError from "../utils/validate-password-format";
+import {
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
+} from "@mui/material";
 
 export default function ChangePassword() {
   return (
@@ -24,9 +32,22 @@ function ChangePasswordPage() {
   const [oldPwError, setOldPwError] = useState();
   const [newPwError, setNewPwError] = useState();
   const [dupError, setDupError] = useState();
-  const [changedPwStatus, setChangedPwStatus] = useState(false);
-  if (!changedPwStatus) {
-    return (
+  const [changedPwSuccessOpen, setChangedPwSuccessOpen] = useState(false);
+
+  const handleKeyPress = async (event) => {
+    if (event.key == "Enter") {
+      await validate();
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener("keyup", handleKeyPress);
+    return () => {
+      document.removeEventListener("keyup", handleKeyPress);
+    };
+  }, []);
+  return (
+    <>
       <div className="grid grid-cols-12 gap-8" style={{ height: "100%" }}>
         <div className="flex flex-col justify-center col-start-4 col-span-6">
           <form className="flex flex-col space-y-4">
@@ -51,7 +72,14 @@ function ChangePasswordPage() {
               onChange={setConfirmedNewPw}
               warning={dupError}
             />
-            <div className="flex items-center justify-between">
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                width: "100%",
+              }}
+            >
               <div onClick={validate}>
                 <Button text="Confirm" />
               </div>
@@ -59,14 +87,13 @@ function ChangePasswordPage() {
           </form>
         </div>
       </div>
-    );
-  } else {
-    return (
-      <>
-        <ChangedPasswordPage />
-      </>
-    );
-  }
+      <SuccessDialog
+        open={changedPwSuccessOpen}
+        close={() => setChangedPwSuccessOpen(false)}
+      />
+    </>
+  );
+
   async function checkUserOldPw(oldPw) {
     const username = localStorage.getItem("username");
     const requestBody = { username: username, password: oldPw };
@@ -178,15 +205,37 @@ function ChangePasswordPage() {
       if (!uploadedPw.success) {
         alert("Unknown error occurs");
         return;
-      } else setChangedPwStatus(true);
+      } else setChangedPwSuccessOpen(true);
     }
   }
 }
 
-function ChangedPasswordPage() {
+function SuccessDialog(props) {
   return (
-    <div className="flex flex-row justify-center">
-      <div>Successfully changed password!</div>
-    </div>
+    <Dialog open={props.open}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
+        }}
+      >
+        <DialogTitle>Success</DialogTitle>
+      </Box>
+      <DialogContent>
+        <DialogContentText>Changed Password Successfully!</DialogContentText>
+        <DialogActions>
+          <Box sx={{ display: "flex", flexDirection: "row-reverse" }}>
+            <button
+              className="bg-indigo-700 hover:bg-indigo-800 text-white py-2 px-4 text-xs rounded focus:outline-none focus:shadow-outline"
+              type="button"
+              onClick={props.close}
+            >
+              Ok
+            </button>
+          </Box>
+        </DialogActions>
+      </DialogContent>
+    </Dialog>
   );
 }
