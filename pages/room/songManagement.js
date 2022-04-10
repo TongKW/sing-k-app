@@ -25,6 +25,7 @@ export default function SongManagementPanel(props) {
         currentRoomType={props.currentRoomType}
         isRoomCreator={props.isRoomCreator}
         handleMoveSong={props.handleMoveSong}
+        sendMsgAll={props.sendMsgAll}
       />
       <SongFunctionKeys
         handleStartSong={props.handleStartSong}
@@ -33,6 +34,7 @@ export default function SongManagementPanel(props) {
         handleDeleteSong={props.handleDeleteSong}
         isRoomCreator={props.isRoomCreator}
         currentRoomType={props.currentRoomType}
+        sendMsgAll={props.sendMsgAll}
       />
     </Box>
   );
@@ -53,6 +55,7 @@ function SongListPanel(props) {
           currentRoomType={props.currentRoomType}
           isRoomCreator={props.isRoomCreator}
           handleMoveSong={props.handleMoveSong}
+          sendMsgAll={props.sendMsgAll}
         />
       )) : <div/>}
     </Box>
@@ -76,14 +79,26 @@ function SongFunctionKeys(props) {
         icon="/images/play.png"
         alt="play"
         length="25"
-        onClick={props.handleStartSong}
+        onClick={() => {
+          props.handleStartSong();
+          props.sendMsgAll({
+            type: "songAction",
+            action: "start",
+          });
+        }}
         style={{ cursor: "pointer"}}
       />
       <Icon
         icon="/images/pause.png"
         alt="pause"
         length="25"
-        onClick={props.handleStopSong}
+        onClick={() => {
+          props.handleStopSong();
+          props.sendMsgAll({
+            type: "songAction",
+            action: "stop",
+          });
+        }}
         style={{ cursor: "pointer" }}
       />
       <label htmlFor="upload-song">
@@ -107,7 +122,13 @@ function SongFunctionKeys(props) {
         icon="/images/minus.png"
         alt="minus"
         length="25"
-        onClick={props.handleDeleteSong}
+        onClick={() => {
+          props.handleDeleteSong();
+          props.sendMsgAll({
+            type: "songAction",
+            action: "delete",
+          });
+        }}
         style={{ cursor: "pointer" }}
       />
     </Box>
@@ -174,7 +195,16 @@ function Song(props) {
               icon="/images/scroll-up.png"
               alt="move_up"
               length="20"
-              onClick={() => props.handleMoveSong(props.index, props.index - 1)}
+              onClick={() => {
+                props.handleMoveSong(props.index, props.index - 1);
+                props.sendMsgAll({
+                  type: "songAction",
+                  action: "move",
+                  prevIndex: props.index,
+                  currentIndex: props.index - 1
+                });
+
+              }}
               style={{ cursor: "pointer" }}
             />
 
@@ -182,7 +212,15 @@ function Song(props) {
               icon="/images/scroll-down.png"
               alt="move_down"
               length="20"
-              onClick={() => props.handleMoveSong(props.index, props.index + 1)}
+              onClick={() => {
+                props.handleMoveSong(props.index, props.index + 1);
+                props.sendMsgAll({
+                  type: "songAction",
+                  action: "move",
+                  prevIndex: props.index,
+                  currentIndex: props.index + 1
+                });
+              }}
               style={{ cursor: "pointer" }}
             />
           </>

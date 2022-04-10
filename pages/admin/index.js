@@ -207,21 +207,20 @@ export default function Admin() {
             >
               <Box sx={{ width: "100%" }}>
                 <AppBar
-                  style={{
-                    background: "#bbb",
+                  sx={{
+                    background: "#444",
                     display: "flex",
                     flexDirection: "row",
-                    justifyContent: "space-around",
-                    borderRadius: "5px",
+                    justifyContent: "space-between",
                   }}
                   position="sticky"
                 >
                   <Toolbar
-                    style={{
+                    sx={{
                       display: "flex",
                       flexDirection: "row",
-                      justifyContent: "space-around",
-                      width: "50vw",
+                      justifyContent: "center",
+                      width: "100%",
                     }}
                   >
                     <Autocomplete
@@ -231,23 +230,25 @@ export default function Admin() {
                       onChange={handleSearchValueChange}
                       inputValue={searchBarInputValue}
                       onInputChange={handleSearchInputValueChange}
-                      sx={{ width: "30vw" }}
+                      sx={{ width: {xs: "50vw", md: "30vw"} }}
+                      size="small"
                       renderInput={(params) => {
                         return (
                           <TextField
                             {...params}
-                            sx={{ backgroundColor: "#fff" }}
+                            sx={{ backgroundColor: "#fff", borderRadius: "5px" }}
                           />
                         );
                       }}
                     />
-                    <FormControl>
+                    <Box pl={2} />
+                    <FormControl size="small">
                       <Select
                         labelId="demo-simple-select-label"
                         id="demo-simple-select"
-                        style={{
+                        sx={{
                           background: "#fff",
-                          width: "10vw",
+                          width: {xs: "30vw", md: "15vw"},
                         }}
                         value={searchFieldOptionName}
                         onChange={handleSearchFieldChange}
@@ -262,7 +263,7 @@ export default function Admin() {
 
               <TableContainer
                 component={Paper}
-                sx={{ width: { xs: "80%", sm: "70%" }, margin: "auto", mt: 5 }}
+                sx={{ width: { xs: "80%", sm: "70%" }, margin: "auto", my: 5 }}
               >
                 <Table>
                   <TableHead>
@@ -275,12 +276,10 @@ export default function Admin() {
                           style={{
                             display: "flex",
                             flexDirection: "row",
-                            justifyContent: "space-between",
                             alignItems: "center",
-                            width: "80%",
                           }}
                         >
-                          Username
+                          Username <Box pl={1} />
                           {usernameDescending ? (
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -314,12 +313,11 @@ export default function Admin() {
                           style={{
                             display: "flex",
                             flexDirection: "row",
-                            justifyContent: "space-between",
                             alignItems: "center",
-                            width: "60%",
                           }}
                         >
                           Email
+                          <Box pl={1} />
                           {emailDescending ? (
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
