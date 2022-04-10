@@ -6,6 +6,7 @@ export default function logout() {
   localStorage.removeItem("username");
   localStorage.removeItem("image");
   // Refresh page
-  window.location.reload();
-  window.location.assign("/");
+  // window.location.reload();
+  // window.location.assign("/");
+  window.location.href = "/";
 }

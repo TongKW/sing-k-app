@@ -13,10 +13,14 @@ import {
   LinearProgress,
   Typography,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import AddAPhotoIcon from "@mui/icons-material/AddAPhoto";
-import { LocalConvenienceStoreOutlined } from "@mui/icons-material";
 import { checkFileSize, processFile } from "../../utils/fileUtils";
 
 const Input = styled("input")({
@@ -58,11 +62,22 @@ export default function Profile() {
   const [avatar, setAvatar] = useState();
   const [usernameError, setUsernameError] = useState();
   const [emailError, setEmailError] = useState();
-  const [updatedProfileStatus, setUpdatedProfileStatus] = useState(false);
+  const [updatedProfileOpen, setUpdatedProfileOpen] = useState(false);
   const userExp = 10;
   const ExpToNextLevel = 100;
   const bar = (Number(userExp) / Number(ExpToNextLevel)) * 100;
+  const handleKeyPress = async (event) => {
+    if (event.key == "Enter") {
+      await updateProfile();
+    }
+  };
 
+  useEffect(() => {
+    document.addEventListener("keyup", handleKeyPress);
+    return () => {
+      document.removeEventListener("keyup", handleKeyPress);
+    };
+  }, []);
   // Get the token stored in local storage
   // Send decrypt request to server
   // Get response of user info and display
@@ -158,7 +173,14 @@ export default function Profile() {
                   warning={emailError}
                   readOnly={true}
                 />
-                <div className="flex items-center justify-between">
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    width: "100%",
+                  }}
+                >
                   <div onClick={updateProfile}>
                     <Button text="Save" />
                   </div>
@@ -168,12 +190,15 @@ export default function Profile() {
           </div>
         </div>
       </div>
+      <SuccessDialog
+        open={updatedProfileOpen}
+        close={() => setUpdatedProfileOpen(false)}
+      />
     </HomePage>
   );
 
   function avatarTooLarge(base64) {
     const fileSize = checkFileSize(base64);
-    console.log(fileSize);
     if (fileSize > 360000) return true;
     return false;
   }
@@ -184,7 +209,10 @@ export default function Profile() {
     if (!fileData.success) {
       alert(fileData.content);
       return;
-    } else if (avatarTooLarge(fileData.content)) return;
+    } else if (avatarTooLarge(fileData.content)) {
+      alert("The avatar is too large!");
+      return;
+    }
     console.log(fileData.content);
     setAvatar(fileData.content);
   }
@@ -335,8 +363,8 @@ export default function Profile() {
           alert("Unknown error occurs!");
           return;
         } else localStorage.setItem("token", newToken);
-        setUpdatedProfileStatus(true);
-        alert("Profile is successfully update.");
+        setUpdatedProfileOpen(true);
+        // alert("Profile is successfully update.");
         return;
       }
     } catch (error) {
@@ -366,5 +394,35 @@ function UploadImageButton(props) {
         </ProfileIcon>
       </ProfileIconButton>
     </label>
+  );
+}
+
+function SuccessDialog(props) {
+  return (
+    <Dialog open={props.open}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
+        }}
+      >
+        <DialogTitle>Success</DialogTitle>
+      </Box>
+      <DialogContent>
+        <DialogContentText>Updated Profile Successfully!</DialogContentText>
+        <DialogActions>
+          <Box sx={{ display: "flex", flexDirection: "row-reverse" }}>
+            <button
+              className="bg-indigo-700 hover:bg-indigo-800 text-white py-2 px-4 text-xs rounded focus:outline-none focus:shadow-outline"
+              type="button"
+              onClick={props.close}
+            >
+              Ok
+            </button>
+          </Box>
+        </DialogActions>
+      </DialogContent>
+    </Dialog>
   );
 }

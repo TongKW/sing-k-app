@@ -76,7 +76,7 @@ export default function Room() {
 
   const [currentRoomType, setCurrentRoomType] = useState();
   const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(50);
+  const [volume, setVolume] = useState(25);
 
   const [currentSong, setCurrentSong] = useState(null);
   const [currentSongIsPlaying, setCurrentSongIsPlaying] = useState(false);
@@ -987,8 +987,8 @@ export default function Room() {
     localStream.current = null;
     pendingICEcandidates.current = {};
 
+    router.push("/");
     location.href = "/";
-    // router.push("/");
   }
 
   async function addICEcandidate(newUserId, ICEcandidate) {
