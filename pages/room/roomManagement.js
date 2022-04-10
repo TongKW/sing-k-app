@@ -1,15 +1,15 @@
 import { React, useEffect } from "react";
 import Icon from "../../component/elements/Icon";
 import { styled } from "@mui/material/styles";
-import { Box, Avatar } from "@mui/material";
+import { Box, Avatar, Typography } from "@mui/material";
 import Button from "../../component/elements/button";
 
 const UserAvatar = styled(Avatar, {
   shouldForwardProp: (prop) => ["src"].includes(prop),
 })(({ src, theme }) => ({
-  width: theme.spacing(10),
-  height: theme.spacing(10),
-  border: `3px solid ${theme.palette.background.paper}`,
+  width: theme.spacing(5),
+  height: theme.spacing(5),
+  border: `2px solid ${theme.palette.background.paper}`,
   src: src,
 }));
 
@@ -39,13 +39,12 @@ function RoomId(props) {
     <Box
       sx={{
         display: "flex",
-        height: "5%",
-        fontSize: "3vmin",
         color: "#FFFFFB",
+        pl: 1,
+        backgroundColor: "#376E6F",
       }}
-      style={{ backgroundColor: "#376E6F" }}
     >
-      <h1>Room ID: {props.roomId}</h1>
+      <Typography sx={{fontSize: {xs: "12px", md: "14px"}}}>Room ID: {props.roomId}</Typography>
     </Box>
   );
 }
@@ -106,41 +105,25 @@ function User(props) {
       sx={{
         display: "flex",
         flexDirection: "row",
-        justifyContent: "flex start",
-        padding: "5px",
+        alignItems: "center",
+        justifyContent: "space-between",
+        pl: 1,
+        my: 1,
       }}
     >
       <Box
         sx={{
           display: "flex",
           flexDirection: "row",
-          justifyContent: "flex-start",
           alignItems: "center",
-          width: "30%",
         }}
       >
-        <UserAvatar src={props.userAvatar} mx="auto" />
-      </Box>
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          fontSize: "3vmin",
-          width: "60%",
-        }}
-      >
-        <h1>{props.username}</h1>
+        <UserAvatar src={props.userAvatar} />
+        <Box pl={1} />
+        <Typography sx={{fontSize: {xs: "12px", md: "15px"}}}>{props.username}</Typography>
       </Box>
 
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          width: "10%",
-        }}
-      >
+      <Box mr={1} pt={1}>
         <OtherMutedIcon isMuted={props.otherIsMuted} />
       </Box>
       <audio autoPlay={true} className="hidden" id={`audio-${props.userId}`}>

@@ -284,19 +284,19 @@ function InputArea(props) {
   return (
     <Box
       sx={{
-        height: "15%",
         background: "#376E6F",
         display: "flex",
         flexDirection: "row",
         justifyContent: "center",
         borderRadius: "10px",
         margin: "0px 5px 0px 5px",
+        padding: 1,
       }}
     >
       <Box
         sx={{
           height: "100%",
-          width: "80%",
+          width: "100%",
           display: "flex",
           flexDirection: "row",
           justifyContent: "space-around",
@@ -310,6 +310,7 @@ function InputArea(props) {
           onClick={() => {
             setModalOpen(!modalOpen);
           }}
+          style={{ cursor: "pointer" }}
         />
         <Box
           ref={props.emojiRef}

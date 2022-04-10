@@ -886,7 +886,7 @@ export default function Room() {
       </Dialog>
       <Box
         className="hide-scrollbar"
-        style={{
+        sx={{
           display: "flex",
           flexDirection: "row",
           width: "100%",
@@ -907,7 +907,7 @@ export default function Room() {
             handleMuteUnmute={handleMuteUnmute}
           />
         </Box>
-        <Box sx={{ width: "54%" }} style={{ background: "#1C1C1C" }}>
+        <Box sx={{ width: "54%", background: "#1C1C1C" }}>
           <UserUtilityPanel
             isMuted={isMuted}
             volume={volume}
@@ -918,7 +918,7 @@ export default function Room() {
             handleAddComment={handleAddComment}
           />
         </Box>
-        <Box sx={{ width: "23%" }} style={{ backgroundColor: "#1C1C1C" }}>
+        <Box sx={{ width: "23%", backgroundColor: "#1C1C1C" }}>
           <SongManagementPanel
             allSongList={allSongList.current}
             currentRoomType={currentRoomType}

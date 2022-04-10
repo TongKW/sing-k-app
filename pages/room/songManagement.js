@@ -1,5 +1,5 @@
 import { React, useState } from "react";
-import { Box } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import Icon from "../../component/elements/Icon";
 import EllipsisText from "react-ellipsis-text";
 import { Input, Button } from "@mui/material";
@@ -10,15 +10,11 @@ export default function SongManagementPanel(props) {
       <Box
         sx={{
           display: "flex",
-          height: "5%",
-          fontSize: "3vmin",
-        }}
-        style={{
           backgroundColor: "#376E6F",
           justifyContent: "center",
         }}
       >
-        <h1>Song List</h1>
+        <Typography sx={{fontSize: {xs: "12px", md: "14px"}}}>Song List</Typography>
       </Box>
       <SongListPanel
         allSongList={props.allSongList}
