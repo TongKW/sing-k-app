@@ -273,21 +273,15 @@ export default function Room() {
 
   // Add listener when user is about to close the page or refresh
   useEffect(() => {
-    window.addEventListener("popstate", () => {
-      console.log("called popstate!");
-      closeHandler();
-    });
+    window.addEventListener("popstate", closeHandler);
+    window.addEventListener("hashchange", closeHandler);
     window.addEventListener("beforeunload", closeHandler);
     return () => {
-      console.log("_userId: ", _userId);
-      console.log("_roomCreatorId: ", _roomCreatorId);
-      window.removeEventListener("popstate", () => {
-        console.log("called popstate!");
-        closeHandler();
-      });
+      window.removeEventListener("popstate", closeHandler);
+      window.removeEventListener("hashchange", closeHandler);
       window.removeEventListener("beforeunload", closeHandler);
     };
-  }, []);
+  });
 
   // Retrieve the userId of the room creator
   // Retrieve current room type
