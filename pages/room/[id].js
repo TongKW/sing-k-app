@@ -889,7 +889,7 @@ export default function Room() {
           flexDirection: "row",
           width: "100%",
           height: "100vh",
-          background: "#434343",
+          background: "#323846",
         }}
       >
         <Box sx={{ width: "23%" }}>
