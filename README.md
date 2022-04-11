@@ -16,13 +16,10 @@ Next, you can create a streaming room or a private room by pressing the correspo
 
 You can also join a room by pressing "join room" with a valid room ID from another user.
 
-Straming room is for user to share/enjoy the singing of other unknown users.
+- Straming room is for user to share/enjoy the singing of other unknown users.
+- Private room is for user to sing and chat privately with friends
 
-Private room is for user to sing and chat privately with friends
-
-Other than that, username and avatar can be set under "User Profile"
-
-Password can be changed under "Change Password"
+Other than that, username and avatar can be set under "User Profile". Password can be changed under "Change Password"
 
 ## For Developer
 
