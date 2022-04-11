@@ -37,7 +37,7 @@ export default function Room() {
   // Routing parameter
   const router = useRouter();
   const roomId = router.query.id;
-  const FILE_LIMIT = 10000000;
+  const FILE_LIMIT = 10485760; // 10MB
 
   let _userId = null;
   let _roomCreatorId = null;
@@ -185,10 +185,6 @@ export default function Room() {
   const handleFileTooLargeClose = () => setFileTooLargeOpen(false);
 
   const handleDataFullClose = () => setDataChannelFullOpen(false);
-
-  const handleEcho = (event) => {
-    setEcho(event.target.value);
-  };
 
   const handleVolume = (event) => {
     setVolume(event.target.value);
