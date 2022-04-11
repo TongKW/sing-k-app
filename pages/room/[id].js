@@ -73,6 +73,7 @@ export default function Room() {
   const [avatar, setAvatar] = useState();
   const [userId, setUserId] = useState();
   const [roomCreatorId, setRoomCreatorId] = useState();
+  const [roomCreatorLeft, setRoomCreatorLeft] = useState(false);
 
   const [currentRoomType, setCurrentRoomType] = useState();
   const [isMuted, setIsMuted] = useState(false);
@@ -307,7 +308,7 @@ export default function Room() {
       localStorage.setItem("_creatorId", creatorId);
     }
     setCurrentRoomType(localStorage.getItem("_roomType"));
-  }, [roomId]);
+  }, [roomId, userId]);
 
   // Initialize audio stream and WebRTC
   // Get peer WebRTC info and connect
@@ -495,6 +496,11 @@ export default function Room() {
           // Update leaving message
           console.log(`Left: ${leftUserId}`);
           console.log(peerConnections.current);
+
+          if (leftUserId === roomCreatorId) {
+            setRoomCreatorLeft(true);
+          }
+
           commentList.current.push({
             username: peerConnections.current[leftUserId].username,
             time: Date(),
@@ -876,6 +882,12 @@ export default function Room() {
       )}
       <Dialog open={!fromLobby}>
         <DialogTitle>Please join the room from Lobby.</DialogTitle>
+        <DialogContent>
+          <Button text="Close" onClick={closeHandler} />
+        </DialogContent>
+      </Dialog>
+      <Dialog open={roomCreatorLeft}>
+        <DialogTitle>Room Creator has closed the room.</DialogTitle>
         <DialogContent>
           <Button text="Close" onClick={closeHandler} />
         </DialogContent>
