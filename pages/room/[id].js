@@ -910,7 +910,6 @@ export default function Room() {
             isMuted={isMuted}
             volume={volume}
             emojiRef={emojiRef}
-            handleEcho={handleEcho}
             handleVolume={handleVolume}
             commentList={commentList.current}
             handleAddComment={handleAddComment}
