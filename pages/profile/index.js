@@ -10,8 +10,6 @@ import {
   Box,
   Badge,
   Avatar,
-  LinearProgress,
-  Typography,
   IconButton,
   Dialog,
   DialogTitle,
@@ -47,10 +45,6 @@ const UserAvatar = styled(Avatar, {
   src: src,
 }));
 
-const StyledLinearProgress = styled(LinearProgress)(({ theme }) => ({
-  width: theme.spacing(19),
-}));
-
 export default function Profile() {
   const [userId, setUserId] = useState();
   const [oldUsername, setOldUsername] = useState();
@@ -63,9 +57,6 @@ export default function Profile() {
   const [usernameError, setUsernameError] = useState();
   const [emailError, setEmailError] = useState();
   const [updatedProfileOpen, setUpdatedProfileOpen] = useState(false);
-  const userExp = 10;
-  const ExpToNextLevel = 100;
-  const bar = (Number(userExp) / Number(ExpToNextLevel)) * 100;
   const handleKeyPress = async (event) => {
     if (event.key == "Enter") {
       await updateProfile();
@@ -144,14 +135,6 @@ export default function Profile() {
                       <UserAvatar src={avatar} mx="auto" />
                     </Badge>
                   </center>
-                </Box>
-                <Box sx={{ mt: { xs: 1, md: 2 } }}>
-                  <StyledLinearProgress variant="determinate" value={bar} />
-                  <Typography variant="subtitle2" color="white">
-                    <Box
-                      sx={{ fontSize: 10, mr: "100%" }}
-                    >{`${userExp}/${ExpToNextLevel} `}</Box>
-                  </Typography>
                 </Box>
               </Box>
             </center>
