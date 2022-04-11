@@ -213,15 +213,7 @@ export default function Room() {
     });
   };
 
-  function handleMoveSong(prevIndex, currentIndex, fromOther = false) {
-    if (!fromOther) {
-      sendMsgAll({
-        type: "songAction",
-        action: "move",
-        prevIndex: prevIndex,
-        currentIndex: currentIndex,
-      });
-    }
+  function handleMoveSong(prevIndex, currentIndex) {
     //swap the two elements inside a list based on prevIndex and currentIndex
     if (prevIndex === 0 || currentIndex === 0) {
       if (allSongList.current.length !== 1) {
