@@ -77,7 +77,7 @@ export default function Profile() {
     return () => {
       document.removeEventListener("keyup", handleKeyPress);
     };
-  }, []);
+  });
   // Get the token stored in local storage
   // Send decrypt request to server
   // Get response of user info and display

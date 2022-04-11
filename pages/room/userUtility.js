@@ -278,8 +278,8 @@ function InputArea(props) {
     }
   }
   useEffect(() => {
-    window.addEventListener("mouseup", handleRemoveModal);
-    return () => window.removeEventListener("mouseup", handleRemoveModal);
+    document.addEventListener("mouseup", handleRemoveModal);
+    return () => document.removeEventListener("mouseup", handleRemoveModal);
   });
   return (
     <Box

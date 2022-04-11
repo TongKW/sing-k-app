@@ -45,7 +45,7 @@ function ChangePasswordPage() {
     return () => {
       document.removeEventListener("keyup", handleKeyPress);
     };
-  }, []);
+  });
   return (
     <>
       <div className="grid grid-cols-12 gap-8" style={{ height: "100%" }}>
