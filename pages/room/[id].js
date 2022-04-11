@@ -73,6 +73,7 @@ export default function Room() {
   const [avatar, setAvatar] = useState();
   const [userId, setUserId] = useState();
   const [roomCreatorId, setRoomCreatorId] = useState();
+  const [roomCreatorLeft, setRoomCreatorLeft] = useState(false);
 
   const [currentRoomType, setCurrentRoomType] = useState();
   const [isMuted, setIsMuted] = useState(false);
@@ -213,15 +214,7 @@ export default function Room() {
     });
   };
 
-  function handleMoveSong(prevIndex, currentIndex, fromOther = false) {
-    if (!fromOther) {
-      sendMsgAll({
-        type: "songAction",
-        action: "move",
-        prevIndex: prevIndex,
-        currentIndex: currentIndex,
-      });
-    }
+  function handleMoveSong(prevIndex, currentIndex) {
     //swap the two elements inside a list based on prevIndex and currentIndex
     if (prevIndex === 0 || currentIndex === 0) {
       if (allSongList.current.length !== 1) {
@@ -315,7 +308,7 @@ export default function Room() {
       localStorage.setItem("_creatorId", creatorId);
     }
     setCurrentRoomType(localStorage.getItem("_roomType"));
-  }, [roomId]);
+  }, [roomId, userId]);
 
   // Initialize audio stream and WebRTC
   // Get peer WebRTC info and connect
@@ -503,6 +496,11 @@ export default function Room() {
           // Update leaving message
           console.log(`Left: ${leftUserId}`);
           console.log(peerConnections.current);
+
+          if (leftUserId === roomCreatorId) {
+            setRoomCreatorLeft(true);
+          }
+
           commentList.current.push({
             username: peerConnections.current[leftUserId].username,
             time: Date(),
@@ -888,9 +886,15 @@ export default function Room() {
           <Button text="Close" onClick={closeHandler} />
         </DialogContent>
       </Dialog>
+      <Dialog open={roomCreatorLeft}>
+        <DialogTitle>Room Creator has closed the room.</DialogTitle>
+        <DialogContent>
+          <Button text="Close" onClick={closeHandler} />
+        </DialogContent>
+      </Dialog>
       <Box
         className="hide-scrollbar"
-        style={{
+        sx={{
           display: "flex",
           flexDirection: "row",
           width: "100%",
@@ -911,7 +915,7 @@ export default function Room() {
             handleMuteUnmute={handleMuteUnmute}
           />
         </Box>
-        <Box sx={{ width: "54%" }} style={{ background: "#1C1C1C" }}>
+        <Box sx={{ width: "54%", background: "#1C1C1C" }}>
           <UserUtilityPanel
             isMuted={isMuted}
             volume={volume}
@@ -922,7 +926,7 @@ export default function Room() {
             handleAddComment={handleAddComment}
           />
         </Box>
-        <Box sx={{ width: "23%" }} style={{ backgroundColor: "#1C1C1C" }}>
+        <Box sx={{ width: "23%", backgroundColor: "#1C1C1C" }}>
           <SongManagementPanel
             allSongList={allSongList.current}
             currentRoomType={currentRoomType}
@@ -1026,7 +1030,9 @@ export default function Room() {
     const connectAllUsers = async () => {
       await Promise.all(
         Object.keys(peerConnections.current).map(async (userId) => {
-          await sendMsg(userId, obj);
+          if (userId !== "") {
+            await sendMsg(userId, obj);
+          }
         })
       );
     };

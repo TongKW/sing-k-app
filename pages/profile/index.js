@@ -57,6 +57,9 @@ export default function Profile() {
   const [usernameError, setUsernameError] = useState();
   const [emailError, setEmailError] = useState();
   const [updatedProfileOpen, setUpdatedProfileOpen] = useState(false);
+  const userExp = 10;
+  const ExpToNextLevel = 100;
+  const bar = (Number(userExp) / Number(ExpToNextLevel)) * 100;
   const handleKeyPress = async (event) => {
     if (event.key == "Enter") {
       await updateProfile();
