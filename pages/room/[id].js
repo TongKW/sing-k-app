@@ -1026,7 +1026,9 @@ export default function Room() {
     const connectAllUsers = async () => {
       await Promise.all(
         Object.keys(peerConnections.current).map(async (userId) => {
-          await sendMsg(userId, obj);
+          if (userId !== "") {
+            await sendMsg(userId, obj);
+          }
         })
       );
     };
