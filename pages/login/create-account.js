@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FormInputBlock } from "../../component/elements/form-input";
 import Button from "../../component/elements/button";
 import styles from "../../styles/Home.module.css";
@@ -19,6 +19,19 @@ export default function CreateAccount(props) {
   const [emailError, setEmailError] = useState();
   const [pwFormatError, setPwFormatError] = useState();
   const [status, setStatus] = useState(false);
+
+  const handleKeyPress = async (event) => {
+    if (event.key == "Enter") {
+      await validate();
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener("keyup", handleKeyPress);
+    return () => {
+      document.removeEventListener("keyup", handleKeyPress);
+    };
+  });
   if (!status) {
     return (
       <div className={styles.container}>
@@ -68,7 +81,14 @@ export default function CreateAccount(props) {
               warning={dupError}
             ></FormInputBlock>
             {/* Confirm */}
-            <div className="flex items-center justify-between">
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                width: "100%",
+              }}
+            >
               <div onClick={validate}>
                 <Button text="Confirm"></Button>
               </div>

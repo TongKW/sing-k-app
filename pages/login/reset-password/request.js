@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FormInputBlock } from "../../../component/elements/form-input";
 import Button from "../../../component/elements/button";
 import styles from "../../../styles/Home.module.css";
@@ -12,6 +12,19 @@ export default function Reset(props) {
   const [email, setEmail] = useState();
   const [error, setError] = useState();
   const [finish, setFinish] = useState(false);
+
+  const handleKeyPress = async (event) => {
+    if (event.key == "Enter") {
+      await validate();
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener("keyup", handleKeyPress);
+    return () => {
+      document.removeEventListener("keyup", handleKeyPress);
+    };
+  });
 
   if (!finish) {
     return (
@@ -35,7 +48,14 @@ export default function Reset(props) {
               onChange={setEmail}
             ></FormInputBlock>
             {/* Confirm */}
-            <div className="flex items-center justify-between">
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                width: "100%",
+              }}
+            >
               <div onClick={validate}>
                 <Button text="Confirm"></Button>
               </div>
