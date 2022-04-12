@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     if (!isExists) {
       //console.log("User not found");
       return res.status(200).json({
-        message: "User not found",
+        message: "Invalid username or password",
         success: false,
       });
     }
@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     if (!bcrypt.compareSync(password, user.hash)) {
       //console.log("Password incorrect");
       return res.status(200).json({
-        message: "Password incorrect",
+        message: "Invalid username or password",
         success: false,
       });
     }
