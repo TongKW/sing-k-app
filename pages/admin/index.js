@@ -52,7 +52,6 @@ export default function Admin() {
           },
         });
         const data = await response.json();
-        console.log(data);
         if (data.authorized) {
           const user = data.body;
           if (user.username == "admin") {
@@ -91,7 +90,6 @@ export default function Admin() {
         setFilteredUserList(data);
         setSearchFieldOption(data.map((userObj) => userObj.username));
         setSearchFieldOptionName("username");
-        console.log(data);
       }
       (async () => {
         getUsersList();
@@ -117,8 +115,6 @@ export default function Admin() {
   }
 
   async function handleChangePw(userId, password, setPasswordError) {
-    console.log(password);
-    console.log(userId);
     setPasswordError();
     if (pwValidateSetError(password, setPasswordError)) {
       return;
@@ -127,7 +123,6 @@ export default function Admin() {
     let uploadedPw;
     try {
       uploadedPw = await changePw(userId, password);
-      console.log("uploadedPw = ", uploadedPw);
     } catch (error) {
       alert(`Unknown error occurs: ${error}`);
       return;
@@ -182,7 +177,6 @@ export default function Admin() {
   const handleSearchInputValueChange = (_, value) => {
     setSearchBarInputValue(value);
     const pattern = new RegExp(value);
-    console.log(pattern);
     const newFilteredUserList = userList.filter((_, index) =>
       pattern.test(searchFieldOption[index])
     );

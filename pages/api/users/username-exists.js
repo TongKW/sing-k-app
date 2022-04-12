@@ -22,17 +22,17 @@ async function checkUsernameExists(username, res) {
   await result.forEach((result) => {
     isExists = true;
     user = result;
-    console.log(user);
+    //console.log(user);
   });
   await client.close();
   if (!isExists) {
-    console.log("No username conflict");
+    //console.log("No username conflict");
     return res.status(200).json({
       exists: false,
       message: "No username conflict",
     });
   }
-  console.log("Username already exists!");
+  //console.log("Username already exists!");
   return res.status(200).json({
     exists: true,
     message: "Username already exists!",

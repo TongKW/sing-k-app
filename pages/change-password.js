@@ -197,7 +197,6 @@ function ChangePasswordPage() {
       let uploadedPw;
       try {
         uploadedPw = await changePwInterface(newPw);
-        console.log("uploadedPw = ", uploadedPw);
       } catch (error) {
         alert(`Unknown error occurs: ${error}`);
         return;

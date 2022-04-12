@@ -67,7 +67,7 @@ function OtherUserList(props) {
         const otherIsMuted = props.otherUsersList[userId].isMuted;
         const isRoomCreator = userId === props.roomCreatorId;
         const currentRoomType = props.currentRoomType;
-        // console.log(username, otherIsMuted);
+        // //console.log(username, otherIsMuted);
 
         return (
           <User

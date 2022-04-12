@@ -8,7 +8,7 @@ export default async function initPeerConnection(localStream) {
   const pc = new RTCPeerConnection(servers);
   let remoteStream = new MediaStream();
   let iceCandidate = null;
-  console.log(`localStream: ${localStream}`)
+  //console.log(`localStream: ${localStream}`)
 
   // Push tracks from local stream to peer connection
   localStream.getTracks().forEach((track) => {
@@ -33,7 +33,7 @@ export default async function initPeerConnection(localStream) {
   };
   await pc.setLocalDescription(description);
   const localDesc = pc.localDescription;
-  console.log(`Local Desc : ${localDesc ? localDesc.sdp.slice(9, 20) : 'null'}`);
+  //console.log(`Local Desc : ${localDesc ? localDesc.sdp.slice(9, 20) : 'null'}`);
 
   while (!iceCandidate) {
     // wait until iceCandidate is got

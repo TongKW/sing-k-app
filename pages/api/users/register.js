@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     await validate.insertOne(user).then(result => {
       validate_id = result.insertedId;
     }).catch(err => {
-      console.log(err);
+      //console.log(err);
       return res.status(200).json({
         success: false,
         message: "Unknown error"
