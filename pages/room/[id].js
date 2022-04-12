@@ -898,7 +898,6 @@ export default function Room() {
     localStream.current = null;
     pendingICEcandidates.current = {};
 
-    router.push("/");
     location.href = "/";
   }
 
