@@ -54,6 +54,7 @@ function SongListPanel(props) {
           isRoomCreator={props.isRoomCreator}
           handleMoveSong={props.handleMoveSong}
           sendMsgAll={props.sendMsgAll}
+          username={props.username}
         />
       )) : <div/>}
     </Box>
@@ -191,7 +192,7 @@ function Song(props) {
         display: "flex",
         flexDirection: "row",
         justifyContent: "space-between",
-        fontSize: "2.5vmin",
+        fontSize: "1.5vmin",
         padding: "10px",
       }}
     >
@@ -236,6 +237,11 @@ function Song(props) {
                   action: "move",
                   prevIndex: props.index,
                   currentIndex: props.index + 1
+                });
+                props.sendMsgAll({
+                  username: props.username,
+                  type: "system",
+                  message: `${props.username} has moved the song.`,
                 });
               }}
               style={{ cursor: "pointer" }}
