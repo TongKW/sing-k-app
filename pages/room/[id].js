@@ -747,6 +747,7 @@ export default function Room() {
           userId: userId,
         });
         // Check if is the last one to receive the song
+        /*
         let isLast = true;
         for (const userId in downloadSongStatus.current) {
           if ((downloadSongStatus.current[userId] = false)) {
@@ -754,7 +755,6 @@ export default function Room() {
             break;
           }
         }
-        /*
         if (isLast) {
           sendMsgAll({
             type: "songAction",
