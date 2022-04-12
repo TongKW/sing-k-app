@@ -84,6 +84,8 @@ export default function Room() {
   const [dataChannelFullOpen, setDataChannelFullOpen] = useState(false);
   const [fileTooLargeOpen, setFileTooLargeOpen] = useState(false);
 
+  const [allowPlaySong, setAllowPlaySong] = useState(true);
+
   // Initialize Firebase
   const app = firebase.initializeApp(firebaseConfig);
 
@@ -701,6 +703,7 @@ export default function Room() {
         } else if (action == "receive") {
           downloadSongStatus.current[data.userId] = true;
         } else if (action == "finish") {
+          setAllowPlaySong(true);
           for (const userId in downloadSongStatus.current) {
             delete downloadSongStatus.current[userId];
           }
@@ -711,6 +714,7 @@ export default function Room() {
     }
 
     function handleReceiveSong(event) {
+      setAllowPlaySong(false);
       const data = JSON.parse(event.data);
       const sender = data.sender;
       if (!receiveSongBuffer.current.hasOwnProperty(sender)) {
@@ -749,7 +753,10 @@ export default function Room() {
         // Check if is the last one to receive the song
         let isLast = true;
         for (const userId in downloadSongStatus.current) {
-          if ((downloadSongStatus.current[userId] == false)) {
+          console.log('downloadSongStatus')
+          console.log(JSON.stringify(downloadSongStatus.current))
+          console.log(userId)
+          if ((!downloadSongStatus.current[userId])) {
             isLast = false;
             break;
           }
@@ -763,10 +770,10 @@ export default function Room() {
             type: "songAction",
             action: "start",
           });
+          
           for (const userId in downloadSongStatus.current) {
             delete downloadSongStatus.current[userId];
           }
-          handleStartSong();
         }
       } else {}
     }
@@ -844,6 +851,7 @@ export default function Room() {
             handleMoveSong={handleMoveSong}
             sendMsgAll={sendMsgAll}
             username={username}
+            allowPlaySong={allowPlaySong}
           />
         </Box>
       </Box>

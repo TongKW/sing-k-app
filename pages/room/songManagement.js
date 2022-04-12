@@ -33,6 +33,7 @@ export default function SongManagementPanel(props) {
         currentRoomType={props.currentRoomType}
         sendMsgAll={props.sendMsgAll}
         username={props.username}
+        allowPlaySong={props.allowPlaySong}
       />
     </Box>
   );
@@ -64,7 +65,7 @@ function SongListPanel(props) {
 function SongFunctionKeys(props) {
   const usableUser = (props.currentRoomType === "private") || ((props.currentRoomType === "streaming") && (props.isRoomCreator))
   // const [fileInputRef, setFileInputRef] = useState({});
-  if (usableUser){
+  if (usableUser) {
     return (
     <Box
       sx={{
@@ -79,6 +80,7 @@ function SongFunctionKeys(props) {
         alt="play"
         length="25"
         onClick={() => {
+          if (!props.allowPlaySong) return;
           props.handleStartSong();
           props.sendMsgAll({
             type: "songAction",
@@ -90,7 +92,7 @@ function SongFunctionKeys(props) {
             message: `${props.username} has started the song.`,
           });
         }}
-        style={{ cursor: "pointer"}}
+        style={{ cursor: props.allowPlaySong ? "pointer" : "not-allowed" }}
       />
       <Icon
         icon="/images/pause.png"
