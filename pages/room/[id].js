@@ -400,7 +400,7 @@ export default function Room() {
                 try {
                   await connectNewUser(newUserId, fromRTCoffer);
                 } catch (error) {}
-                await sleep(1000);
+                await sleep(2000);
                 // Send user info to other users
                 sendMsgAll({
                   username: username,
