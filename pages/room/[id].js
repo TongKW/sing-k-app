@@ -754,6 +754,7 @@ export default function Room() {
             break;
           }
         }
+        /*
         if (isLast) {
           sendMsgAll({
             type: "songAction",
@@ -768,6 +769,7 @@ export default function Room() {
           }
           handleStartSong();
         }
+        */
       } else {}
     }
   }, [roomId, userId, initialized, username, avatar, commentList, initConn]);
