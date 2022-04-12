@@ -84,7 +84,7 @@ export default function Profile() {
     async function decrypt_jwt(token) {
       const response = await fetch("/api/jwt/decrypt", {
         method: "POST",
-      //console.logN.stringify({ token: token }),
+        body: JSON.stringify({ token: token }),
         headers: {
           "Content-Type": "application/json",
         },
