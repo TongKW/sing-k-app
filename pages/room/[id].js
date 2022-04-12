@@ -161,6 +161,13 @@ export default function Room() {
           type: "system",
           message: `${username} is uploading song -- ${cleantFileName}.`,
         });
+        sendMsgAll({
+          type: "songAction",
+          action: "receive",
+          userId: userId,
+        });
+        
+        setAllowPlaySong(false);
         lastSend.current = currentTime;
         sendSongAll({ songName: cleantFileName, songBuffer: data.content });
         appendSongInfo(cleantFileName, data.content);
