@@ -15,7 +15,7 @@ export default function UserUtilityPanel(props) {
         width: "100%",
         display: "flex",
         flexDirection: "column",
-        height: "100vh",
+        height: "100%",
       }}
       style={{ background: "#FFFFFF" }}
     >
@@ -106,6 +106,8 @@ function CommentArea(props) {
   return (
     <Box
       className="bg-indigo-900"
+      display = "flex"
+      flexDirection = "column"
       style={{
         width: "100%",
         height: "90%",
@@ -136,7 +138,7 @@ function MessageArea(props) {
       className="py-4 px-2 scrollbar"
       sx={{
         display: "flex",
-        height: "85%",
+        height: "100%",
         overflowY: "auto",
         overflowX: "hidden",
         flexDirection: "column",
@@ -292,7 +294,7 @@ function InputArea(props) {
         justifyContent: "center",
         borderRadius: "10px",
         margin: "0px 5px 0px 5px",
-        padding: 1,
+        px: 1,
       }}
     >
       <Box

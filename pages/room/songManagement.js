@@ -6,7 +6,7 @@ import { Input, Button } from "@mui/material";
 
 export default function SongManagementPanel(props) {
   return (
-    <Box sx={{ height: "100%", background: "#323846" }}>
+    <Box sx={{ height: "100%", background: "#323846", display: "flex", flexDirection: "column" }}>
       <Box
         sx={{
           display: "flex",
@@ -42,7 +42,7 @@ function SongListPanel(props) {
   return (
     <Box
       className="px-2 scrollbar"
-      sx={{ height: "85%", overflowY: "auto" }}
+      sx={{ height: "100%", overflowY: "auto" }}
       style={{ testAlign: "flex-start" }}
     >
       {props.allSongList ? props.allSongList.map((song, index) => (
@@ -71,7 +71,7 @@ function SongFunctionKeys(props) {
         display: "flex",
         justifyContent: "space-around",
         padding: "20px 0px 0px 0px",
-        height: "10%",
+        mb: 1,
       }}
     >
       <Icon
