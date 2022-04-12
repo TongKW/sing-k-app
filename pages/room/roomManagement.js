@@ -15,7 +15,7 @@ const UserAvatar = styled(Avatar, {
 
 export default function RoomMangementPanel(props) {
   return (
-    <Box sx={{ height: "100%" }} style={{ borderRadius: "25px" }}>
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }} style={{ borderRadius: "25px" }}>
       <RoomId roomId={props.roomId} />
       <OtherUserList
         peerConnections={props.peerConnections}
@@ -56,7 +56,7 @@ function OtherUserList(props) {
       className="px-2 scrollbar"
       style={{
         background: "#323846",
-        height: "90%",
+        height: "100%",
         overflowY: "auto",
       }}
     >
@@ -153,7 +153,7 @@ function RoomFunctionKeys(props) {
         display: "flex",
         flexDirection: "row",
         justifyContent: "space-around",
-        height: "5%",
+        mb: 1,
       }}
     >
       <Mute
