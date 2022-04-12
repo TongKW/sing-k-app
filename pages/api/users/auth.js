@@ -25,12 +25,12 @@ export default async function handler(req, res) {
     await result.forEach((result) => {
       isExists = true;
       user = result;
-      console.log(user);
+      //console.log(user);
     });
     await client.close();
     // if the username does not exist in the db
     if (!isExists) {
-      console.log("User not found");
+      //console.log("User not found");
       return res.status(200).json({
         message: "User not found",
         success: false,
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     }
     // if the password hash does not match
     if (!bcrypt.compareSync(password, user.hash)) {
-      console.log("Password incorrect");
+      //console.log("Password incorrect");
       return res.status(200).json({
         message: "Password incorrect",
         success: false,
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     }
     // successfully logged in
     // set cookie and return signed jwt
-    console.log("successfully logged in");
+    //console.log("successfully logged in");
     var secret = serverRuntimeConfig.jwt_secret;
     var payload = {
       id: user._id,

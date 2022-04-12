@@ -156,9 +156,6 @@ function CreateRoomButton() {
   }, [canEnterRoom, roomId, router, userIdError]);
 
   const handleEnterCreatedRoom = async () => {
-    console.log(
-      "handleEnterCreatedRoom [line 149-155]: setDoc creator, creatorAvatar, queue, type"
-    );
     await setDoc(doc(db, "rooms", roomId), {
       creator: creatorName,
       creatorAvatar: creatorAvatar,
@@ -166,9 +163,6 @@ function CreateRoomButton() {
       queue: [],
       type: roomType,
     });
-    console.log(
-      "handleEnterCreatedRoom [line 159-160]: setDoc rooms/roomId/RTCinfo/userId"
-    );
     await setDoc(doc(db, `rooms/${roomId}/RTCinfo/${userId}`), {});
     await sleep(2000);
     setCanEnterRoom(true);
@@ -391,11 +385,8 @@ function JoinRoomUtilityDialog(props) {
         const roomDoc = doc(db, `rooms/${props.roomId}`);
         onSnapshot(roomDoc, (doc) => {
           if (!doc.data()) return;
-          console.log("snapshot changed:");
-          console.log(doc.data());
           const newPosition = doc.data().queue.indexOf(userId);
           if (newPosition === 0) {
-            console.log(`can enter room now! ${props.roomId}`);
             setCanEnterRoom(true);
           } else {
             setQueuePosition(newPosition);
@@ -430,8 +421,6 @@ function JoinRoomUtilityDialog(props) {
   };
   const appendUserIdToQueue = async () => {
     const userId = await getUserId();
-    console.log(userId);
-    console.log(props.roomId);
     if (userId !== null) {
       const roomDoc = doc(db, "rooms", props.roomId);
       const roomSnapshot = await getDoc(roomDoc);

@@ -117,17 +117,14 @@ export default function Room() {
     if (!allAudioList.current) return;
     if (currentSong === allAudioList.current[0]) {
       // The user has paused, and now we need to resume
-      console.log("Resume song!");
     } else {
       setCurrentSong(allAudioList.current[0]);
-      console.log("Start song!");
     }
     setCurrentSongIsPlaying(true);
   };
 
   const handleStopSong = () => {
     setCurrentSongIsPlaying(false);
-    console.log("Stopped song!");
   };
 
   const handleFinishedSong = () => {
@@ -135,7 +132,6 @@ export default function Room() {
     allAudioList.current = allAudioList.current.slice(1);
     setCurrentSongIsPlaying(false);
     setCurrentSong(null);
-    console.log("Finished song!");
   };
 
   const handleAddSong = async (event) => {
@@ -287,13 +283,9 @@ export default function Room() {
     async function checkRoomCreator() {
       const db = getFirestore();
       const roomDoc = doc(db, `rooms/${roomId}`);
-      console.log("roomId: ");
-      console.log(roomId);
       const roomSnapshot = await getDoc(roomDoc);
       const data = roomSnapshot.data();
-      console.log(data);
       const creatorId = data?.creatorId;
-      console.log(`creatorId == userId: ${creatorId == userId}`);
       setRoomCreatorId(creatorId);
       localStorage.setItem("_creatorId", creatorId);
     }
@@ -304,7 +296,6 @@ export default function Room() {
   // Get peer WebRTC info and connect
   // Only run once after roomId is get
   useEffect(() => {
-    console.log(`initConn: ${initConn}`);
     const db = getFirestore();
     const allUserDoc = collection(db, `rooms/${roomId}/RTCinfo`);
     const calleeDoc = collection(
@@ -319,13 +310,11 @@ export default function Room() {
       setFromLobby(false);
       return;
     }
-    console.log(`initialized = ${initialized}`);
     if (initialized || !roomId || !userId) return;
     initialize();
 
     // Initialize for first time joining the room
     async function initialize() {
-      console.log("COUNT: initalize() is called");
       setInitialized(true);
 
       // Setup audio
@@ -338,7 +327,6 @@ export default function Room() {
         localStorage.getItem("_roomType") === "streaming" &&
         localStorage.getItem("_userId") !== localStorage.getItem("_creatorId")
       ) {
-        console.log("mute myself!");
         handleMuteUnmute();
       }
 
@@ -352,9 +340,6 @@ export default function Room() {
           await initPeerConnection(newUserId);
         }
       });
-
-      //TODO: Add a new user to the otherUsersList
-
       // Write Firebase to update offer
       await createNewUserFirestore();
     }
@@ -370,11 +355,8 @@ export default function Room() {
         if (newUserId === userId) return;
         // If a new user joined, connect with WebRTC
         if (change.type === "added" || change.type === "modified") {
-          console.log("new user joined!");
           // Create new connection
           createNewPeerConnection(newUserId);
-
-          console.log("Finished create new peer connection");
           // Initializing an empty ICE candidate queue for the new comer
           if (!pendingICEcandidates.current.hasOwnProperty(newUserId)) {
             pendingICEcandidates.current[newUserId] = [];
@@ -388,23 +370,15 @@ export default function Room() {
             if (
               peerConnections.current[newUserId].pc.remoteDescription === null
             ) {
-              console.log(`Current remote desc:`);
-              console.log(
-                peerConnections.current[newUserId].pc.remoteDescription
-              );
+
               // Case: Joined room as a new comer
               // If created the connection first and got answer back:
               // 1. if pc.currentRemote is null => setRemote
               if (existingUsers.current.includes(newUserId) && !initConn) {
                 const desc = new RTCSessionDescription(fromRTCoffer);
-
                 await peerConnections.current[
                   newUserId
                 ].pc.setRemoteDescription(desc);
-
-                //console.log(`[system] ${newUserId} joined the room.`);
-                console.log(peerConnections.current);
-
                 await sleep(1000);
                 // Send user info to other users
                 sendMsg(newUserId, {
@@ -425,10 +399,7 @@ export default function Room() {
               if (!existingUsers.current.includes(newUserId)) {
                 try {
                   await connectNewUser(newUserId, fromRTCoffer);
-                } catch (error) {
-                  console.log("Error in connecting new user!");
-                }
-
+                } catch (error) {}
                 await sleep(1000);
                 // Send user info to other users
                 sendMsgAll({
@@ -444,7 +415,6 @@ export default function Room() {
                 });
               }
             }
-
             // Add all pending ICE candidates
             await handleICEqueue(newUserId);
           }
@@ -453,11 +423,7 @@ export default function Room() {
             if (peerConnections.current[newUserId].pc.remoteDescription) {
               try {
                 await addICEcandidate(newUserId, fromICEcandidate);
-              } catch (error) {
-                console.log(
-                  `Error occurred when adding ICE candidate: ${error}`
-                );
-              }
+              } catch (error) {}
             } else {
               pendingICEcandidates.current[newUserId].push(fromICEcandidate);
             }
@@ -484,9 +450,6 @@ export default function Room() {
           }
 
           // Update leaving message
-          console.log(`Left: ${leftUserId}`);
-          console.log(peerConnections.current);
-
           if (leftUserId === roomCreatorId) {
             setRoomCreatorLeft(true);
           }
@@ -507,21 +470,14 @@ export default function Room() {
       });
     });
 
-    //return () => {}
-
     // Below are the wrapped functions ONLY used in this useEffect
-
     // Initialize Peer Connection
     async function initPeerConnection(userId) {
-      console.log(`COUNT: initPeerConnection() is called on ${userId}`);
+      //console.log(`COUNT: initPeerConnection() is called on ${userId}`);
       // If peer Connection has been created before, return
       try {
         if (peerConnections.current.hasOwnProperty(userId)) {
-          console.log(
-            "already formed connection, deleting previous connection."
-          );
           removePeerConnection(userId);
-          console.log("Deleted previous connection.");
         }
 
         // Initialize and store new Peer Connection
@@ -538,14 +494,8 @@ export default function Room() {
         await peerConnections.current[userId].pc.setLocalDescription(
           description
         );
-        console.log("Peer Connection after setLocalDescription");
-        console.log(peerConnections.current);
-        console.log(peerConnections.current[userId].pc);
-
         await sleep(2000);
         await updateConnectionData(userId, { RTCoffer: RTCoffer });
-        //const localDesc = peerConnections.current[userId].pc.localDescription;
-
         // Create firestore document for new user to connect to you
         await createNewUserFirestore();
       } catch (error) {
@@ -566,12 +516,9 @@ export default function Room() {
         `rooms/${roomId}/RTCinfo/${targetUserId}/callees/${userId}`
       );
       await setDoc(calleeDoc, payload, { merge: true });
-      console.log("update connection data:");
-      console.log(payload);
     }
 
     async function connectNewUser(newUserId, remoteRTCoffer) {
-      console.log("connect new user!");
       createNewPeerConnection(newUserId);
       const desc = new RTCSessionDescription(remoteRTCoffer);
       await peerConnections.current[newUserId].pc.setRemoteDescription(desc);
@@ -586,8 +533,6 @@ export default function Room() {
         sdp: localRTCoffer.sdp,
       };
       await updateConnectionData(newUserId, { RTCoffer: offer });
-      //console.log(`[system] ${newUserId} joined the room.`);
-      console.log(peerConnections.current);
     }
 
     function createNewPeerConnection(userId) {
@@ -596,18 +541,11 @@ export default function Room() {
       peerConnections.current[userId].pc = new RTCPeerConnection(servers);
       // Push tracks from local stream to peer connection
       localStream.current.getTracks().forEach((track) => {
-        console.log(`Pushing track to ${userId} ... ${new Date().getTime()}`);
-        console.log(track);
-        // if (isMuted) {
-        //   console.log("I am muted!");
-        //   localStream.current.getAudioTracks()[0].enabled = false;
-        // }
         peerConnections.current[userId].pc.addTrack(track, localStream.current);
       });
 
       peerConnections.current[userId].audioStream = new MediaStream();
       peerConnections.current[userId].pc.ontrack = (event) => {
-        console.log(`Getting track from ${userId}... ${new Date().getTime()}`);
         event.streams[0].getTracks().forEach((track) => {
           peerConnections.current[userId].audioStream.addTrack(track);
         });
@@ -620,8 +558,6 @@ export default function Room() {
             ICEcandidate: event.candidate.toJSON(),
           });
       };
-      console.log(`userId: ${userId}`);
-      console.log(`roomCreatorId: ${localStorage.getItem("_creatorId")}`);
       if (
         localStorage.getItem("_roomType") === "streaming" &&
         userId !== localStorage.getItem("_creatorId")
@@ -630,11 +566,6 @@ export default function Room() {
       else {
         peerConnections.current[userId].isMuted = false;
       }
-
-      console.log(
-        `userId ${userId} is muted ${peerConnections.current[userId].isMuted}`
-      );
-
       // Event listener for creating receive channel
       peerConnections.current[userId].pc.ondatachannel = (event) => {
         receiveChannelCallback(event, userId);
@@ -655,15 +586,12 @@ export default function Room() {
       if (
         peerConnections.current[userId].pc.connectionState !== "connected" ||
         peerConnections.current[userId].pc.signalingState === "stable"
-      )
-        return false;
-      console.log("Have good and stable connection!");
+      ) return false;
       return true;
     }
 
     // Channel is for chat text transmission
     function createChannel(userId) {
-      console.log("create data Channel");
       if (
         peerConnections.current[userId].hasOwnProperty("messageChannel") &&
         peerConnections.current[userId].hasOwnProperty("songChannel")
@@ -679,7 +607,6 @@ export default function Room() {
 
     function receiveChannelCallback(event, userId) {
       if (event.channel.label === "message") {
-        console.log(event.channel);
         peerConnections.current[userId].receiveMessageChannel = event.channel;
         peerConnections.current[userId].receiveMessageChannel.onmessage =
           handleReceiveMessage;
@@ -692,7 +619,6 @@ export default function Room() {
     }
 
     function removePeerConnection(leftUserId) {
-      console.log(`Removing connection of ${leftUserId}`);
       if (!peerConnections.current.hasOwnProperty(leftUserId)) return;
       if (!peerConnections.current[leftUserId].hasOwnProperty("pc")) return;
       peerConnections.current[leftUserId].pc.close();
@@ -729,7 +655,6 @@ export default function Room() {
       const userId = data.userId;
       const type = data.type;
 
-      // console.log(`${user}: ${message}`);
       // If message is chat, update in comment list
       if (type === "chat") {
         commentList.current.push({
@@ -805,13 +730,7 @@ export default function Room() {
         )
       ) {
         // Entire song is received
-        const songBuffer =
-          receiveSongBuffer.current[sender].songBufferChunk.join("");
-        console.log("current length: ", songBuffer.length);
-        console.log(
-          "theoretical length: ",
-          receiveSongBuffer.current[sender].songBufferLength
-        );
+        const songBuffer = receiveSongBuffer.current[sender].songBufferChunk.join("");
         const songName = receiveSongBuffer.current[sender].songName;
         appendSongInfo(songName, songBuffer);
         delete receiveSongBuffer.current[sender];
@@ -849,9 +768,7 @@ export default function Room() {
           }
           handleStartSong();
         }
-      } else {
-        console.log(`Passing data!`);
-      }
+      } else {}
     }
   }, [roomId, userId, initialized, username, avatar, commentList, initConn]);
 
@@ -945,9 +862,7 @@ export default function Room() {
       // Remove any listeners to Firestore
       unsubscribeCallee.current();
       unsubscribeLeftUser.current();
-    } catch (error) {
-      console.log(error);
-    }
+    } catch (error) {}
 
     const db = getFirestore();
 
@@ -957,8 +872,6 @@ export default function Room() {
     // If the left user is the creator of the room,ha
     // Delete the room when the creator left
     if (_roomCreatorId === _userId) {
-      console.log(`roomCreatorId == undefined: ${_roomCreatorId == undefined}`);
-      console.log("delete the whole doc!");
       await deleteDoc(doc(db, `rooms/${roomId}`));
     }
 
@@ -1015,7 +928,6 @@ export default function Room() {
   }
 
   function sendMsgAll(obj) {
-    console.log("message:", obj);
     const connectAllUsers = async () => {
       await Promise.all(
         Object.keys(peerConnections.current).map(async (userId) => {
@@ -1029,7 +941,6 @@ export default function Room() {
   }
 
   async function sendMsg(userId, obj) {
-    console.log("pc data: ", peerConnections.current[userId]);
     if (peerConnections.current[userId].messageChannel.readyState === "open") {
       peerConnections.current[userId].messageChannel.send(JSON.stringify(obj));
     } else {
@@ -1039,7 +950,6 @@ export default function Room() {
   }
 
   async function sendSongAll(obj) {
-    console.log("song:", obj);
     const connectAllUsers = async () => {
       await Promise.all(
         Object.keys(peerConnections.current).map(async (userId) => {
@@ -1070,11 +980,6 @@ export default function Room() {
           songBufferChunk: songBuffer.slice(start, end),
           type: "songBuffer",
         };
-        // try {
-        //   songChannel.send(JSON.stringify(songBufferInfo));
-        // } catch (error) {
-        //   setDataChannelFullOpen(true);
-        // }
         songChannel.send(JSON.stringify(songBufferInfo));
       }
     }

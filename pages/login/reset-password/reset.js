@@ -100,14 +100,14 @@ export default function Reset(props) {
         },
       });
       const data = await response.json();
-      console.log(data);
+      //console.log(data);
 
       setMsg(data.message);
       setFinish(true);
 
       Loading.remove();
     } catch (error) {
-      console.log(error);
+      //console.log(error);
       setMsg("Unknown error occurred.");
       setFinish(true);
       Loading.remove();

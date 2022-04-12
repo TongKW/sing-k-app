@@ -10,8 +10,6 @@ import {
 } from "firebase/firestore";
 import { firebaseConfig } from "./config.js";
 
-console.log(`Firebase config`, firebaseConfig);
-
 initializeApp(firebaseConfig);
 const db = getFirestore();
 
@@ -20,9 +18,7 @@ export async function getRoomList() {
   var result = [];
   querySnapshot.forEach((doc) => {
     result.push(doc.id);
-    console.log("getRoomList", doc.id, " => ", doc.data());
   });
-  console.log(result);
   return result;
 }
 
@@ -58,7 +54,6 @@ export async function getRoom(roomId) {
 }
 
 export async function createRoom(roomID, creatorID, type, usersArray) {
-  console.log(roomId);
   await setDoc(doc(db, "rooms", roomID), {
     creator: creatorID,
     type: type,
@@ -76,7 +71,5 @@ export async function changeRoom(roomID, changes) {
 export async function delUserFromRoom(roomId, userId) {
   var ref = db.collection("/rooms/" + roomId + "/").doc(user);
 
-  ref.delete().then(() => {
-    console.log("delete data successful");
-  });
+  ref.delete().then(() => {});
 }

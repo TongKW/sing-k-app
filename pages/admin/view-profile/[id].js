@@ -26,7 +26,6 @@ export default function ViewProfile(){
                 },
             });
             const data = await response.json();
-            console.log(data);
             if (data.authorized) {
                 const user = data.body;
                 if (user.username == "admin"){

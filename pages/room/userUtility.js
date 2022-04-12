@@ -260,7 +260,7 @@ function InputArea(props) {
   }
   function handleRemoveModal(event) {
     if (modalOpen) {
-      console.log(event.clientX, event.clientY);
+      //console.log(event.clientX, event.clientY);
       const element = props.emojiRef.current.getBoundingClientRect();
       const emojiTopLeftX = element.x;
       const emojiTopLeftY = element.y;
@@ -273,7 +273,7 @@ function InputArea(props) {
         event.clientX <= emojiBottomRightX &&
         emojiTopLeftY <= event.clientY &&
         event.clientY <= emojiBottomRightY;
-      console.log(inBoundCondition);
+      //console.log(inBoundCondition);
       if (!inBoundCondition) {
         setModalOpen(false);
       }

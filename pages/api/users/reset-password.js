@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     // Check if user info is correct
     const query = { "username": username, "email": email };
     const result = await user_info.findOne(query);
-    console.log(result);
+    //console.log(result);
 
     if (!result) {
       return res.status(200).json({
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
     await reset_pw.insertOne(user).then(result => {
       reset_id = result.insertedId;
     }).catch(err => {
-      console.log(err);
+      //console.log(err);
       return res.status(200).json({
         success: false,
         message: "Unknown error occurred"

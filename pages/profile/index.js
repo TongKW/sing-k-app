@@ -84,7 +84,7 @@ export default function Profile() {
     async function decrypt_jwt(token) {
       const response = await fetch("/api/jwt/decrypt", {
         method: "POST",
-        body: JSON.stringify({ token: token }),
+      //console.logN.stringify({ token: token }),
         headers: {
           "Content-Type": "application/json",
         },
@@ -179,7 +179,7 @@ export default function Profile() {
         </div>
       </div>
       <SuccessDialog
-        open={updatedProfileOpen}
+    //console.logpdatedProfileOpen}
         close={() => setUpdatedProfileOpen(false)}
       />
     </HomePage>
@@ -190,7 +190,7 @@ export default function Profile() {
     if (fileSize > 360000) return true;
     return false;
   }
-
+//console.log
   async function uploadPhoto(event) {
     if (!event.target.files.length) return;
     console.log(event.target.files);

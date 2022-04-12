@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     };
     const secret_key = serverRuntimeConfig.jwt_secret;
     const result = verify_token(token, secret_key);
-    console.log(result);
+    //console.log(result);
 
     if (!result.authorized) {
       return res.status(200).json({ success: false, token: null });

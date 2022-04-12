@@ -14,9 +14,9 @@ export function middleware(req) {
   }
 
   const url = req.nextUrl.clone()
-  console.log(`req.cookies: ${JSON.stringify(req.cookies)}`);
+  //console.log(`req.cookies: ${JSON.stringify(req.cookies)}`);
   const isLogin = 'isLogin' in req.cookies;
-  console.log(isLogin);
+  //console.log(isLogin);
   if (!isLogin) {
     url.pathname = '/login';
     return NextResponse.rewrite(url);
