@@ -388,7 +388,7 @@ export default function Room() {
                 await peerConnections.current[
                   newUserId
                 ].pc.setRemoteDescription(desc);
-                await sleep(1000);
+                await sleep(5000);
                 // Send user info to other users
                 sendMsg(newUserId, {
                   type: "setUser",
