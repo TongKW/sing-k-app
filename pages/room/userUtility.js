@@ -250,8 +250,10 @@ function InputArea(props) {
     setText(event.target.value);
   };
   const submitText = () => {
-    props.handleAddComment(text);
-    setText("");
+    if (text.trim("\n")) {
+      props.handleAddComment(text);
+      setText("");
+    }
   };
   function onEmojiClick(event, emoji) {
     setText(text + emoji.emoji);
@@ -278,8 +280,8 @@ function InputArea(props) {
     }
   }
   useEffect(() => {
-    window.addEventListener("mouseup", handleRemoveModal);
-    return () => window.removeEventListener("mouseup", handleRemoveModal);
+    document.addEventListener("mouseup", handleRemoveModal);
+    return () => document.removeEventListener("mouseup", handleRemoveModal);
   });
   return (
     <Box

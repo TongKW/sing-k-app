@@ -56,7 +56,14 @@ export default function Reset(props) {
               warning={dupError}
             ></FormInputBlock>
             {/* Confirm */}
-            <div className="flex items-center justify-between">
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                width: "100%",
+              }}
+            >
               <div onClick={validate}>
                 <Button text="Confirm"></Button>
               </div>

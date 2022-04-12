@@ -30,7 +30,7 @@ import { FormInputBlock } from "../component/elements/form-input";
 import PeopleIcon from "@mui/icons-material/People";
 import generateRoomId from "../utils/room/generate-id";
 import LoadingCircle from "../utils/inlineLoading";
-import { TapAndPlayTwoTone } from "@mui/icons-material";
+import { ContactPageOutlined, TapAndPlayTwoTone } from "@mui/icons-material";
 import { getUserId, setUsernameAvatar } from "../utils/jwt/decrypt";
 import sleep from "../utils/sleep";
 import CloseIcon from "@mui/icons-material/Close";
@@ -458,15 +458,16 @@ function JoinRoomUtilityDialog(props) {
 }
 
 function EnterRoomIdDialog(props) {
+  // const roomIdRef = useRef("");
   const [roomId, setRoomId] = useState();
 
-  const handleClick = async () => {
-    props.validate(roomId.trim());
+  const handleClick = () => {
+    props.validate(roomId);
   };
 
-  const handleKeyPress = async (event) => {
+  const handleKeyPress = (event) => {
     if (event.key == "Enter") {
-      await handleClick();
+      handleClick();
     }
   };
 
@@ -475,7 +476,7 @@ function EnterRoomIdDialog(props) {
     return () => {
       document.removeEventListener("keyup", handleKeyPress);
     };
-  }, []);
+  });
 
   return (
     <Dialog open={props.open}>

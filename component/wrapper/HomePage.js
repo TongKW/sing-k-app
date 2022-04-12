@@ -15,9 +15,9 @@ export default function HomePage(props) {
   }, []);
   return (
     <div>
-      <div className="relative min-h-screen md:flex">
+      <div className="relative min-h-screen md:flex z-0">
         <MobileNavBar></MobileNavBar>
-        <div className={navBarClass}>
+        <div className={navBarClass} style={{zIndex: 100}}>
           <nav>
             <Link href="/">
               <a className={navElemClass + "flex w-64"}>

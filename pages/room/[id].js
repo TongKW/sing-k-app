@@ -37,7 +37,7 @@ export default function Room() {
   // Routing parameter
   const router = useRouter();
   const roomId = router.query.id;
-  const FILE_LIMIT = 10000000;
+  const FILE_LIMIT = 10485760; // 10MB
 
   let _userId = null;
   let _roomCreatorId = null;
@@ -186,10 +186,6 @@ export default function Room() {
 
   const handleDataFullClose = () => setDataChannelFullOpen(false);
 
-  const handleEcho = (event) => {
-    setEcho(event.target.value);
-  };
-
   const handleVolume = (event) => {
     setVolume(event.target.value);
   };
@@ -273,21 +269,15 @@ export default function Room() {
 
   // Add listener when user is about to close the page or refresh
   useEffect(() => {
-    window.addEventListener("popstate", () => {
-      console.log("called popstate!");
-      closeHandler();
-    });
+    window.addEventListener("popstate", closeHandler);
+    window.addEventListener("hashchange", closeHandler);
     window.addEventListener("beforeunload", closeHandler);
     return () => {
-      console.log("_userId: ", _userId);
-      console.log("_roomCreatorId: ", _roomCreatorId);
-      window.removeEventListener("popstate", () => {
-        console.log("called popstate!");
-        closeHandler();
-      });
+      window.removeEventListener("popstate", closeHandler);
+      window.removeEventListener("hashchange", closeHandler);
       window.removeEventListener("beforeunload", closeHandler);
     };
-  }, []);
+  });
 
   // Retrieve the userId of the room creator
   // Retrieve current room type
@@ -899,7 +889,7 @@ export default function Room() {
           flexDirection: "row",
           width: "100%",
           height: "100vh",
-          background: "#434343",
+          background: "#323846",
         }}
       >
         <Box sx={{ width: "23%" }}>
@@ -920,7 +910,6 @@ export default function Room() {
             isMuted={isMuted}
             volume={volume}
             emojiRef={emojiRef}
-            handleEcho={handleEcho}
             handleVolume={handleVolume}
             commentList={commentList.current}
             handleAddComment={handleAddComment}

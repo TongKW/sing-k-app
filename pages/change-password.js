@@ -36,7 +36,9 @@ function ChangePasswordPage() {
 
   const handleKeyPress = async (event) => {
     if (event.key == "Enter") {
-      await validate();
+      if (!changedPwSuccessOpen) {
+        await validate();
+      }
     }
   };
 
@@ -45,7 +47,7 @@ function ChangePasswordPage() {
     return () => {
       document.removeEventListener("keyup", handleKeyPress);
     };
-  }, []);
+  });
   return (
     <>
       <div className="grid grid-cols-12 gap-8" style={{ height: "100%" }}>
@@ -211,6 +213,18 @@ function ChangePasswordPage() {
 }
 
 function SuccessDialog(props) {
+  const handleKeyPress = async (event) => {
+    if (event.key == "Enter") {
+      props.close();
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener("keyup", handleKeyPress);
+    return () => {
+      document.removeEventListener("keyup", handleKeyPress);
+    };
+  });
   return (
     <Dialog open={props.open}>
       <Box

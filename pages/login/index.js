@@ -22,7 +22,9 @@ export default function Login() {
   });
   const handleKeyPress = (event) => {
     if (event.key == "Enter") {
-      login();
+      if (loginState == states.login) {
+        login();
+      }
     }
   };
   if (loginState === states.login) {

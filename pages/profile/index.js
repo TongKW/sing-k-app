@@ -62,7 +62,9 @@ export default function Profile() {
   const bar = (Number(userExp) / Number(ExpToNextLevel)) * 100;
   const handleKeyPress = async (event) => {
     if (event.key == "Enter") {
-      await updateProfile();
+      if (!updatedProfileOpen) {
+        await updateProfile();
+      }
     }
   };
 
@@ -71,7 +73,7 @@ export default function Profile() {
     return () => {
       document.removeEventListener("keyup", handleKeyPress);
     };
-  }, []);
+  });
   // Get the token stored in local storage
   // Send decrypt request to server
   // Get response of user info and display
@@ -190,7 +192,10 @@ export default function Profile() {
   }
 
   async function uploadPhoto(event) {
+    if (!event.target.files.length) return;
+    console.log(event.target.files);
     const [file] = event.target.files;
+    event.target.files = null;
     const fileData = await processFile(file);
     if (!fileData.success) {
       alert(fileData.content);
@@ -384,6 +389,18 @@ function UploadImageButton(props) {
 }
 
 function SuccessDialog(props) {
+  const handleKeyPress = async (event) => {
+    if (event.key == "Enter") {
+      props.close();
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener("keyup", handleKeyPress);
+    return () => {
+      document.removeEventListener("keyup", handleKeyPress);
+    };
+  });
   return (
     <Dialog open={props.open}>
       <Box
