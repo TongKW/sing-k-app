@@ -747,10 +747,9 @@ export default function Room() {
           userId: userId,
         });
         // Check if is the last one to receive the song
-        /*
         let isLast = true;
         for (const userId in downloadSongStatus.current) {
-          if ((downloadSongStatus.current[userId] = false)) {
+          if ((downloadSongStatus.current[userId] == false)) {
             isLast = false;
             break;
           }
@@ -769,7 +768,6 @@ export default function Room() {
           }
           handleStartSong();
         }
-        */
       } else {}
     }
   }, [roomId, userId, initialized, username, avatar, commentList, initConn]);
