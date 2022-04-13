@@ -56,7 +56,9 @@ export default function Room() {
   let receiveSongBuffer = useRef({});
   let lastSend = useRef(null);
   let emojiRef = useRef();
-  let downloadSongStatus = useRef({});
+  let songUploader = useRef();
+  let songReceiverList = useRef([]);
+  //let downloadSongStatus = useRef({});
 
   // Check if user enters from Lobby
   const [fromLobby, setFromLobby] = useState(true);
@@ -150,6 +152,7 @@ export default function Room() {
         lastSend.current === null ||
         currentTime - lastSend.current >= 20000
       ) {
+        songUploader.current = userId;
         // Notify other users that a song is going to be uploaded
         sendMsgAll({
           userId: userId,
@@ -160,11 +163,6 @@ export default function Room() {
           username: username,
           type: "system",
           message: `${username} is uploading song -- ${cleantFileName}.`,
-        });
-        sendMsgAll({
-          type: "songAction",
-          action: "receive",
-          userId: userId,
         });
         
         setAllowPlaySong(false);
@@ -385,10 +383,12 @@ export default function Room() {
               // 1. if pc.currentRemote is null => setRemote
               if (existingUsers.current.includes(newUserId) && !initConn) {
                 const desc = new RTCSessionDescription(fromRTCoffer);
-                await peerConnections.current[
-                  newUserId
-                ].pc.setRemoteDescription(desc);
-                await sleep(1000);
+                try {
+                  await peerConnections.current[
+                    newUserId
+                  ].pc.setRemoteDescription(desc);
+                } catch (error) {}
+                await sleep(2000);
                 // Send user info to other users
                 sendMsg(newUserId, {
                   type: "setUser",
@@ -622,8 +622,11 @@ export default function Room() {
       }
       if (event.channel.label === "song") {
         peerConnections.current[userId].receiveSongChannel = event.channel;
-        peerConnections.current[userId].receiveSongChannel.onmessage =
-          handleReceiveSong;
+        peerConnections.current[userId].receiveSongChannel.onmessage = (event) => {
+          songReceiverList.current = Object.keys(peerConnections.current);
+          songUploader.current = userId;
+          handleReceiveSong(event);
+        }
       }
     }
 
@@ -704,16 +707,21 @@ export default function Room() {
         } else if (action === "move") {
           handleMoveSong(data.prevIndex, data.currentIndex);
         } else if (action == "upload") {
-          Object.keys(peerConnections.current).map((userId) => {
-            downloadSongStatus.current[userId] = false;
-          });
+          songUploader.current = data.userId;
         } else if (action == "receive") {
-          downloadSongStatus.current[data.userId] = true;
+          const index = songReceiverList.current.indexOf(data.userId);
+          songReceiverList.current.splice(index, 1);
+          if (songReceiverList.current.length === 0) {
+            sendMsgAll({
+              type: "songAction",
+              action: "finish",
+              userId: userId,
+            });
+          }
+          //downloadSongStatus.current[data.userId] = true;
         } else if (action == "finish") {
           setAllowPlaySong(true);
-          for (const userId in downloadSongStatus.current) {
-            delete downloadSongStatus.current[userId];
-          }
+          handleStartSong();
         }
       }
       // Force rerender on the UI
@@ -752,37 +760,12 @@ export default function Room() {
           type: "system",
           message: `${username} has received song ${songName}.`,
         });
-        sendMsgAll({
+        sendMsg(songUploader.current, {
           type: "songAction",
           action: "receive",
           userId: userId,
         });
-        // Check if is the last one to receive the song
-        let isLast = true;
-        for (const userId in downloadSongStatus.current) {
-          console.log('downloadSongStatus')
-          console.log(JSON.stringify(downloadSongStatus.current))
-          console.log(userId)
-          if ((!downloadSongStatus.current[userId])) {
-            isLast = false;
-            break;
-          }
-        }
-        if (isLast) {
-          sendMsgAll({
-            type: "songAction",
-            action: "finish",
-          });
-          sendMsgAll({
-            type: "songAction",
-            action: "start",
-          });
-          
-          for (const userId in downloadSongStatus.current) {
-            delete downloadSongStatus.current[userId];
-          }
-        }
-      } else {}
+      }
     }
   }, [roomId, userId, initialized, username, avatar, commentList, initConn]);
 
