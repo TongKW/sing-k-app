@@ -383,10 +383,11 @@ function JoinRoomUtilityDialog(props) {
         const userId = await getUserId();
         setUserId(userId);
         const roomDoc = doc(db, `rooms/${props.roomId}`);
-        onSnapshot(roomDoc, (doc) => {
+        onSnapshot(roomDoc, async (doc) => {
           if (!doc.data()) return;
           const newPosition = doc.data().queue.indexOf(userId);
           if (newPosition === 0) {
+            await sleep(2000);
             setCanEnterRoom(true);
           } else {
             setQueuePosition(newPosition);
