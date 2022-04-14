@@ -389,7 +389,7 @@ export default function Room() {
                   ].pc.setRemoteDescription(desc);
                 } catch (error) {}
                 await sleep(2000);
-                sendMsgAll({
+                sendMsg(newUserId, {
                   username: username,
                   type: "system",
                   message: `${username} has joined the room.`,
