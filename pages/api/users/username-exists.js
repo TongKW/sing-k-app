@@ -21,7 +21,6 @@ async function checkUsernameExists(username, res) {
 
   await result.forEach((result) => {
     isExists = true;
-    user = result;
     //console.log(user);
   });
   await client.close();
