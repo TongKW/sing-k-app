@@ -389,6 +389,11 @@ export default function Room() {
                   ].pc.setRemoteDescription(desc);
                 } catch (error) {}
                 await sleep(2000);
+                sendMsgAll({
+                  username: username,
+                  type: "system",
+                  message: `${username} has joined the room.`,
+                });
                 // Send user info to other users
                 sendMsg(newUserId, {
                   type: "setUser",
@@ -410,13 +415,8 @@ export default function Room() {
                   await connectNewUser(newUserId, fromRTCoffer);
                 } catch (error) {}
                 await sleep(2000);
-                sendMsgAll({
-                  username: username,
-                  type: "system",
-                  message: `${username} has joined the room.`,
-                });
                 // Send user info to other users
-                sendMsgAll({
+                sendMsg(newUserId, {
                   username: username,
                   type: "setUser",
                   userId: userId,
@@ -695,6 +695,7 @@ export default function Room() {
           isSystem: true,
         });
         */
+        
       } else if (type === "setMute") {
         peerConnections.current[userId].isMuted =
           !peerConnections.current[userId].isMuted;
