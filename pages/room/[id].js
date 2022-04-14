@@ -721,6 +721,7 @@ export default function Room() {
               userId: userId,
             });
           }
+          setAllowPlaySong(true);
           //downloadSongStatus.current[data.userId] = true;
         } else if (action == "finish") {
           setAllowPlaySong(true);
