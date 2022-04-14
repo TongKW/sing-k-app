@@ -660,7 +660,7 @@ export default function Room() {
       delete pendingICEcandidates.current[leftUserId];
     }
 
-    function handleReceiveMessage(event) {
+    async function handleReceiveMessage(event) {
       const data = JSON.parse(event.data);
       const username = data.username;
       const message = data.message;
@@ -712,6 +712,7 @@ export default function Room() {
           const index = songReceiverList.current.indexOf(data.userId);
           songReceiverList.current.splice(index, 1);
           if (songReceiverList.current.length === 0) {
+            await sleep(3000);
             sendMsgAll({
               type: "songAction",
               action: "finish",
