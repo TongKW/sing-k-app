@@ -152,6 +152,7 @@ export default function Profile() {
                   value={username}
                   onChange={setUsername}
                   warning={usernameError}
+                  readOnly={true}
                 />
                 <FormTitle title="email" />
                 <FormInputBlock

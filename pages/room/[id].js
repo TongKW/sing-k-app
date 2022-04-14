@@ -413,11 +413,6 @@ export default function Room() {
                 // Send user info to other users
                 sendMsgAll({
                   username: username,
-                  type: "system",
-                  message: `${username} has joined the room.`,
-                });
-                sendMsgAll({
-                  username: username,
                   type: "setUser",
                   userId: userId,
                   avatar: avatar,
