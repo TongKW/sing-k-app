@@ -1,6 +1,6 @@
 ## Background
 
-The main objective for this app is to create a peer to peer platform for user to sing karaoke with friends or other users. User can communicate through audio and sending message. User can also upload songs to the platform so that they can sing with the music behind. We hope that this app can provide the same experience as a real karaoke room. Please enjoy!
+The main objective for this app is to create a peer to peer platform for user to sing karaoke with friends or other users. User can communicate through audio and sending message. User can also upload songs to the platform so that they can sing with the music behind. We hope that this app can provide the same experience as a real karaoke room. Please enjoy.
 
 ## For User
 
