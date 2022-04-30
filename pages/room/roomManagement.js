@@ -1,9 +1,18 @@
+/**
+ * Reder a panel for users to do the following functions
+ * 1. See other participants in the meeting
+ * 2. Mute/Unmute themselves
+ * 3. Leave the room
+ */
 import { React, useEffect } from "react";
 import Icon from "../../component/elements/Icon";
 import { styled } from "@mui/material/styles";
 import { Box, Avatar, Typography } from "@mui/material";
 import Button from "../../component/elements/button";
 
+/**
+ * Define the UI for Avatar of the user
+ */
 const UserAvatar = styled(Avatar, {
   shouldForwardProp: (prop) => ["src"].includes(prop),
 })(({ src, theme }) => ({
@@ -13,9 +22,24 @@ const UserAvatar = styled(Avatar, {
   src: src,
 }));
 
+/**
+ * Reder the Room Management Panel, allowing users to see other users, mute/unmute and leave the room
+ * @param {string} props.roomId - Room ID
+ * @param {string} props.peerConnections
+ * @param {string} props.currentRoomType - Room Type: either Streaming or Private
+ * @param {string} props.roomCreatorId - User Id of the room creator
+ * @param {bool} props.isMuted - True if the user is muted, otherwise False
+ * @param {bool} props.isRoomCreator - True if the current user Id === User Id of the room creator
+ * @param {function} props.handleMuteUnmute - Function to allow user to mute/unmute
+ * @param {function} props.closeHandler - Function to allow user to leave the room
+ * @returns {object} - Three react components: RoomId, OtherUserList and RoomFunctionKeys
+ */
 export default function RoomMangementPanel(props) {
   return (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }} style={{ borderRadius: "25px" }}>
+    <Box
+      sx={{ height: "100%", display: "flex", flexDirection: "column" }}
+      style={{ borderRadius: "25px" }}
+    >
       <RoomId roomId={props.roomId} />
       <OtherUserList
         peerConnections={props.peerConnections}
@@ -34,6 +58,11 @@ export default function RoomMangementPanel(props) {
   );
 }
 
+/**
+ * A component showing the room ID
+ * @param {string} props.roomId - Room ID
+ * @returns {object}
+ */
 function RoomId(props) {
   return (
     <Box
@@ -44,11 +73,21 @@ function RoomId(props) {
         backgroundColor: "#376E6F",
       }}
     >
-      <Typography sx={{fontSize: {xs: "12px", md: "14px"}}}>Room ID: {props.roomId}</Typography>
+      <Typography sx={{ fontSize: { xs: "12px", md: "14px" } }}>
+        Room ID: {props.roomId}
+      </Typography>
     </Box>
   );
 }
 
+/**
+ * A component showing all the users in the same room
+ * @param {string} props.roomId - Room ID
+ * @param {string} props.peerConnections
+ * @param {string} props.currentRoomType - Room Type: either Streaming or Private
+ * @param {string} props.roomCreatorId - User Id of the room creator
+ * @returns {object}
+ */
 function OtherUserList(props) {
   return (
     <div
@@ -60,32 +99,43 @@ function OtherUserList(props) {
         overflowY: "auto",
       }}
     >
-      {props.otherUsersList ? Object.keys(props.otherUsersList).map((userId, index) => {
+      {props.otherUsersList ? (
+        Object.keys(props.otherUsersList).map((userId, index) => {
+          const username = props.otherUsersList[userId].username;
+          const userAvatar = props.otherUsersList[userId].avatar;
+          const otherIsMuted = props.otherUsersList[userId].isMuted;
+          const isRoomCreator = userId === props.roomCreatorId;
+          const currentRoomType = props.currentRoomType;
+          // //console.log(username, otherIsMuted);
 
-        const username = props.otherUsersList[userId].username;
-        const userAvatar = props.otherUsersList[userId].avatar;
-        const otherIsMuted = props.otherUsersList[userId].isMuted;
-        const isRoomCreator = userId === props.roomCreatorId;
-        const currentRoomType = props.currentRoomType;
-        // //console.log(username, otherIsMuted);
-
-        return (
-          <User
-            key={index}
-            peerConnections={props.peerConnections}
-            userId={userId}
-            username={username}
-            userAvatar={userAvatar}
-            otherIsMuted={otherIsMuted}
-            isRoomCreator={isRoomCreator}
-            currentRoomType={currentRoomType}
-          />
-        );
-      }) : <div/>}
+          return (
+            <User
+              key={index}
+              peerConnections={props.peerConnections}
+              userId={userId}
+              username={username}
+              userAvatar={userAvatar}
+              otherIsMuted={otherIsMuted}
+              isRoomCreator={isRoomCreator}
+              currentRoomType={currentRoomType}
+            />
+          );
+        })
+      ) : (
+        <div />
+      )}
     </div>
   );
 }
 
+/**
+ * A component showing all the user information in the room, including an avatar, username and mute status
+ * @param {string} props.roomId - Room ID
+ * @param {string} props.peerConnections
+ * @param {string} props.currentRoomType - Room Type: either Streaming or Private
+ * @param {string} props.roomCreatorId - User Id of the room creator
+ * @returns {object}
+ */
 function User(props) {
   useEffect(() => {
     Object.keys(props.peerConnections.current).map((userId) => {
@@ -120,7 +170,9 @@ function User(props) {
       >
         <UserAvatar src={props.userAvatar} />
         <Box pl={1} />
-        <Typography sx={{fontSize: {xs: "12px", md: "15px"}}}>{props.username}</Typography>
+        <Typography sx={{ fontSize: { xs: "12px", md: "15px" } }}>
+          {props.username}
+        </Typography>
       </Box>
 
       <Box mr={1} pt={1}>
@@ -133,6 +185,11 @@ function User(props) {
   );
 }
 
+/**
+ * Show an icon for mute status
+ * @param {bool} props.isMuted - True if the user is muted, otherwise False
+ * @returns {object}
+ */
 function OtherMutedIcon(props) {
   return (
     <>
@@ -145,6 +202,15 @@ function OtherMutedIcon(props) {
   );
 }
 
+/**
+ * Show the mute button and the leave button for users
+ * @param {bool} props.isMuted - True if the user is muted, otherwise False
+ * @param {bool} props.isRoomCreator - True if the current user Id === User Id of the room creator
+ * @param {string} props.currentRoomType - Room Type: either Streaming or Private
+ * @param {function} props.handleMuteUnmute - Function to allow user to mute/unmute
+ * @param {function} props.closeHandler - Function to allow user to leave the room
+ * @returns {object}
+ */
 function RoomFunctionKeys(props) {
   return (
     <Box
@@ -177,6 +243,14 @@ function RoomFunctionKeys(props) {
   );
 }
 
+/**
+ * Show the mute button and the leave button for users
+ * @param {bool} props.isMuted - True if the user is muted, otherwise False
+ * @param {bool} props.isRoomCreator - True if the current user Id === User Id of the room creator
+ * @param {function} props.handleMuteUnmute - Function to allow user to mute/unmute
+ * @param {string} props.currentRoomType - Room Type: either Streaming or Private
+ * @returns {object}
+ */
 function Mute(props) {
   const usableUser =
     props.currentRoomType === "private" ||
