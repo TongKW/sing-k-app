@@ -1,3 +1,12 @@
+/**
+ * Render a panel for user to communicate with other users using messaging system and change the volume of the song
+ * Functionality involved
+ * 1. A slide bar for changing the volume
+ * 2. A screen for receiving messages from other users
+ * 3. Writing messages
+ * 4. Choosing emojis
+ * 5. Sending the messages to other users
+ */
 import { React, useRef, useEffect, useState } from "react";
 import { Box, TextField, Slider } from "@mui/material";
 import { styled } from "@mui/material/styles";
@@ -8,6 +17,16 @@ import EllipsisText from "react-ellipsis-text";
 import dynamic from "next/dynamic";
 const Picker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
+/**
+ * Render the User Utility Panel, allowing user to send and receive messages, and change the volume
+ * @param {bool} props.isMuted - True if the user is muted, otherwise False
+ * @param {int} volume - volume of the song
+ * @param {function} handleVolume - A function to change the volumn of the song
+ * @param {function} props.emojiRef - A function to provide the emoji panel for adding emoji
+ * @param {list of objects} props.commentList - A list of comments from other users
+ * @param {function} props.handleAddComment - A function to add comments to the comment list
+ * @returns {object} - Two react components: Audio pane, Comment Area
+ */
 export default function UserUtilityPanel(props) {
   return (
     <Box
@@ -34,6 +53,13 @@ export default function UserUtilityPanel(props) {
   );
 }
 
+/**
+ * Render a panel for user to change the volume of the song
+ * @param {bool} props.isMuted - True if the user is muted, otherwise False
+ * @param {int} volume - volume of the song
+ * @param {function} handleVolume - A function to change the volumn of the song
+ * @returns a react component to change the volume
+ */
 function AudioPane(props) {
   const volumeScale = (value) => 2 * value;
   return (
@@ -101,13 +127,19 @@ function AudioPane(props) {
     </Box>
   );
 }
-
+/**
+ * Render the Comment area showing all the comments from the users with sending function
+ * @param {function} props.emojiRef - A function to provide the emoji panel for adding emoji
+ * @param {list of objects} props.commentList - A list of comments from other users
+ * @param {function} props.handleAddComment - A function to add comments to the comment list
+ * @returns a react component with showing and sending comments
+ */
 function CommentArea(props) {
   return (
     <Box
       className="bg-indigo-900"
-      display = "flex"
-      flexDirection = "column"
+      display="flex"
+      flexDirection="column"
       style={{
         width: "100%",
         height: "90%",
@@ -125,7 +157,11 @@ function CommentArea(props) {
     </Box>
   );
 }
-
+/**
+ * Render a screen for user to see all the comments posted by all users in the room
+ * @param {list of objects} props.commentList - A list of comments from other users
+ * @return a react component showing all comments
+ */
 function MessageArea(props) {
   const messageBoxRef = useRef(null);
   //auto scroll till bottom
@@ -166,6 +202,11 @@ function MessageArea(props) {
   );
 }
 
+/**
+ * Render the system messages posted by the system, eg. when another user enters the room
+ * @param {string} props.text - The text of the system message
+ * @returns react component showing the system message
+ */
 function SystemMessage(props) {
   return (
     <Box
@@ -192,6 +233,13 @@ function SystemMessage(props) {
   );
 }
 
+/**
+ * Render the comments posted by the users
+ * @param {string} props.time - The time when sending the message
+ * @param {string} props.username - Username of the current user
+ * @param {string} props.text - The text of the comments
+ * @returns react component showing the comments
+ */
 function UserComment(props) {
   const time = new Date(props.time);
   return (
@@ -241,6 +289,11 @@ function UserComment(props) {
   );
 }
 
+/**
+ * Render an input area for user to write and send their messages to the system
+ * @param {function} props.emojiRef - A function to provide the emoji panel for adding emoji
+ * @returns a component for user to send messages
+ */
 function InputArea(props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [text, setText] = useState("");
@@ -339,6 +392,11 @@ function InputArea(props) {
   );
 }
 
+/**
+ * Render an input box for user to write their messages
+ * @param {string} props.text - The text written by the user
+ * @returns a component for user to write their messages
+ */
 function InputBox(props) {
   const inputArea = useRef();
   useEffect(() => {
