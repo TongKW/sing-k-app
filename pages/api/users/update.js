@@ -50,9 +50,7 @@ export default async function handler(req, res) {
     //update mongodb
     let newvalues = { $set: user };
     await user_info.updateOne(query, newvalues).then(result => {
-      //console.log(result);
     }).catch(err => {
-      //console.log(err);
     });
 
     await client.close();

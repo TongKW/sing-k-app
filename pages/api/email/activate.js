@@ -6,6 +6,14 @@ const uri = process.env.MONGODB_SERVER;
 
 export default async function handler(req, res) {
   if (req.method === "POST") {
+    /*
+    This function is handling http POST request to path /api/email/activate, to
+    activate a user account. It does the following things:
+    1. Get the validate_id from the request body.
+    2. Connect to the mongoDB.
+    3. Validate the activating request by check the data in mongoDB.
+    4. Create an account for the validated user.
+     */
     const { validate_id } = req.body;
     let data;
 
