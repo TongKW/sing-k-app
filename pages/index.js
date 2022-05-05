@@ -36,6 +36,7 @@ import sleep from "../utils/sleep";
 import CloseIcon from "@mui/icons-material/Close";
 import removeUserQueue from "../utils/room/userOffQueue";
 
+// Home page for the user view.
 export default function Home() {
   const [username, setUsername] = useState("");
   const [roomInfos, setRoomInfos] = useState([]);
@@ -44,6 +45,9 @@ export default function Home() {
 
   useEffect(() => {
     setUsername(localStorage.getItem("username"));
+    // when the firebase conenction is available, we register an event listener that
+    // emit signal when the room collection in the firebase has any change
+    // to re-render the UI of list of available rooms
     const unsub = onSnapshot(collection(db, "rooms"), async (snapshot) => {
       const roomInfos = await Promise.all(
         snapshot.docs.map(async (doc) => {
@@ -64,6 +68,7 @@ export default function Home() {
       );
       setRoomInfos(publicRoomInfos);
     });
+    //an unsubscribe function to clean up memory when the component unmounts
     return () => unsub();
   }, [db]);
   return (
@@ -118,6 +123,7 @@ const UserAvatar = styled(Avatar, {
   src: src,
 }));
 
+// a create room button which allow users to create a singing room on click
 function CreateRoomButton() {
   const [createRoomOpen, setCreateRoomOpen] = useState(false);
   const [checkMicOpen, setCheckMicOpen] = useState(false);
@@ -132,14 +138,20 @@ function CreateRoomButton() {
   const db = getFirestore();
   const router = useRouter();
 
+  //whether open the create room modal dialog
   const handleCreateRoomOpen = () => setCreateRoomOpen(true);
 
+  //whether close the create room modal dialog
   const handleCreateRoomClose = () => setCreateRoomOpen(false);
 
+  //whether open the check user mic open modal dialog
   const handleCheckMicOpen = () => setCheckMicOpen(true);
+
+  //whether close the check user mic open modal dialog
   const handleCheckMicClose = () => setCheckMicOpen(false);
 
   useEffect(() => {
+    // if the user can enter the room, or there is authorization error
     if (canEnterRoom || userIdError) {
       handleCreateRoomClose();
       handleCheckMicClose();
@@ -155,7 +167,9 @@ function CreateRoomButton() {
     // return () => localStream.removeTrack();
   }, [canEnterRoom, roomId, router, userIdError]);
 
+  //when the user can enter the created room
   const handleEnterCreatedRoom = async () => {
+    //update the database document with the same roomId
     await setDoc(doc(db, "rooms", roomId), {
       creator: creatorName,
       creatorAvatar: creatorAvatar,
@@ -168,6 +182,7 @@ function CreateRoomButton() {
     setCanEnterRoom(true);
   };
 
+  //a function when user click the create room button
   const createRoom = async () => {
     const roomId = await generateRoomId();
     const userId = await setUsernameAvatar(setCreatorName, setCreatorAvatar);
@@ -181,16 +196,18 @@ function CreateRoomButton() {
     handleCheckMicOpen();
   };
 
+  // if the user creates a streaming room
   const createStreamingRoom = async () => {
     const roomType = "streaming";
     setRoomType(roomType);
-    await createRoom(roomType);
+    await createRoom();
   };
 
+  // if the user creates a private room
   const createPrivateRoom = async () => {
     const roomType = "private";
     setRoomType(roomType);
-    await createRoom(roomType);
+    await createRoom();
   };
 
   return (
@@ -217,6 +234,7 @@ function CreateRoomButton() {
   );
 }
 
+// crteate room dialog which shows chosing which type of rooms
 function CreateRoomDialog(props) {
   return (
     <Dialog open={props.open}>
@@ -248,6 +266,7 @@ function CreateRoomDialog(props) {
   );
 }
 
+// component of the streaming room button
 function StreamRoomButton(props) {
   return (
     <Box>
@@ -262,6 +281,7 @@ function StreamRoomButton(props) {
   );
 }
 
+// component of the private room button
 function PrivateRoomButton(props) {
   return (
     <Box>
@@ -276,6 +296,7 @@ function PrivateRoomButton(props) {
   );
 }
 
+// a join room button which allow users to create a singing room on click
 function JoinRoomButton() {
   const [enterRoomIdOpen, setEnterRoomIdOpen] = useState(false);
   const [roomId, setRoomId] = useState();

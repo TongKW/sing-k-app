@@ -1,3 +1,4 @@
+// firebase configuration to run the project
 export const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
   authDomain: "sing-k-app-b4399.firebaseapp.com",

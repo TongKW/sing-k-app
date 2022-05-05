@@ -25,6 +25,7 @@ export default function ChangePassword() {
   );
 }
 
+// This component renders the change password page
 function ChangePasswordPage() {
   const [oldPw, setOldPw] = useState();
   const [newPw, setNewPw] = useState();
@@ -34,6 +35,9 @@ function ChangePasswordPage() {
   const [dupError, setDupError] = useState();
   const [changedPwSuccessOpen, setChangedPwSuccessOpen] = useState(false);
 
+  // For a better UX, we have added the event listener callback to check
+  // whether the user input key is Enter. If yes, then the "change password" function
+  // should be invoked.
   const handleKeyPress = async (event) => {
     if (event.key == "Enter") {
       if (!changedPwSuccessOpen) {
@@ -43,6 +47,7 @@ function ChangePasswordPage() {
   };
 
   useEffect(() => {
+    //Adding event listener to catch keyup events
     document.addEventListener("keyup", handleKeyPress);
     return () => {
       document.removeEventListener("keyup", handleKeyPress);
@@ -96,11 +101,13 @@ function ChangePasswordPage() {
     </>
   );
 
+  // This is a function to check whether the user old password is correct
   async function checkUserOldPw(oldPw) {
     const username = localStorage.getItem("username");
     const requestBody = { username: username, password: oldPw };
     const errorResponse = { success: false, error: null };
     let response;
+    //fetch the api
     try {
       response = await fetch("/api/users/auth", {
         method: "POST",
@@ -110,8 +117,10 @@ function ChangePasswordPage() {
         },
       });
     } catch (error) {
+      // if fetch unsuccessful
       return errorResponse;
     }
+    // if fetch successful, wait to parse the response from JSON to object
     try {
       const data = await response.json();
       return { success: data.success, error: data.message };
@@ -120,6 +129,9 @@ function ChangePasswordPage() {
     }
   }
 
+  //this is a function to decrypt the JWT from the client side on the backend
+  // to check whether there is sufficient authorization for the request sender
+  // to change the password
   async function decryptSessionToken() {
     const token = localStorage.getItem("token");
     const requestBody = { token: token };
@@ -144,6 +156,9 @@ function ChangePasswordPage() {
     }
   }
 
+  //this function is to change the password from the client side. Once the
+  // user identity is checked to be authorized, then the update function
+  // will be invoked
   async function changePw(userId, newPw) {
     const requestBody = { id: userId, password: newPw };
     const response = await fetch("/api/users/update", {
@@ -161,6 +176,7 @@ function ChangePasswordPage() {
     }
   }
 
+  //An abstracted interface to change the password
   async function changePwInterface(newPw) {
     const decryptionResult = await decryptSessionToken();
     if (!decryptionResult.success) return decryptionResult;
@@ -168,6 +184,7 @@ function ChangePasswordPage() {
     return await changePw(userId, newPw);
   }
 
+  //validate whether the change password event is successful.
   async function validate() {
     setOldPwError();
     setNewPwError();

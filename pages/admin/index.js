@@ -27,6 +27,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import HomePage from "../../component/wrapper/HomePage";
 import sortOnKey from "../../utils/sortOnKey";
 
+// This component generates the admin view
 export default function Admin() {
   const router = useRouter();
   const [fetching, setFetching] = useState(true);
@@ -97,6 +98,7 @@ export default function Admin() {
     }
   }, [validated]);
 
+  // this function changes the password when the admin pass in userId and new password to the database
   async function changePw(userId, newPw) {
     const requestBody = { id: userId, password: newPw };
     const response = await fetch("/api/users/update", {
@@ -114,6 +116,9 @@ export default function Admin() {
     }
   }
 
+  // this function is a top level function which handles the admin on request
+  // change the password of the user, by passing in userId, password and the
+  // callback of setting password error
   async function handleChangePw(userId, password, setPasswordError) {
     setPasswordError();
     if (pwValidateSetError(password, setPasswordError)) {
@@ -135,9 +140,14 @@ export default function Admin() {
     }
   }
 
+  // this function is a top level function which handles the admin on request
+  // view the user profile by requiring the userID
   function handleViewProfile(userId) {
     router.push(`/admin/view-profile/${userId}`);
   }
+
+  // this function is a top level function which handles the admin on request
+  // sort the username data
   const handleSortUsernameDescending = () => {
     const newUsernameDescending = !usernameDescending;
     const newFilteredUserList = sortOnKey(
@@ -149,6 +159,8 @@ export default function Admin() {
     setFilteredUserList(newFilteredUserList);
   };
 
+  // this function is a top level function which handles the admin on request
+  // sort the email data
   const handleSortEmailDescending = () => {
     const newEmailDescending = !emailDescending;
     const newFilteredUserList = sortOnKey(
@@ -160,6 +172,8 @@ export default function Admin() {
     setFilteredUserList(newFilteredUserList);
   };
 
+  // this function is a top level function which handles when the search bar field
+  // value changes
   const handleSearchFieldChange = (event) => {
     const newSearchField = event.target.value;
     if (newSearchField !== searchFieldOptionName) {
@@ -173,7 +187,12 @@ export default function Admin() {
     }
   };
 
+  // this function is a top level function which handles when the search bar selected option
+  // value changes
   const handleSearchValueChange = (_, value) => setSearchBarValue(value);
+
+  // this function is a top level function which handles when the search bar selected input
+  // value changes
   const handleSearchInputValueChange = (_, value) => {
     setSearchBarInputValue(value);
     const pattern = new RegExp(value);
@@ -224,13 +243,16 @@ export default function Admin() {
                       onChange={handleSearchValueChange}
                       inputValue={searchBarInputValue}
                       onInputChange={handleSearchInputValueChange}
-                      sx={{ width: {xs: "50vw", md: "30vw"} }}
+                      sx={{ width: { xs: "50vw", md: "30vw" } }}
                       size="small"
                       renderInput={(params) => {
                         return (
                           <TextField
                             {...params}
-                            sx={{ backgroundColor: "#fff", borderRadius: "5px" }}
+                            sx={{
+                              backgroundColor: "#fff",
+                              borderRadius: "5px",
+                            }}
                           />
                         );
                       }}
@@ -242,7 +264,7 @@ export default function Admin() {
                         id="demo-simple-select"
                         sx={{
                           background: "#fff",
-                          width: {xs: "30vw", md: "15vw"},
+                          width: { xs: "30vw", md: "15vw" },
                         }}
                         value={searchFieldOptionName}
                         onChange={handleSearchFieldChange}
@@ -363,6 +385,7 @@ export default function Admin() {
   }
 }
 
+// this is a component that list all the users data and allow admin to change their password respectively
 function ListUser(props) {
   const [password, setPassword] = useState();
   const [passwordError, setPasswordError] = useState();

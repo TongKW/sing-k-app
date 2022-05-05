@@ -1,9 +1,14 @@
 import React from "react";
 
+// A generic form input component where the types and onChange event listeners are yet to defined
 export default function FormInput(props) {
   return (
     <input
-      className={inputFormClass + (props.warning ? "border-red-500 " : " ") + (props.readOnly ? "bg-gray-300 text-gray-600 " : " ")}
+      className={
+        inputFormClass +
+        (props.warning ? "border-red-500 " : " ") +
+        (props.readOnly ? "bg-gray-300 text-gray-600 " : " ")
+      }
       id={props.id}
       type={props.type}
       placeholder={props.placeholder}
@@ -16,7 +21,7 @@ export default function FormInput(props) {
   );
 }
 
-// Input Form block
+// Input Form block that generates a form input section with custom error warning handling
 export function FormInputBlock(props) {
   var value = props.value ? props.value : "";
   var category = props.category;

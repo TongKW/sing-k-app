@@ -27,6 +27,7 @@ function generateRandomString(length = 6) {
   return roomId;
 }
 
+// This function generates a random room id
 export default async function generateRoomId() {
   // Initialize Firebase
   const app = firebase.initializeApp(firebaseConfig);

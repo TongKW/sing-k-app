@@ -1,6 +1,8 @@
 import Image from "next/image";
 import defaultIcon from "../../public/images/icon.png";
 
+// This component returns a generic icon class with the image input as icon, and leave flexibility of
+// other user defined properties like onClick event listener all in the ...style
 export default function Icon({ length, alt, icon, ...style }) {
   const defaultLength = 150;
   const iconSource = icon ?? defaultIcon;
@@ -17,4 +19,3 @@ export default function Icon({ length, alt, icon, ...style }) {
     </div>
   );
 }
-

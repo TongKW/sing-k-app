@@ -1,7 +1,9 @@
+//A utility function that pads the digit of date to 2 for consistent date length
 function padTo2Digits(num) {
   return num.toString().padStart(2, "0");
 }
 
+// A utility function that formats the date to a standard ISO but human readable format
 export default function formatDate(date) {
   return (
     [

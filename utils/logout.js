@@ -1,3 +1,4 @@
+//logout function
 export default function logout() {
   // Set a cookie with expires time to remove cookie
   document.cookie =

@@ -1,5 +1,6 @@
 import React from "react";
 
+// a generic button component that renders the button with onclick event listener
 export default function Button(props) {
   return (
     <div onClick={props.onClick ? props.onClick : undefined}>
